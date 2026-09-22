@@ -110,21 +110,44 @@ function confirmPix(id){
   localStorage.bv_orders=JSON.stringify(orders);renderAdmin();toast("Pix confirmado. Pedido confirmado!");
 }
 function renderAdmin(){
-  const deliveredOrders=orders.filter(o=>o.status==="Entregue");
-  let rev=deliveredOrders.reduce((s,o)=>s+o.total,0);
-  $("sOrders").textContent=deliveredOrders.length;$("sRevenue").textContent=brl(rev);$("sAvg").textContent=brl(deliveredOrders.length?rev/deliveredOrders.length:0);
-  let pending=orders.filter(o=>o.status==="Novo"||o.status==="Aguardando pagamento").length;
-  $("sNew").textContent=pending;$("sideNew").textContent=pending;
+  const delivered=orders.filter(o=>o.status==="Entregue");
+  const revenue=delivered.reduce((sum,o)=>sum+(Number(o.total)||0),0);
+  $("sOrders").textContent=delivered.length;
+  $("sRevenue").textContent=brl(revenue);
+  $("sAvg").textContent=brl(delivered.length?revenue/delivered.length:0);
+  const pending=orders.filter(o=>o.status==="Novo"||o.status==="Aguardando pagamento").length;
+  $("sNew").textContent=pending;
+  $("sideNew").textContent=pending;
   $("dashNotice").textContent=pending?"🔔 "+pending+" pedido(s) aguardando atendimento/pagamento.":"Nenhum pedido novo.";
-  const deliveredBox=$("dashboardOrders");
-  if(deliveredBox){
-    const delivered=orders.filter(o=>o.status==="Entregue");
-    deliveredBox.innerHTML=delivered.length?delivered.map(o=>`<div class="order"><div class="line"><b>#${o.id} — ${o.customer}</b><span class="status">Entregue</span></div><p><b>Itens:</b> ${o.items}</p><p class="orderInfo"><b>💳 Pagamento:</b> ${o.payment}${o.paid?" · ✅ Pago":""}</p><div class="mini">${brl(o.total)} · ${o.time}</div></div>`).join(""):"<p class="muted">Nenhum pedido entregue ainda.</p>";
+
+  const dashboard=$("dashboardOrders");
+  if(dashboard){
+    dashboard.innerHTML=delivered.length?delivered.map(o=>`
+      <div class="order">
+        <div class="line"><b>#${o.id} — ${o.customer}</b><span class="status">Entregue</span></div>
+        <p><b>Itens:</b> ${o.items}</p>
+        <p class="orderInfo"><b>💳 Pagamento:</b> ${o.payment}${o.paid?" · ✅ Pago":""}</p>
+        <div class="mini">${brl(Number(o.total)||0)} · ${o.time}</div>
+      </div>`).join(""):'<p class="muted">Nenhum pedido entregue ainda.</p>';
   }
-  $("orders").innerHTML=orders.length?orders.map(o=>{
-    let address=o.address?(o.address.rua+", "+o.address.numero+" — "+o.address.bairro+(o.address.cep?" · CEP "+o.address.cep:"")+(o.address.complemento?" · "+o.address.complemento:"")):"Retirada no local";
-    return "<div class=\"order\"><div class=\"line\"><b>#"+o.id+" — "+o.customer+"</b><span class=\"status\">"+o.status+"</span></div><p><b>Itens:</b> "+o.items+"</p><p class=\"orderInfo\"><b>📍 "+(o.delivery||"Entrega")+":</b> "+address+"</p><p class=\"orderInfo\"><b>💳 Pagamento:</b> "+o.payment+(o.paid?" · ✅ Pago":"")+(o.payment==="Dinheiro"&&o.change?" · Troco para "+o.change:"")+"</p><div class=\"mini\">"+brl(o.total)+" · "+o.time+(o.paidAt?" · Pago às "+o.paidAt:"")+"</div>"+(o.payment==="Pix"&&!o.paid?"<button class=\"confirmPix\" onclick=\"confirmPix('"+o.id+"')\">✅ Confirmar pagamento Pix</button>":"")+"<select onchange=\"statusOrder('"+o.id+"',this.value)\"><option "+(o.status==="Aguardando pagamento"?"selected":"")+">Aguardando pagamento</option><option "+(o.status==="Novo"?"selected":"")+">Novo</option><option "+(o.status==="Confirmado"?"selected":"")+">Confirmado</option><option "+(o.status==="Em preparo"?"selected":"")+">Em preparo</option><option "+(o.status==="Pronto"?"selected":"")+">Pronto</option><option "+(o.status==="Saiu para entrega"?"selected":"")+">Saiu para entrega</option><option "+(o.status==="Entregue"?"selected":"")+">Entregue</option><option "+(o.status==="Cancelado"?"selected":"")+">Cancelado</option></select></div>";
-  }).join(""):"<p class=\"muted\">Nenhum pedido.</p>";
+
+  const ordersBox=$("orders");
+  if(!ordersBox)return;
+  ordersBox.innerHTML=orders.length?orders.map(o=>{
+    const address=o.address?(o.address.rua+", "+o.address.numero+" — "+o.address.bairro+(o.address.cep?" · CEP "+o.address.cep:"")+(o.address.complemento?" · "+o.address.complemento:"")):"Retirada no local";
+    const pixButton=o.payment==="Pix"&&!o.paid?`<button class="confirmPix" onclick="confirmPix('${o.id}')">✅ Confirmar pagamento Pix</button>`:"";
+    const options=["Aguardando pagamento","Novo","Confirmado","Em preparo","Pronto","Saiu para entrega","Entregue","Cancelado"].map(st=>`<option ${o.status===st?"selected":""}>${st}</option>`).join("");
+    return `
+      <div class="order">
+        <div class="line"><b>#${o.id} — ${o.customer}</b><span class="status">${o.status}</span></div>
+        <p><b>Itens:</b> ${o.items}</p>
+        <p class="orderInfo"><b>📍 ${o.delivery||"Entrega"}:</b> ${address}</p>
+        <p class="orderInfo"><b>💳 Pagamento:</b> ${o.payment}${o.paid?" · ✅ Pago":""}${o.payment==="Dinheiro"&&o.change?" · Troco para "+o.change:""}</p>
+        <div class="mini">${brl(Number(o.total)||0)} · ${o.time}${o.paidAt?" · Pago às "+o.paidAt:""}</div>
+        ${pixButton}
+        <select onchange="statusOrder('${o.id}',this.value)">${options}</select>
+      </div>`;
+  }).join(""):'<p class="muted">Nenhum pedido.</p>';
 }
 function statusOrder(id,s){
   let o=orders.find(x=>x.id===id);
