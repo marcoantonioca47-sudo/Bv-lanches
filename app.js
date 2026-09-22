@@ -1,39 +1,18 @@
-/* RBAC patch */
+const _bvOldAdmin=sessionStorage.getItem("bv")==="1"&&!sessionStorage.getItem("bv_role");if(_bvOldAdmin)sessionStorage.setItem("bv_role","administrador");
 const BV_DEFAULT_USERS=[{id:"admin-marco",name:"Administrador",email:"marco@bv.com",pass:"123456",role:"administrador"},{id:"user-demo",name:"Usuário",email:"usuario@bv.com",pass:"123456",role:"usuario"}];
 function bvUsers(){const u=safeParse("bv_users",null);if(!Array.isArray(u)){localStorage.bv_users=JSON.stringify(BV_DEFAULT_USERS);return BV_DEFAULT_USERS.slice()}return u}
 function bvRole(){return sessionStorage.getItem("bv_role")||""}
 function isAdmin(){return bvRole()==="administrador"}
 function isMoto(){return bvRole()==="motoboy"}
 function canPage(page){if(isAdmin())return true;if(isMoto())return ["inicio","cardapio","pedidos","acompanhar"].includes(page);return publicPages.includes(page)}
-function applyAccess(){
- const role=bvRole(),admin=role==="administrador",moto=role==="motoboy";
- document.querySelectorAll(".adminOnly").forEach(x=>x.style.display=admin?"":"none");
- document.querySelectorAll(".adminHide").forEach(x=>x.style.display=(admin||moto)?"none":"");
- document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=moto?"":"none");
- const aq=$("adminQuick");if(aq)aq.style.display=admin?"":"none";
-}
-function showPage(page){
- if(!pageTitles[page])return;
- if(!canPage(page)){toast("Você não tem permissão para acessar esta tela.");return}
- localStorage.bv_page=page;
- document.querySelectorAll(".page").forEach(x=>x.classList.remove("activePage"));
- const target=$("page-"+page);if(!target)return;target.classList.add("activePage");
- document.querySelectorAll(".sideNav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
- $("pageTitle").textContent=pageTitles[page]||"BV LANCHES";$("sidebar").classList.remove("open");
- if(page==="pedido")renderCart();if(page==="cardapio")renderProducts();if(["dashboard","pedidos","produtos","cupons","config"].includes(page))renderAdmin();window.scrollTo(0,0)
-}
+function applyAccess(){const role=bvRole(),admin=role==="administrador",moto=role==="motoboy";document.querySelectorAll(".adminOnly").forEach(x=>x.style.display=admin?"":"none");document.querySelectorAll(".adminHide").forEach(x=>x.style.display=(admin||moto)?"none":"");document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=moto?"":"none");const aq=$("adminQuick");if(aq)aq.style.display=admin?"":"none"}
+function showPage(page){if(!pageTitles[page])return;if(!canPage(page)){toast("Você não tem permissão para acessar esta tela.");return}localStorage.bv_page=page;document.querySelectorAll(".page").forEach(x=>x.classList.remove("activePage"));const target=$("page-"+page);if(!target)return;target.classList.add("activePage");document.querySelectorAll(".sideNav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));$("pageTitle").textContent=pageTitles[page]||"BV LANCHES";$("sidebar").classList.remove("open");if(page==="pedido")renderCart();if(page==="cardapio")renderProducts();if(["dashboard","pedidos","produtos","cupons","config"].includes(page))renderAdmin();if(page==="config")renderUsers();window.scrollTo(0,0)}
 function openAdmin(page="dashboard"){if(!canPage(page)){toast("Acesso permitido somente ao administrador.");return}showPage(page);if(isAdmin())renderAdmin()}
-function login(){
- const email=$("email").value.trim().toLowerCase(),pass=$("pass").value;
- const users=bvUsers(),u=users.find(x=>x.email.toLowerCase()===email&&x.pass===pass);
- if(!u){$("err").textContent="E-mail ou senha incorretos.";return}
- sessionStorage.setItem("bv_user_id",u.id);sessionStorage.setItem("bv_role",u.role);sessionStorage.setItem("bv",u.role==="administrador"?"1":"0");
- $("login").style.display="none";$("err").textContent="";applyAccess();showPage(u.role==="administrador"?"dashboard":"inicio");toast("Login realizado como "+u.role+".")
-}
+function login(){const email=$("email").value.trim().toLowerCase(),pass=$("pass").value;const users=bvUsers(),u=users.find(x=>x.email.toLowerCase()===email&&x.pass===pass);if(!u){$("err").textContent="E-mail ou senha incorretos.";return}sessionStorage.setItem("bv_user_id",u.id);sessionStorage.setItem("bv_role",u.role);sessionStorage.setItem("bv",u.role==="administrador"?"1":"0");$("login").style.display="none";$("err").textContent="";applyAccess();showPage(u.role==="administrador"?"dashboard":"inicio");toast("Login realizado como "+u.role+".")}
 function logout(){sessionStorage.clear();localStorage.bv_page="inicio";applyAccess();showPage("inicio");$("login").style.display="flex";$("email").value="";$("pass").value="";$("err").textContent=""}
 function saveUsers(){localStorage.bv_users=JSON.stringify(bvUsers())}
 function renderUsers(){const box=$("userPermissions");if(!box)return;box.innerHTML=bvUsers().map(u=>`<div class="userPerm"><div><b>${String(u.name).replace(/</g,"&lt;")}</b><small>${u.email}</small></div><select onchange="changeUserRole('${u.id}',this.value)" ${u.id==="admin-marco"?"disabled":""}><option value="usuario" ${u.role==="usuario"?"selected":""}>Usuário</option><option value="motoboy" ${u.role==="motoboy"?"selected":""}>Motoboy</option><option value="administrador" ${u.role==="administrador"?"selected":""}>Administrador</option></select></div>`).join("")}
 function changeUserRole(id,role){if(!isAdmin())return toast("Somente o administrador pode alterar permissões.");if(!["usuario","motoboy","administrador"].includes(role))return;const users=bvUsers(),u=users.find(x=>x.id===id);if(!u)return;u.role=role;saveUsers();renderUsers();toast("Permissão atualizada para "+role+".")}
 function createUser(){if(!isAdmin())return;const name=$("newUserName").value.trim(),email=$("newUserEmail").value.trim().toLowerCase(),pass=$("newUserPass").value;if(!name||!email||!pass)return toast("Preencha nome, e-mail e senha.");const users=bvUsers();if(users.some(u=>u.email===email))return toast("Este e-mail já está cadastrado.");users.push({id:"u-"+Date.now(),name,email,pass,role:"usuario"});localStorage.bv_users=JSON.stringify(users);$("newUserName").value="";$("newUserEmail").value="";$("newUserPass").value="";renderUsers();toast("Usuário cadastrado como usuário comum.")}
-function initPermissions(){renderUsers();const r=bvRole();if(r)applyAccess()}
+function initPermissions(){if(sessionStorage.getItem("bv_role"))applyAccess();renderUsers()}
 window.addEventListener("load",initPermissions);
