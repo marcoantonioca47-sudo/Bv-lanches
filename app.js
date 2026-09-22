@@ -8,13 +8,25 @@ const defaultProducts=[
 {id:7,name:"X-Caminhoneiro",price:28,emoji:"🍔",desc:"Pão, 2 bifes, ovo, presunto, mussarela, bacon, cheddar, requeijão e salada.",category:"Lanches"},
 {id:8,name:"BV-Megã Monstrão",price:34,emoji:"🍔",desc:"Pão, 4 bifes, 2 ovos, calabresa, bacon, cheddar, requeijão, frango desfiado, batata e salada.",category:"Lanches"}
 ];
-let products=JSON.parse(localStorage.bv_products||"null");
+function safeParse(key,fallback){
+  try{
+    const raw=localStorage.getItem(key);
+    return raw===null||raw===""?fallback:JSON.parse(raw);
+  }catch(e){
+    localStorage.removeItem(key);
+    return fallback;
+  }
+}
+let products=safeParse("bv_products",null);
 if(!Array.isArray(products)||localStorage.bv_products_version!=="2"){
   products=defaultProducts;
   localStorage.bv_products=JSON.stringify(products);
   localStorage.bv_products_version="2";
 }
-let cart=JSON.parse(localStorage.bv_cart||"[]"),delivery=localStorage.bv_delivery!=="false",payment=localStorage.bv_payment||"Pix",orders=JSON.parse(localStorage.bv_orders||"[]"),config=JSON.parse(localStorage.bv_config||'{"fee":5,"wa":"5531984595968","bairroFees":{}}'),savedAddress=JSON.parse(localStorage.bv_saved_address||"null");
+let cart=safeParse("bv_cart",[]),delivery=localStorage.bv_delivery!=="false",payment=localStorage.bv_payment||"Pix",orders=safeParse("bv_orders",[]),config=safeParse("bv_config",{"fee":5,"wa":"5531984595968","bairroFees":{}}),savedAddress=safeParse("bv_saved_address",null);
+if(!Array.isArray(cart))cart=[];
+if(!Array.isArray(orders))orders=[];
+if(!config||typeof config!=="object")config={"fee":5,"wa":"5531984595968","bairroFees":{}};
 if(!config.bairroFees||typeof config.bairroFees!=="object")config.bairroFees={};
 if(!config.wa||config.wa==="5500000000000"||config.wa==="550000000000"){config.wa="5531984595968";localStorage.bv_config=JSON.stringify(config);}
 const brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -130,7 +142,7 @@ function orderProgress(status){
 function renderTracking(order){
   let r=$("trackingResult"); if(!r)return;
   if(!order){
-    let last=JSON.parse(localStorage.bv_last_order||"null");
+    let last=safeParse("bv_last_order",null);
     if(last) order=orders.find(x=>x.id===last.id&&x.phone===last.phone);
   }
   if(!order){
@@ -153,7 +165,7 @@ function trackOrder(){
   localStorage.bv_last_order=JSON.stringify({id:o.id,phone:o.phone});
   renderTracking(o);
 }
-function trackLastOrder(){let last=JSON.parse(localStorage.bv_last_order||"null");if(!last)return toast("Ainda não há pedido neste aparelho.");$("trackId").value=last.id;$("trackPhone").value=last.phone||"";trackOrder();}
+function trackLastOrder(){let last=safeParse("bv_last_order",null);if(!last)return toast("Ainda não há pedido neste aparelho.");$("trackId").value=last.id;$("trackPhone").value=last.phone||"";trackOrder();}
 
 function renderManage(){$("manage").innerHTML=products.map((p,i)=>`<div class="manageProduct"><div class="manageProductInfo"><div class="manageEmoji">${p.emoji}</div><div><h3>${String(p.name).replace(/</g,"&lt;")}</h3><strong>${brl(p.price)}</strong><p>${String(p.desc||"Sem descrição").replace(/</g,"&lt;")}</p></div></div><button class="deleteProduct" onclick="removeProduct(${i})">Excluir</button></div>`).join("")}
 function addProduct(){let n=prompt("Nome do produto:");if(!n)return;let v=parseFloat(prompt("Valor do produto (R$):","20").replace(",","."));if(isNaN(v)||v<0)return toast("Informe um valor válido.");let d=prompt("Descrição do produto:","Pão, hambúrguer e ingredientes.");if(d===null)return;products.push({id:Date.now(),name:n.trim(),price:v,emoji:"🍔",desc:d.trim()||"Sem descrição"});localStorage.bv_products=JSON.stringify(products);renderProducts();toast("Produto adicionado com sucesso!")}
