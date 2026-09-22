@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <title>BV LANCHES</title>
 <link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="product-form-override.css?v=1">
 </head>
 <body>
 <div id="login" class="overlay">
@@ -72,14 +73,7 @@
 <section id="page-acompanhar" class="page">
   <div class="sectionTitle"><div><small class="eyebrow">PEDIDO</small><h2>Acompanhar pedido</h2></div></div>
   <div class="trackingGrid">
-    <div class="panel">
-      <h3>Consultar pedido</h3>
-      <p class="muted">Informe o número do pedido e o WhatsApp usado na compra.</p>
-      <input id="trackId" placeholder="Número do pedido">
-      <input id="trackPhone" placeholder="WhatsApp">
-      <button class="trackBtn" onclick="trackOrder()">Consultar status</button>
-      <button class="trackLast" onclick="trackLastOrder()">Ver meu último pedido</button>
-    </div>
+    <div class="panel"><h3>Consultar pedido</h3><p class="muted">Informe o número do pedido e o WhatsApp usado na compra.</p><input id="trackId" placeholder="Número do pedido"><input id="trackPhone" placeholder="WhatsApp"><button class="trackBtn" onclick="trackOrder()">Consultar status</button><button class="trackLast" onclick="trackLastOrder()">Ver meu último pedido</button></div>
     <div id="trackingResult" class="panel trackingResult"><p class="muted">Nenhum pedido selecionado.</p></div>
   </div>
 </section>
