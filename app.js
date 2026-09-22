@@ -14,7 +14,8 @@ if(!Array.isArray(products)||localStorage.bv_products_version!=="2"){
   localStorage.bv_products=JSON.stringify(products);
   localStorage.bv_products_version="2";
 }
-let cart=JSON.parse(localStorage.bv_cart||"[]"),delivery=localStorage.bv_delivery!=="false",payment=localStorage.bv_payment||"Pix",orders=JSON.parse(localStorage.bv_orders||"[]"),config=JSON.parse(localStorage.bv_config||'{"fee":5,"wa":"5531984595968"}'),savedAddress=JSON.parse(localStorage.bv_saved_address||"null");
+let cart=JSON.parse(localStorage.bv_cart||"[]"),delivery=localStorage.bv_delivery!=="false",payment=localStorage.bv_payment||"Pix",orders=JSON.parse(localStorage.bv_orders||"[]"),config=JSON.parse(localStorage.bv_config||'{"fee":5,"wa":"5531984595968","bairroFees":{}}'),savedAddress=JSON.parse(localStorage.bv_saved_address||"null");
+if(!config.bairroFees||typeof config.bairroFees!=="object")config.bairroFees={};
 if(!config.wa||config.wa==="5500000000000"||config.wa==="550000000000"){config.wa="5531984595968";localStorage.bv_config=JSON.stringify(config);}
 const brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const $=id=>document.getElementById(id);
@@ -58,14 +59,15 @@ function saveCart(){localStorage.bv_cart=JSON.stringify(cart)}
 function add(id){let p=products.find(x=>x.id===id),i=cart.find(x=>x.id===id);i?i.q++:cart.push({...p,q:1});saveCart();renderCart()}
 function change(id,d){let i=cart.find(x=>x.id===id);if(!i)return;i.q+=d;if(i.q<1)cart=cart.filter(x=>x.id!==id);saveCart();renderCart()}
 function couponValue(sub){let c=$("coupon").value.trim().toUpperCase();return c==="BV10"?sub*.1:c==="PRIMEIRA"?5:0}
-function renderCart(){let sub=cart.reduce((s,x)=>s+x.price*x.q,0),fee=delivery&&sub?+config.fee:0,disc=couponValue(sub),total=Math.max(0,sub+fee-disc);$("cart").innerHTML=cart.length?cart.map(x=>`<div class="line"><span>${x.q}x ${x.name}<br><small class="mini"><button onclick="change(${x.id},-1)">−</button> <button onclick="change(${x.id},1)">+</button></small></span><b>${brl(x.price*x.q)}</b></div>`).join(""):'<p class="muted">Carrinho vazio.</p>';$("sub").textContent=brl(sub);$("fee").textContent=brl(fee-disc);$("total").textContent=brl(total);$("count").textContent=cart.reduce((s,x)=>s+x.q,0);$("sideCount").textContent=cart.reduce((s,x)=>s+x.q,0);$("quickCount").textContent=cart.reduce((s,x)=>s+x.q,0)}
+function deliveryFee(){if(!delivery)return 0;let bairro=($("bairro")?.value||"").trim().toLowerCase();if(bairro&&Object.prototype.hasOwnProperty.call(config.bairroFees,bairro))return +config.bairroFees[bairro]||0;return +config.fee||0}
+function renderCart(){let sub=cart.reduce((s,x)=>s+x.price*x.q,0),fee=delivery&&sub?deliveryFee():0,disc=couponValue(sub),total=Math.max(0,sub+fee-disc);$("cart").innerHTML=cart.length?cart.map(x=>`<div class="line"><span>${x.q}x ${x.name}<br><small class="mini"><button onclick="change(${x.id},-1)">−</button> <button onclick="change(${x.id},1)">+</button></small></span><b>${brl(x.price*x.q)}</b></div>`).join(""):'<p class="muted">Carrinho vazio.</p>';$("sub").textContent=brl(sub);$("fee").textContent=brl(fee-disc);$("total").textContent=brl(total);$("count").textContent=cart.reduce((s,x)=>s+x.q,0);$("sideCount").textContent=cart.reduce((s,x)=>s+x.q,0);$("quickCount").textContent=cart.reduce((s,x)=>s+x.q,0)}
 function mode(m,b){delivery=m==="entrega";localStorage.bv_delivery=String(delivery);document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");$("address").style.display=delivery?"block":"none";renderCart()}
 function pay(p,b){payment=p;localStorage.bv_payment=p;document.querySelectorAll(".pay button").forEach(x=>x.classList.remove("active"));b.classList.add("active");$("troco").classList.toggle("hide",p!=="Dinheiro")}
 function finish(){
   if(!cart.length)return toast("Adicione um produto.");
   if(delivery&&(!$("name").value||!$("street").value||!$("num").value||!$("bairro").value))return toast("Preencha nome e endereço.");
   if(!delivery&&!$("name").value)return toast("Informe seu nome.");
-  let sub=cart.reduce((s,x)=>s+x.price*x.q,0),fee=delivery?+config.fee:0,disc=couponValue(sub),total=Math.max(0,sub+fee-disc);
+  let sub=cart.reduce((s,x)=>s+x.price*x.q,0),fee=delivery?deliveryFee():0,disc=couponValue(sub),total=Math.max(0,sub+fee-disc);
   let id=Date.now().toString().slice(-5);
   let address=delivery?{rua:$("street").value.trim(),numero:$("num").value.trim(),bairro:$("bairro").value.trim(),cep:$("cep").value.trim(),complemento:$("comp").value.trim()}:null;
   if(delivery){savedAddress={name:$("name").value.trim(),phone:$("phone").value.trim(),...address};localStorage.bv_saved_address=JSON.stringify(savedAddress);}
@@ -146,7 +148,10 @@ function trackLastOrder(){let last=JSON.parse(localStorage.bv_last_order||"null"
 function renderManage(){$("manage").innerHTML=products.map((p,i)=>`<div class="manageRow"><span>${p.emoji} ${p.name} — ${brl(p.price)}</span><button onclick="removeProduct(${i})">Excluir</button></div>`).join("")}
 function addProduct(){let n=prompt("Nome do produto:");if(!n)return;let v=parseFloat(prompt("Preço:","20"));if(!v)return;products.push({id:Date.now(),name:n,price:v,emoji:"🍔",desc:"Novo produto"});localStorage.bv_products=JSON.stringify(products);renderProducts()}
 function removeProduct(i){if(confirm("Excluir este produto?")){products.splice(i,1);localStorage.bv_products=JSON.stringify(products);renderProducts()}}
-function saveCfg(){config.fee=parseFloat($("feeCfg").value)||0;config.wa=$("waCfg").value.replace(/\D/g,"");localStorage.bv_config=JSON.stringify(config);toast("Configurações salvas")}
+function renderBairroFees(){let el=$("bairroFees");if(!el)return;let entries=Object.entries(config.bairroFees||{});el.innerHTML=entries.length?entries.map(([b,v])=>`<div class="manageRow"><span>${b} — ${brl(+v)}</span><button onclick="removeBairroFee('${b.replace(/'/g,"\\'")}')">Excluir</button></div>`).join(""):'<p class="muted">Nenhum bairro cadastrado.</p>'}
+function addBairroFee(){let b=$("bairroCfg").value.trim().toLowerCase(),v=parseFloat($("bairroFeeCfg").value);if(!b||isNaN(v)||v<0)return toast("Informe o bairro e uma taxa válida.");config.bairroFees[b]=v;localStorage.bv_config=JSON.stringify(config);$("bairroCfg").value="";$("bairroFeeCfg").value="";renderBairroFees();renderCart();toast("Taxa do bairro cadastrada.")}
+function removeBairroFee(b){delete config.bairroFees[b];localStorage.bv_config=JSON.stringify(config);renderBairroFees();renderCart();toast("Bairro removido.")}
+function saveCfg(){config.fee=parseFloat($("feeCfg").value)||0;config.wa=$("waCfg").value.replace(/\D/g,"");localStorage.bv_config=JSON.stringify(config);renderBairroFees();renderCart();toast("Configurações salvas")}
 function restoreSavedAddress(){
   if(!savedAddress)return;
   if(savedAddress.name)$("name").value=savedAddress.name;
@@ -161,7 +166,7 @@ function demoOrder(){orders.unshift({id:Date.now().toString().slice(-5),customer
 function login(){let email=$("email").value.trim().toLowerCase(),pass=$("pass").value;if(email==="marco@bv.com"&&pass==="123456"){sessionStorage.setItem("bv","1");$("login").style.display="none";$("err").textContent="";applyAccess();showPage(pendingAdminPage);renderAdmin()}else if(email==="usuario@bv.com"&&pass==="123456"){sessionStorage.setItem("bv_user","1");$("login").style.display="none";$("err").textContent="";showPage("inicio")}else $("err").textContent="E-mail ou senha incorretos."}
 function logout(){sessionStorage.clear();localStorage.bv_page="inicio";applyAccess();showPage("inicio");$("login").style.display="flex";$("email").value="";$("pass").value="";$("err").textContent="";$("email").focus();toast("Todas as contas foram desconectadas")}
 if(isAdmin())$("login").style.display="none";applyAccess();showPage(isAdmin()&&adminPages.includes(localStorage.bv_page)?localStorage.bv_page:(publicPages.includes(localStorage.bv_page)?localStorage.bv_page:"inicio"));
-$("coupon").addEventListener("input",renderCart);$("feeCfg").value=config.fee;$("waCfg").value=config.wa;
+$("coupon").addEventListener("input",renderCart);$("bairro")?.addEventListener("input",renderCart);$("feeCfg").value=config.fee;$("waCfg").value=config.wa;renderBairroFees();
 renderProducts();renderCart();renderAdmin();restoreSavedAddress();renderTracking();
 if(trackingTimer)clearInterval(trackingTimer);
 trackingTimer=setInterval(()=>{if($("page-acompanhar")?.classList.contains("activePage"))renderTracking()},3000);
