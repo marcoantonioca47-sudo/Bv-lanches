@@ -70,7 +70,7 @@ function openAdmin(page="dashboard"){
   $("email").focus();
 }
 
-function renderProducts(){$("products").innerHTML=products.map(p=>`<article class="product"><div class="photo">${p.emoji}</div><h3>${p.name}</h3><p>${p.desc}</p><div class="price">${brl(p.price)}</div><button class="add" onclick="add(${p.id})">Adicionar</button></article>`).join("");renderManage()}
+function renderProducts(){$("products").innerHTML=products.map(p=>`<article class="product"><div class="photo">${p.emoji|| (p.category==="Bebidas"?"🥤":"🍔")}</div><span class="categoryBadge">${p.category||"Lanches"}</span><h3>${p.name}</h3><p>${p.desc}</p><div class="price">${brl(p.price)}</div><button class="add" onclick="add(${p.id})">Adicionar</button></article>`).join("");renderManage()}
 function saveCart(){localStorage.bv_cart=JSON.stringify(cart)}
 function add(id){let p=products.find(x=>x.id===id),i=cart.find(x=>x.id===id);i?i.q++:cart.push({...p,q:1});saveCart();renderCart()}
 function change(id,d){let i=cart.find(x=>x.id===id);if(!i)return;i.q+=d;if(i.q<1)cart=cart.filter(x=>x.id!==id);saveCart();renderCart()}
@@ -193,19 +193,19 @@ function trackLastOrder(){let last=safeParse("bv_last_order",null);if(!last)retu
 function renderManage(){
   const count=$("productCount");
   if(count)count.textContent=products.length+" produto"+(products.length===1?"":"s");
-  $("manage").innerHTML=products.map((p,i)=>`<div class="manageProduct"><div class="manageProductInfo"><div class="manageEmoji">${p.emoji}</div><div><h3>${String(p.name).replace(/</g,"&lt;")}</h3><strong>${brl(p.price)}</strong><p>${String(p.desc||"Sem descrição").replace(/</g,"&lt;")}</p></div></div><button class="deleteProduct" onclick="removeProduct(${i})">Excluir</button></div>`).join("")
+  $("manage").innerHTML=products.map((p,i)=>`<div class="manageProduct"><div class="manageProductInfo"><div class="manageEmoji">${p.emoji||"🍔"}</div><div><span class="categoryBadge">${p.category||"Lanches"}</span><h3>${String(p.name).replace(/</g,"&lt;")}</h3><strong>${brl(p.price)}</strong><p>${String(p.desc||"Sem descrição").replace(/</g,"&lt;")}</p></div></div><button class="deleteProduct" onclick="removeProduct(${i})">Excluir</button></div>`).join("")
 }
-function openProductForm(){const box=$("productFormPanel");if(!box)return;box.classList.add("show");$("productName").focus();box.scrollIntoView({behavior:"smooth",block:"start"})}
-function closeProductForm(){const box=$("productFormPanel");if(box)box.classList.remove("show")}
+function openProductForm(){const box=$("productFormPanel");if(!box)return;box.classList.add("show");document.body.classList.add("modalOpen");setTimeout(()=>$("productName")?.focus(),50)}
+function closeProductForm(){const box=$("productFormPanel");if(box)box.classList.remove("show");document.body.classList.remove("modalOpen")}
 function addProduct(e){
   if(e)e.preventDefault();
-  let n=$("productName").value.trim(),v=parseFloat($("productPrice").value),d=$("productDesc").value.trim();
+  let n=$("productName").value.trim(),v=parseFloat($("productPrice").value),c=$("productCategory").value,d=$("productDesc").value.trim();
   if(!n)return toast("Informe o nome do produto.");
   if(isNaN(v)||v<0)return toast("Informe um valor válido.");
   if(!d)return toast("Informe a descrição do produto.");
-  products.push({id:Date.now(),name:n,price:v,emoji:"🍔",desc:d,category:"Lanches"});
+  products.push({id:Date.now(),name:n,price:v,emoji:c==="Bebidas"?"🥤":"🍔",desc:d,category:c});
   localStorage.bv_products=JSON.stringify(products);
-  $("productName").value="";$("productPrice").value="";$("productDesc").value="";
+  $("productName").value="";$("productPrice").value="";$("productCategory").value="Lanches";$("productDesc").value="";
   closeProductForm();
   renderProducts();
   toast("✅ Produto cadastrado com sucesso!");
