@@ -27,7 +27,9 @@ function isAdmin(){return sessionStorage.bv==="1"}
 function applyAccess(){
   const admin=isAdmin();
   document.querySelectorAll(".adminOnly").forEach(x=>x.style.display=admin?"":"none");
+  document.querySelectorAll(".adminHide").forEach(x=>x.style.display=admin?"none":"");
   const adminQuick=$("adminQuick"); if(adminQuick)adminQuick.style.display=admin?"":"none";
+  if(admin && ["pedido","acompanhar"].includes(localStorage.bv_page))localStorage.bv_page="inicio";
   if(!admin && adminPages.includes(localStorage.bv_page))localStorage.bv_page="inicio";
 }
 function showPage(page){
