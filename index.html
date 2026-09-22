@@ -31,14 +31,14 @@
     <button data-page="cardapio" onclick="showPage('cardapio')"><span>🍔</span> Cardápio</button>
     <button data-page="pedido" onclick="showPage('pedido')"><span>🛒</span> Meu pedido <b id="sideCount">0</b></button>
     <button data-page="acompanhar" onclick="showPage('acompanhar');renderTracking()"><span>🔎</span> Acompanhar pedido</button>
-    <div class="navTitle">ADMINISTRAÇÃO</div>
-    <button data-page="dashboard" onclick="openAdmin('dashboard')"><span>▦</span> Dashboard</button>
-    <button data-page="pedidos" onclick="openAdmin('pedidos')"><span>📋</span> Pedidos <b id="sideNew">0</b></button>
-    <button data-page="produtos" onclick="openAdmin('produtos')"><span>📦</span> Produtos</button>
-    <button data-page="cupons" onclick="openAdmin('cupons')"><span>🎟</span> Cupons</button>
-    <button data-page="config" onclick="openAdmin('config')"><span>⚙</span> Configurações</button>
+    <div class="navTitle adminOnly">ADMINISTRAÇÃO</div>
+    <button class="adminOnly" data-page="dashboard" onclick="openAdmin('dashboard')"><span>▦</span> Dashboard</button>
+    <button class="adminOnly" data-page="pedidos" onclick="openAdmin('pedidos')"><span>📋</span> Pedidos <b id="sideNew">0</b></button>
+    <button class="adminOnly" data-page="produtos" onclick="openAdmin('produtos')"><span>📦</span> Produtos</button>
+    <button class="adminOnly" data-page="cupons" onclick="openAdmin('cupons')"><span>🎟</span> Cupons</button>
+    <button class="adminOnly" data-page="config" onclick="openAdmin('config')"><span>⚙</span> Configurações</button>
   </nav>
-  <div class="sideBottom"><button onclick="openAdmin('dashboard')" class="adminBtn">🔐 Painel administrativo</button></div>
+  <div class="sideBottom adminOnly"><button onclick="openAdmin('dashboard')" class="adminBtn">🔐 Painel administrativo</button></div>
 </aside>
 
 <div class="app">
@@ -54,7 +54,7 @@
   <div class="quickGrid">
     <button class="quickCard" onclick="showPage('cardapio')"><span>🍔</span><b>Cardápio</b><small>Veja nossos produtos</small></button>
     <button class="quickCard" onclick="showPage('pedido')"><span>🛒</span><b>Meu pedido</b><small><em id="quickCount">0</em> itens no carrinho</small></button>
-    <button class="quickCard" onclick="openAdmin('dashboard')"><span>📊</span><b>Administração</b><small>Acessar painel</small></button>
+    <button id="adminQuick" class="quickCard adminOnly" onclick="openAdmin('dashboard')"><span>📊</span><b>Administração</b><small>Acessar painel</small></button>
   </div>
 </section>
 
@@ -100,5 +100,5 @@
 </main>
 </div>
 <div id="toast"></div>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 </body></html>
