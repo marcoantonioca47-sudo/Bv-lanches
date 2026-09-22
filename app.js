@@ -19,6 +19,7 @@ if(!config.wa||config.wa==="5500000000000"||config.wa==="550000000000"){config.w
 const brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const $=id=>document.getElementById(id);
 let pendingAdminPage="dashboard";
+let trackingTimer=null;
 const pageTitles={inicio:"Início",cardapio:"Cardápio",pedido:"Meu pedido",dashboard:"Dashboard",pedidos:"Pedidos",produtos:"Produtos",cupons:"Cupons",config:"Configurações"};
 function toggleSidebar(){$("sidebar").classList.toggle("open")}
 function closeLogin(){$("login").style.display="none";pendingAdminPage="dashboard";showPage("inicio")}
@@ -64,9 +65,13 @@ function finish(){
   if(delivery)msg+="%0A📍 *Endereço:* "+address.rua+", "+address.numero+" — "+address.bairro+(address.cep?" — CEP "+address.cep:"")+(address.complemento?"%0A🏠 "+address.complemento:"");
   if(payment==="Dinheiro")msg+="%0A💵 Troco para: "+o.change;
   if(payment==="Pix")msg+="%0A⏳ *Aguardando confirmação do pagamento Pix.*";
-  window.open("https://wa.me/"+config.wa+"?text="+msg,"_blank");
-  toast(payment==="Pix"?"Pedido criado. Aguardando pagamento Pix.":"Pedido criado!");
+  localStorage.bv_last_order=JSON.stringify({id:id,phone:o.phone});
   cart=[];saveCart();renderCart();
+  $("trackId").value=o.id;
+  $("trackPhone").value=o.phone;
+  showPage("acompanhar");
+  renderTracking(o);
+  toast(payment==="Pix"?"Pedido criado. Aguardando pagamento Pix.":"Pedido criado com sucesso!");
 }
 function confirmPix(id){
   let o=orders.find(x=>x.id===id);
@@ -85,7 +90,47 @@ function renderAdmin(){
     return "<div class=\"order\"><div class=\"line\"><b>#"+o.id+" — "+o.customer+"</b><span class=\"status\">"+o.status+"</span></div><p><b>Itens:</b> "+o.items+"</p><p class=\"orderInfo\"><b>📍 "+(o.delivery||"Entrega")+":</b> "+address+"</p><p class=\"orderInfo\"><b>💳 Pagamento:</b> "+o.payment+(o.paid?" · ✅ Pago":"")+(o.payment==="Dinheiro"&&o.change?" · Troco para "+o.change:"")+"</p><div class=\"mini\">"+brl(o.total)+" · "+o.time+(o.paidAt?" · Pago às "+o.paidAt:"")+"</div>"+(o.payment==="Pix"&&!o.paid?"<button class=\"confirmPix\" onclick=\"confirmPix('"+o.id+"')\">✅ Confirmar pagamento Pix</button>":"")+"<select onchange=\"statusOrder('"+o.id+"',this.value)\"><option "+(o.status==="Aguardando pagamento"?"selected":"")+">Aguardando pagamento</option><option "+(o.status==="Novo"?"selected":"")+">Novo</option><option "+(o.status==="Confirmado"?"selected":"")+">Confirmado</option><option "+(o.status==="Em preparo"?"selected":"")+">Em preparo</option><option "+(o.status==="Pronto"?"selected":"")+">Pronto</option><option "+(o.status==="Saiu para entrega"?"selected":"")+">Saiu para entrega</option><option "+(o.status==="Entregue"?"selected":"")+">Entregue</option><option "+(o.status==="Cancelado"?"selected":"")+">Cancelado</option></select></div>";
   }).join(""):"<p class=\"muted\">Nenhum pedido.</p>";
 }
-function statusOrder(id,s){let o=orders.find(x=>x.id===id);if(o){o.status=s;localStorage.bv_orders=JSON.stringify(orders);renderAdmin();toast("Status atualizado")}}
+function statusOrder(id,s){
+  let o=orders.find(x=>x.id===id);
+  if(!o)return;
+  if(o.payment==="Pix"&&!o.paid&&s!=="Aguardando pagamento")return toast("Confirme o pagamento Pix antes de avançar o pedido.");
+  o.status=s;localStorage.bv_orders=JSON.stringify(orders);renderAdmin();renderTracking();
+  toast("Status atualizado");
+}
+function orderProgress(status){
+  const steps=["Novo","Confirmado","Em preparo","Pronto","Saiu para entrega","Entregue"];
+  if(status==="Aguardando pagamento")return 0;
+  if(status==="Cancelado")return -1;
+  let i=steps.indexOf(status);return i<0?0:i;
+}
+function renderTracking(order){
+  let r=$("trackingResult"); if(!r)return;
+  if(!order){
+    let last=JSON.parse(localStorage.bv_last_order||"null");
+    if(last) order=orders.find(x=>x.id===last.id&&x.phone===last.phone);
+  }
+  if(!order){
+    r.innerHTML='<p class="muted">Digite os dados do pedido para consultar.</p>';return;
+  }
+  let address=order.address?(order.address.rua+", "+order.address.numero+" — "+order.address.bairro):"Retirada no local";
+  let steps=["Novo","Confirmado","Em preparo","Pronto","Saiu para entrega","Entregue"],p=orderProgress(order.status);
+  let timeline=order.status==="Cancelado"
+    ? '<div class="cancelBox">❌ Pedido cancelado</div>'
+    : order.payment==="Pix"&&!order.paid
+      ? '<div class="paymentBox">🔷 Aguardando confirmação do pagamento Pix</div>'
+      : '<div class="timeline">'+steps.map((s,i)=>'<div class="step '+(i<=p?"done":"")+'"><span>'+(i<=p?"✓":(i+1))+'</span><b>'+s+'</b></div>').join("")+'</div>';
+  r.innerHTML='<div class="trackHead"><div><small>Pedido</small><h3>#'+order.id+'</h3></div><span class="status">'+order.status+'</span></div>'+timeline+
+    '<div class="trackInfo"><p><b>Itens:</b> '+order.items+'</p><p><b>Total:</b> '+brl(order.total)+'</p><p><b>Pagamento:</b> '+order.payment+(order.paid?" · Pago":"")+'</p><p><b>Modalidade:</b> '+order.delivery+'</p><p><b>📍 Local:</b> '+address+'</p><p><b>Horário:</b> '+order.time+'</p></div>';
+}
+function trackOrder(){
+  let id=$("trackId").value.trim(),phone=$("trackPhone").value.replace(/\D/g,"");
+  let o=orders.find(x=>String(x.id)===id&&String(x.phone||"").replace(/\D/g,"")===phone);
+  if(!o)return toast("Pedido não encontrado. Confira número e WhatsApp.");
+  localStorage.bv_last_order=JSON.stringify({id:o.id,phone:o.phone});
+  renderTracking(o);
+}
+function trackLastOrder(){let last=JSON.parse(localStorage.bv_last_order||"null");if(!last)return toast("Ainda não há pedido neste aparelho.");$("trackId").value=last.id;$("trackPhone").value=last.phone||"";trackOrder();}
+
 function renderManage(){$("manage").innerHTML=products.map((p,i)=>`<div class="manageRow"><span>${p.emoji} ${p.name} — ${brl(p.price)}</span><button onclick="removeProduct(${i})">Excluir</button></div>`).join("")}
 function addProduct(){let n=prompt("Nome do produto:");if(!n)return;let v=parseFloat(prompt("Preço:","20"));if(!v)return;products.push({id:Date.now(),name:n,price:v,emoji:"🍔",desc:"Novo produto"});localStorage.bv_products=JSON.stringify(products);renderProducts()}
 function removeProduct(i){if(confirm("Excluir este produto?")){products.splice(i,1);localStorage.bv_products=JSON.stringify(products);renderProducts()}}
@@ -105,5 +150,7 @@ function login(){let email=$("email").value.trim().toLowerCase(),pass=$("pass").
 function logout(){sessionStorage.removeItem("bv");showPage("inicio");toast("Sessão administrativa encerrada")}
 if(sessionStorage.bv==="1")$("login").style.display="none";showPage(localStorage.bv_page||"inicio");
 $("coupon").addEventListener("input",renderCart);$("feeCfg").value=config.fee;$("waCfg").value=config.wa;
-renderProducts();renderCart();renderAdmin();restoreSavedAddress();
+renderProducts();renderCart();renderAdmin();restoreSavedAddress();renderTracking();
+if(trackingTimer)clearInterval(trackingTimer);
+trackingTimer=setInterval(()=>{if($("page-acompanhar")?.classList.contains("activePage"))renderTracking()},3000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
