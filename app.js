@@ -94,8 +94,9 @@ function confirmPix(id){
   localStorage.bv_orders=JSON.stringify(orders);renderAdmin();toast("Pix confirmado. Pedido confirmado!");
 }
 function renderAdmin(){
-  let rev=orders.reduce((s,o)=>s+o.total,0);
-  $("sOrders").textContent=orders.length;$("sRevenue").textContent=brl(rev);$("sAvg").textContent=brl(orders.length?rev/orders.length:0);
+  const deliveredOrders=orders.filter(o=>o.status==="Entregue");
+  let rev=deliveredOrders.reduce((s,o)=>s+o.total,0);
+  $("sOrders").textContent=deliveredOrders.length;$("sRevenue").textContent=brl(rev);$("sAvg").textContent=brl(deliveredOrders.length?rev/deliveredOrders.length:0);
   let pending=orders.filter(o=>o.status==="Novo"||o.status==="Aguardando pagamento").length;
   $("sNew").textContent=pending;$("sideNew").textContent=pending;
   $("dashNotice").textContent=pending?"🔔 "+pending+" pedido(s) aguardando atendimento/pagamento.":"Nenhum pedido novo.";
