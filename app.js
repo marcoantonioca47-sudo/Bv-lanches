@@ -20,22 +20,18 @@ const brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const $=id=>document.getElementById(id);
 let pendingAdminPage="dashboard";
 let trackingTimer=null;
-const pageTitles={inicio:"Início",cardapio:"Cardápio",pedido:"Meu pedido",dashboard:"Dashboard",pedidos:"Pedidos",produtos:"Produtos",cupons:"Cupons",config:"Configurações"};
-function toggleSidebar(){$("sidebar").classList.toggle("open")}
-function closeLogin(){$("login").style.display="none";pendingAdminPage="dashboard";showPage("inicio")}
-function showPage(page){
-  localStorage.bv_page=page;
-  document.querySelectorAll(".page").forEach(x=>x.classList.remove("activePage"));
-  const target=$("page-"+page);
-  if(!target)return;
-  target.classList.add("activePage");
-  document.querySelectorAll(".sideNav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
-  $("pageTitle").textContent=pageTitles[page]||"BV LANCHES";
-  $("sidebar").classList.remove("open");
-  window.scrollTo({top:0,behavior:"smooth"});
+const publicPages=["inicio","cardapio","pedido","acompanhar"];
+const adminPages=["dashboard","pedidos","produtos","cupons","config"];
+const pageTitles={inicio:"Início",cardapio:"Cardápio",pedido:"Meu pedido",acompanhar:"Acompanhar pedido",dashboard:"Dashboard",pedidos:"Pedidos",produtos:"Produtos",cupons:"Cupons",config:"Configurações"};
+function isAdmin(){return sessionStorage.bv==="1"}
+function applyAccess(){
+  const admin=isAdmin();
+  document.querySelectorAll(".adminOnly").forEach(x=>x.style.display=admin?"":"none");
+  const adminQuick=$("adminQuick"); if(adminQuick)adminQuick.style.display=admin?"":"none";
+  if(!admin && adminPages.includes(localStorage.bv_page))localStorage.bv_page="inicio";
 }
 function openAdmin(page="dashboard"){
-  if(sessionStorage.bv==="1"){showPage(page);renderAdmin();return}
+  if(isAdmin()){showPage(page);renderAdmin();return}
   pendingAdminPage=page;
   $("login").style.display="flex";
   $("email").focus();
@@ -146,9 +142,9 @@ function restoreSavedAddress(){
   if(savedAddress.complemento)$("comp").value=savedAddress.complemento;
 }
 function demoOrder(){orders.unshift({id:Date.now().toString().slice(-5),customer:"Cliente Demo",items:"1x X-Bacon, 1x Batata P",total:36.9,payment:"Pix",delivery:"Entrega",address:{rua:"Rua Demo",numero:"100",bairro:"Centro",cep:"00000-000",complemento:""},status:"Aguardando pagamento",paid:false,time:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})});localStorage.bv_orders=JSON.stringify(orders);renderAdmin();toast("🔔 Pedido Pix aguardando pagamento")}function toast(t){$("toast").textContent=t;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
-function login(){let email=$("email").value.trim().toLowerCase(),pass=$("pass").value;if(email==="admin@bvlanche.com"&&pass==="123456"){sessionStorage.setItem("bv","1");$("login").style.display="none";$("err").textContent="";showPage(pendingAdminPage);renderAdmin()}else $("err").textContent="E-mail ou senha incorretos."}
-function logout(){sessionStorage.removeItem("bv");showPage("inicio");toast("Sessão administrativa encerrada")}
-if(sessionStorage.bv==="1")$("login").style.display="none";showPage(localStorage.bv_page||"inicio");
+function login(){let email=$("email").value.trim().toLowerCase(),pass=$("pass").value;if(email==="admin@bvlanche.com"&&pass==="123456"){sessionStorage.setItem("bv","1");$("login").style.display="none";$("err").textContent="";applyAccess();showPage(pendingAdminPage);renderAdmin()}else $("err").textContent="E-mail ou senha incorretos."}
+function logout(){sessionStorage.removeItem("bv");applyAccess();showPage("inicio");toast("Sessão administrativa encerrada")}
+if(isAdmin())$("login").style.display="none";applyAccess();showPage(isAdmin()&&adminPages.includes(localStorage.bv_page)?localStorage.bv_page:(publicPages.includes(localStorage.bv_page)?localStorage.bv_page:"inicio"));
 $("coupon").addEventListener("input",renderCart);$("feeCfg").value=config.fee;$("waCfg").value=config.wa;
 renderProducts();renderCart();renderAdmin();restoreSavedAddress();renderTracking();
 if(trackingTimer)clearInterval(trackingTimer);
