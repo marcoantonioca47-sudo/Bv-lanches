@@ -30,6 +30,20 @@ function applyAccess(){
   const adminQuick=$("adminQuick"); if(adminQuick)adminQuick.style.display=admin?"":"none";
   if(!admin && adminPages.includes(localStorage.bv_page))localStorage.bv_page="inicio";
 }
+function showPage(page){
+  if(adminPages.includes(page)&&!isAdmin()){pendingAdminPage=page;$("login").style.display="flex";$("email").focus();return}
+  localStorage.bv_page=page;
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("activePage"));
+  const target=$("page-"+page);
+  if(!target)return;
+  target.classList.add("activePage");
+  document.querySelectorAll(".sideNav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
+  $("pageTitle").textContent=pageTitles[page]||"BV LANCHES";
+  $("sidebar").classList.remove("open");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function closeLogin(){$("login").style.display="none";$("err").textContent=""}
+function toggleSidebar(){$("sidebar").classList.toggle("open")}
 function openAdmin(page="dashboard"){
   if(isAdmin()){showPage(page);renderAdmin();return}
   pendingAdminPage=page;
