@@ -93,15 +93,20 @@
 <section id="page-pedidos" class="page adminPage"><div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Pedidos</h2><p>Acompanhe e atualize o status dos pedidos.</p></div><button onclick="demoOrder()">+ Simular pedido</button></div><div class="panel"><div id="orders"></div></div></section>
 
 <section id="page-produtos" class="page adminPage"><div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Produtos</h2><p>Gerencie os produtos do cardápio.</p></div><button onclick="openProductForm()">＋ Novo produto</button></div><div class="panel productsManager">
-  <div class="managerHeader"><div><small class="eyebrow">CATÁLOGO</small><h3>Cadastrar produtos</h3><p class="muted">Preencha os dados abaixo para adicionar um novo produto ao cardápio.</p></div></div>
-  <div id="productFormPanel" class="productFormPanel"><div class="productFormHero"><div><small>CADASTRO DE PRODUTO</small><h3>Novo produto</h3><p>Preencha as informações do lanche para adicionar ao cardápio.</p></div><button type="button" class="productClose" onclick="closeProductForm()">×</button></div><form class="productForm" onsubmit="addProduct(event)"><label><span>Nome do produto</span><input id="productName" type="text" placeholder="Ex.: X-Bacon" maxlength="80" required></label><label><span>Valor do produto</span><div class="moneyInput"><b>R$</b><input id="productPrice" type="number" step="0.01" min="0" placeholder="19,90" required></div></label><label><span>Descrição</span><textarea id="productDesc" rows="4" maxlength="240" placeholder="Descreva os ingredientes e detalhes do produto." required></textarea><small class="fieldHint">Uma descrição clara ajuda o cliente a escolher.</small></label><div class="productFormActions"><button type="button" class="formCancel" onclick="closeProductForm()">Cancelar</button><button type="submit" class="formSave">✓ Cadastrar produto</button></div></form></div><form class="productForm" onsubmit="addProduct(event)">
-    <div class="productFormGrid">
-      <label><span>Nome do produto</span><input id="productName" type="text" placeholder="Ex.: X-Bacon" maxlength="80" required></label>
-      <label><span>Valor do produto</span><div class="moneyInput"><b>R$</b><input id="productPrice" type="number" step="0.01" min="0" placeholder="19,90" required></div></label>
+  <div class="managerHeader"><div><small class="eyebrow">CATÁLOGO</small><h3>Produtos cadastrados</h3><p class="muted">Clique em <b>Novo produto</b> para cadastrar um item.</p></div></div>
+  <div id="productFormPanel" class="productFormPanel" role="dialog" aria-modal="true" aria-labelledby="productFormTitle">
+    <div class="productFormBackdrop" onclick="closeProductForm()"></div>
+    <div class="productFormModal">
+      <div class="productFormHero"><div><small>CADASTRO DE PRODUTO</small><h3 id="productFormTitle">Novo produto</h3><p>Cadastre o nome, preço, categoria e descrição.</p></div><button type="button" class="productClose" onclick="closeProductForm()" aria-label="Fechar">×</button></div>
+      <form class="productForm" onsubmit="addProduct(event)">
+        <label><span>Nome do produto</span><input id="productName" type="text" placeholder="Ex.: X-Bacon" maxlength="80" required></label>
+        <label><span>Valor do produto</span><div class="moneyInput"><b>R$</b><input id="productPrice" type="number" step="0.01" min="0" placeholder="19,90" required></div></label>
+        <label><span>Categoria</span><select id="productCategory" required><option value="Lanches">🍔 Lanches</option><option value="Bebidas">🥤 Bebidas</option></select></label>
+        <label><span>Descrição</span><textarea id="productDesc" rows="4" maxlength="240" placeholder="Ex.: Pão, hambúrguer, bacon, queijo e salada." required></textarea><small class="fieldHint">Uma descrição clara ajuda o cliente a escolher.</small></label>
+        <div class="productFormActions"><button type="button" class="formCancel" onclick="closeProductForm()">Cancelar</button><button type="submit" class="formSave">✓ Cadastrar produto</button></div>
+      </form>
     </div>
-    <label><span>Descrição</span><textarea id="productDesc" rows="4" maxlength="240" placeholder="Ex.: Pão, hambúrguer, bacon, queijo e salada." required></textarea></label>
-    <div class="productFormActions"><button type="reset" class="formCancel">Limpar</button><button type="submit" class="formSave">＋ Cadastrar produto</button></div>
-  </form>
+  </div>
   <div class="managerDivider"><h3>Produtos cadastrados</h3><span id="productCount"></span></div>
   <div id="manage"></div>
 </div></section>
