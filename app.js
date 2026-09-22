@@ -195,6 +195,8 @@ function renderManage(){
   if(count)count.textContent=products.length+" produto"+(products.length===1?"":"s");
   $("manage").innerHTML=products.map((p,i)=>`<div class="manageProduct"><div class="manageProductInfo"><div class="manageEmoji">${p.emoji}</div><div><h3>${String(p.name).replace(/</g,"&lt;")}</h3><strong>${brl(p.price)}</strong><p>${String(p.desc||"Sem descrição").replace(/</g,"&lt;")}</p></div></div><button class="deleteProduct" onclick="removeProduct(${i})">Excluir</button></div>`).join("")
 }
+function openProductForm(){const box=$("productFormPanel");if(!box)return;box.classList.add("show");$("productName").focus();box.scrollIntoView({behavior:"smooth",block:"start"})}
+function closeProductForm(){const box=$("productFormPanel");if(box)box.classList.remove("show")}
 function addProduct(e){
   if(e)e.preventDefault();
   let n=$("productName").value.trim(),v=parseFloat($("productPrice").value),d=$("productDesc").value.trim();
@@ -204,6 +206,7 @@ function addProduct(e){
   products.push({id:Date.now(),name:n,price:v,emoji:"🍔",desc:d,category:"Lanches"});
   localStorage.bv_products=JSON.stringify(products);
   $("productName").value="";$("productPrice").value="";$("productDesc").value="";
+  closeProductForm();
   renderProducts();
   toast("✅ Produto cadastrado com sucesso!");
 }
