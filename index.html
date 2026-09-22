@@ -29,8 +29,8 @@
   <nav class="sideNav">
     <button data-page="inicio" onclick="showPage('inicio')"><span>⌂</span> Início</button>
     <button data-page="cardapio" onclick="showPage('cardapio')"><span>🍔</span> Cardápio</button>
-    <button data-page="pedido" onclick="showPage('pedido')"><span>🛒</span> Meu pedido <b id="sideCount">0</b></button>
-    <button data-page="acompanhar" onclick="showPage('acompanhar');renderTracking()"><span>🔎</span> Acompanhar pedido</button>
+    <button class="adminHide" data-page="pedido" onclick="showPage('pedido')"><span>🛒</span> Meu pedido <b id="sideCount">0</b></button>
+    <button class="adminHide" data-page="acompanhar" onclick="showPage('acompanhar');renderTracking()"><span>🔎</span> Acompanhar pedido</button>
     <div class="navTitle adminOnly">ADMINISTRAÇÃO</div>
     <button class="adminOnly" data-page="dashboard" onclick="openAdmin('dashboard')"><span>▦</span> Dashboard</button>
     <button class="adminOnly" data-page="pedidos" onclick="openAdmin('pedidos')"><span>📋</span> Pedidos <b id="sideNew">0</b></button>
