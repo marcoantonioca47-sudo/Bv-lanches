@@ -23,9 +23,9 @@ function renderManage(){$("manage").innerHTML=products.map((p,i)=>`<div class="m
 function addProduct(){let n=prompt("Nome do produto:");if(!n)return;let v=parseFloat(prompt("Preço:","20"));if(!v)return;products.push({id:Date.now(),name:n,price:v,emoji:"🍔",desc:"Novo produto"});localStorage.bv_products=JSON.stringify(products);renderProducts()}
 function removeProduct(i){if(confirm("Excluir este produto?")){products.splice(i,1);localStorage.bv_products=JSON.stringify(products);renderProducts()}}
 function saveCfg(){config.fee=parseFloat($("feeCfg").value)||0;config.wa=$("waCfg").value.replace(/\D/g,"");localStorage.bv_config=JSON.stringify(config);toast("Configurações salvas")}
-function demoOrder(){orders.unshift({id:Date.now().toString().slice(-5),customer:"Cliente Demo",items:"1x X-Bacon, 1x Batata P",total:36.9,payment:"Pix",status:"Novo",time:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}));localStorage.bv_orders=JSON.stringify(orders);renderAdmin();toast("🔔 Novo pedido recebido")}
+function demoOrder(){orders.unshift({id:Date.now().toString().slice(-5),customer:"Cliente Demo",items:"1x X-Bacon, 1x Batata P",total:36.9,payment:"Pix",status:"Novo",time:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})});localStorage.bv_orders=JSON.stringify(orders);renderAdmin();toast("🔔 Novo pedido recebido")}
 function toast(t){$("toast").textContent=t;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
-function login(){if($("email").value==="admin@bvlanche.com"&&$("pass").value==="123456"){sessionStorage.bv="1";$("login").style.display="none"}else $("err").textContent="E-mail ou senha incorretos."}
+function login(){let email=$("email").value.trim().toLowerCase(),pass=$("pass").value;if(email==="admin@bvlanche.com"&&pass==="123456"){sessionStorage.setItem("bv","1");$("login").style.display="none";$("err").textContent=""}else $("err").textContent="E-mail ou senha incorretos."}
 function logout(){sessionStorage.removeItem("bv");$("login").style.display="flex"}
 if(sessionStorage.bv==="1")$("login").style.display="none";
 $("coupon").addEventListener("input",renderCart);$("feeCfg").value=config.fee;$("waCfg").value=config.wa;
