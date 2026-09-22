@@ -63,3 +63,5 @@ body{display:flex}.sidebar{position:fixed;left:0;top:0;bottom:0;width:255px;back
   .hero{padding:24px 17px}
   .two{gap:5px}
 }
+
+.orderInfo{margin:7px 0;color:#d5d8dd;font-size:13px;line-height:1.4}.confirmPix{width:100%;margin:10px 0 8px;background:#16c965;color:#fff;border:0;border-radius:8px;padding:10px;font-weight:800}.order select{width:100%;margin-top:7px;background:#111419;color:#fff;border:1px solid #30343b;border-radius:8px;padding:9px}
