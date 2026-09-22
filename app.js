@@ -14,7 +14,7 @@ if(!Array.isArray(products)||localStorage.bv_products_version!=="2"){
   localStorage.bv_products=JSON.stringify(products);
   localStorage.bv_products_version="2";
 }
-let cart=JSON.parse(localStorage.bv_cart||"[]"),delivery=localStorage.bv_delivery!=="false",payment=localStorage.bv_payment||"Pix",orders=JSON.parse(localStorage.bv_orders||"[]"),config=JSON.parse(localStorage.bv_config||'{"fee":5,"wa":"5500000000000"}');
+let cart=JSON.parse(localStorage.bv_cart||"[]"),delivery=localStorage.bv_delivery!=="false",payment=localStorage.bv_payment||"Pix",orders=JSON.parse(localStorage.bv_orders||"[]"),config=JSON.parse(localStorage.bv_config||'{"fee":5,"wa":"5531984595968"}');
 const brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const $=id=>document.getElementById(id);
 let pendingAdminPage="dashboard";
