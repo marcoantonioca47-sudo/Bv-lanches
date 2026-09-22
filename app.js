@@ -1,10 +1,19 @@
-const products=JSON.parse(localStorage.bv_products||JSON.stringify([
-{id:1,name:"X-Bacon",price:24.9,emoji:"🍔",desc:"Hambúrguer, queijo e bacon."},
-{id:2,name:"X-Tudo",price:28.9,emoji:"🍔",desc:"Completo e caprichado."},
-{id:3,name:"Cheddar Bacon",price:26.9,emoji:"🍔",desc:"Cheddar cremoso e bacon."},
-{id:4,name:"Smash Burger",price:29.9,emoji:"🍔",desc:"Duas carnes smash e queijo."},
-{id:5,name:"Batata P",price:12,emoji:"🍟",desc:"Crocante e sequinha."},
-{id:6,name:"Coca-Cola",price:6,emoji:"🥤",desc:"350ml gelada."}]));
+const defaultProducts=[
+{id:1,name:"X-Salada",price:12.99,emoji:"🍔",desc:"Pão, ovo, mussarela, requeijão, presunto e salada.",category:"Lanches"},
+{id:2,name:"Hambúrguer",price:15,emoji:"🍔",desc:"Pão, bife, presunto, mussarela, milho e requeijão.",category:"Lanches"},
+{id:3,name:"X-Egg",price:17,emoji:"🍔",desc:"Pão, bife, presunto, mussarela, ovo, milho, batata e salada.",category:"Lanches"},
+{id:4,name:"X-Bacon",price:19,emoji:"🍔",desc:"Pão, bife, bacon, requeijão, presunto, cheddar, mussarela, batata, milho e salada.",category:"Lanches"},
+{id:5,name:"BV X-Tudão",price:23,emoji:"🍔",desc:"Pão, 2 bifes, presunto, mussarela, calabresa, requeijão, milho e salada.",category:"Lanches"},
+{id:6,name:"X-Explosão",price:27,emoji:"🍔",desc:"Pão, bife, ovo, presunto, mussarela, calabresa, requeijão, batata, milho, cebola, alface e tomate.",category:"Lanches"},
+{id:7,name:"X-Caminhoneiro",price:28,emoji:"🍔",desc:"Pão, 2 bifes, ovo, presunto, mussarela, bacon, cheddar, requeijão e salada.",category:"Lanches"},
+{id:8,name:"BV-Megã Monstrão",price:34,emoji:"🍔",desc:"Pão, 4 bifes, 2 ovos, calabresa, bacon, cheddar, requeijão, frango desfiado, batata e salada.",category:"Lanches"}
+];
+let products=JSON.parse(localStorage.bv_products||"null");
+if(!Array.isArray(products)||localStorage.bv_products_version!=="2"){
+  products=defaultProducts;
+  localStorage.bv_products=JSON.stringify(products);
+  localStorage.bv_products_version="2";
+}
 let cart=JSON.parse(localStorage.bv_cart||"[]"),delivery=localStorage.bv_delivery!=="false",payment=localStorage.bv_payment||"Pix",orders=JSON.parse(localStorage.bv_orders||"[]"),config=JSON.parse(localStorage.bv_config||'{"fee":5,"wa":"5500000000000"}');
 const brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const $=id=>document.getElementById(id);
