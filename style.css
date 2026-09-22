@@ -70,3 +70,23 @@ body{display:flex}.sidebar{position:fixed;left:0;top:0;bottom:0;width:255px;back
 @media(max-width:850px){.trackingGrid{grid-template-columns:1fr;gap:10px}.timeline{grid-template-columns:repeat(3,1fr);row-gap:14px}.trackHead h3{font-size:24px}}
 .logoutBtn{width:100%;margin-top:8px;background:#181b20;color:#fff;border:1px solid #30343b;border-radius:9px;padding:11px;font-weight:800}.logoutBtn:hover{background:#242830}
 .productsManager{padding:18px}.managerHeader{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.managerHeader h3{margin:0 0 4px}.manageProduct{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px;border:1px solid var(--line);background:#111419;border-radius:12px;margin-bottom:10px}.manageProductInfo{display:flex;align-items:flex-start;gap:13px;min-width:0}.manageEmoji{width:48px;height:48px;border-radius:10px;background:#20242a;display:grid;place-items:center;font-size:27px;flex:none}.manageProduct h3{margin:0 0 3px;font-size:16px}.manageProduct strong{display:block;color:#fff;font-size:15px;margin-bottom:5px}.manageProduct p{margin:0;color:#9ba1aa;font-size:13px;line-height:1.4}.deleteProduct{background:#301419;color:#ff7d87;border:1px solid #542027;border-radius:8px;padding:9px 12px;font-weight:800;flex:none}.deleteProduct:hover{background:#451a21}@media(max-width:600px){.managerHeader{align-items:stretch;flex-direction:column}.managerHeader button{width:100%}.manageProduct{align-items:flex-start}.deleteProduct{padding:8px 10px}.manageProductInfo{gap:9px}.manageEmoji{width:42px;height:42px;font-size:23px}.manageProduct h3{font-size:14px}.manageProduct p{font-size:12px}}
+
+.productForm{margin-top:18px;padding:20px;border:1px solid #2b3038;border-radius:16px;background:linear-gradient(145deg,#171a20,#101216);box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.productFormGrid{display:grid;grid-template-columns:1.5fr .7fr;gap:14px}
+.productForm label{display:block;margin-bottom:14px}
+.productForm label>span{display:block;margin-bottom:7px;color:#f5f6f7;font-size:13px;font-weight:800}
+.productForm input,.productForm textarea{width:100%;box-sizing:border-box;background:#0d0f13;border:1px solid #303640;color:#fff;border-radius:10px;padding:13px 14px;outline:none;transition:.2s}
+.productForm textarea{resize:vertical;min-height:100px;line-height:1.45}
+.productForm input:focus,.productForm textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,9,20,.12)}
+.moneyInput{position:relative}
+.moneyInput b{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9ba1aa;font-size:13px;z-index:1}
+.moneyInput input{padding-left:42px}
+.productFormActions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
+.productFormActions button{border-radius:10px;padding:12px 17px;font-weight:800;cursor:pointer}
+.formCancel{background:#20242a;color:#d7dae0;border:1px solid #343a44}
+.formSave{background:var(--red);color:#fff;border:0;box-shadow:0 8px 18px rgba(229,9,20,.18)}
+.formSave:hover{filter:brightness(1.08)}
+.managerDivider{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:25px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+.managerDivider h3{margin:0}
+#productCount{font-size:12px;color:#9ba1aa;background:#20242a;border:1px solid #30343b;border-radius:999px;padding:5px 9px}
+@media(max-width:600px){.productForm{padding:15px}.productFormGrid{grid-template-columns:1fr;gap:0}.productFormActions{display:grid;grid-template-columns:1fr 1.5fr}.productFormActions button{width:100%}}
