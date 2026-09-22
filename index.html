@@ -87,7 +87,7 @@
 <section id="page-dashboard" class="page adminPage">
   <div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Dashboard</h2><p>Visão geral da sua operação.</p></div><button onclick="logout()" class="dark">Sair</button></div>
   <div class="stats"><div><small>Pedidos entregues</small><b id="sOrders">0</b></div><div><small>Faturamento entregue</small><b id="sRevenue">R$ 0,00</b></div><div><small>Ticket médio entregue</small><b id="sAvg">R$ 0,00</b></div><div><small>Pedidos pendentes</small><b id="sNew">0</b></div></div>
-  <div class="adminCards"><div class="panel"><h3>Acesso rápido</h3><div class="shortcutGrid"><button onclick="openAdmin('pedidos')">📋 Pedidos</button><button onclick="openAdmin('produtos')">📦 Produtos</button><button onclick="openAdmin('cupons')">🎟 Cupons</button><button onclick="openAdmin('config')">⚙ Configurações</button></div></div><div class="panel"><h3>Notificações</h3><p id="dashNotice" class="muted">Nenhum pedido novo.</p></div></div>
+  <div class="panel"><h3>Pedidos entregues</h3><div id="dashboardOrders"></div></div></div><div class="adminCards"><div class="panel"><h3>Acesso rápido</h3><div class="shortcutGrid"><button onclick="openAdmin('pedidos')">📋 Pedidos</button><button onclick="openAdmin('produtos')">📦 Produtos</button><button onclick="openAdmin('cupons')">🎟 Cupons</button><button onclick="openAdmin('config')">⚙ Configurações</button></div></div><div class="panel"><h3>Notificações</h3><p id="dashNotice" class="muted">Nenhum pedido novo.</p></div></div>
 </section>
 
 <section id="page-pedidos" class="page adminPage"><div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Pedidos</h2><p>Acompanhe e atualize o status dos pedidos.</p></div><button onclick="demoOrder()">+ Simular pedido</button></div><div class="panel"><div id="orders"></div></div></section>
@@ -100,5 +100,5 @@
 </main>
 </div>
 <div id="toast"></div>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 </body></html>
