@@ -34,7 +34,8 @@ function applyAccess(){
   if(!admin && adminPages.includes(localStorage.bv_page))localStorage.bv_page="inicio";
 }
 function showPage(page){
-  if(adminPages.includes(page)&&!isAdmin()){pendingAdminPage=page;$("login").style.display="flex";$("email").focus();return}
+  if(!pageTitles[page])return;
+  if(adminPages.includes(page)&&!isAdmin()){pendingAdminPage=page;$("login").style.display="flex";return}
   localStorage.bv_page=page;
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("activePage"));
   const target=$("page-"+page);
@@ -43,7 +44,10 @@ function showPage(page){
   document.querySelectorAll(".sideNav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
   $("pageTitle").textContent=pageTitles[page]||"BV LANCHES";
   $("sidebar").classList.remove("open");
-  window.scrollTo({top:0,behavior:"smooth"});
+  if(page==="pedido")renderCart();
+  if(page==="cardapio")renderProducts();
+  if(adminPages.includes(page))renderAdmin();
+  window.scrollTo(0,0);
 }
 function closeLogin(){$("login").style.display="none";$("err").textContent=""}
 function toggleSidebar(){$("sidebar").classList.toggle("open")}
