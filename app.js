@@ -15,6 +15,7 @@ if(!Array.isArray(products)||localStorage.bv_products_version!=="2"){
   localStorage.bv_products_version="2";
 }
 let cart=JSON.parse(localStorage.bv_cart||"[]"),delivery=localStorage.bv_delivery!=="false",payment=localStorage.bv_payment||"Pix",orders=JSON.parse(localStorage.bv_orders||"[]"),config=JSON.parse(localStorage.bv_config||'{"fee":5,"wa":"5531984595968"}'),savedAddress=JSON.parse(localStorage.bv_saved_address||"null");
+if(!config.wa||config.wa==="5500000000000"||config.wa==="550000000000"){config.wa="5531984595968";localStorage.bv_config=JSON.stringify(config);}
 const brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const $=id=>document.getElementById(id);
 let pendingAdminPage="dashboard";
@@ -53,7 +54,8 @@ function finish(){
   if(!delivery&&!$("name").value)return toast("Informe seu nome.");
   let sub=cart.reduce((s,x)=>s+x.price*x.q,0),fee=delivery?+config.fee:0,disc=couponValue(sub),total=Math.max(0,sub+fee-disc);
   let id=Date.now().toString().slice(-5);
-  let address=delivery?{rua:$("street").value.trim(),numero:$("num").value.trim(),bairro:$("bairro").value.trim(),cep:$("cep").value.trim(),complemento:$("comp").value.trim()}:null;\n  if(delivery){savedAddress={name:$("name").value.trim(),phone:$("phone").value.trim(),...address};localStorage.bv_saved_address=JSON.stringify(savedAddress);}
+  let address=delivery?{rua:$("street").value.trim(),numero:$("num").value.trim(),bairro:$("bairro").value.trim(),cep:$("cep").value.trim(),complemento:$("comp").value.trim()}:null;
+  if(delivery){savedAddress={name:$("name").value.trim(),phone:$("phone").value.trim(),...address};localStorage.bv_saved_address=JSON.stringify(savedAddress);}
   let o={id:id,customer:$("name").value.trim()||"Cliente",phone:$("phone").value.trim(),items:cart.map(x=>x.q+"x "+x.name).join(", "),total:total,payment:payment,delivery:delivery?"Entrega":"Retirada",address:address,change:payment==="Dinheiro"?($("troco").value||"Não informado"):"",status:payment==="Pix"?"Aguardando pagamento":"Novo",paid:payment!=="Pix",time:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})};
   orders.unshift(o);
   localStorage.bv_orders=JSON.stringify(orders);
@@ -88,7 +90,17 @@ function renderManage(){$("manage").innerHTML=products.map((p,i)=>`<div class="m
 function addProduct(){let n=prompt("Nome do produto:");if(!n)return;let v=parseFloat(prompt("Preço:","20"));if(!v)return;products.push({id:Date.now(),name:n,price:v,emoji:"🍔",desc:"Novo produto"});localStorage.bv_products=JSON.stringify(products);renderProducts()}
 function removeProduct(i){if(confirm("Excluir este produto?")){products.splice(i,1);localStorage.bv_products=JSON.stringify(products);renderProducts()}}
 function saveCfg(){config.fee=parseFloat($("feeCfg").value)||0;config.wa=$("waCfg").value.replace(/\D/g,"");localStorage.bv_config=JSON.stringify(config);toast("Configurações salvas")}
-function restoreSavedAddress(){\n  if(!savedAddress)return;\n  if(savedAddress.name)$("name").value=savedAddress.name;\n  if(savedAddress.phone)$("phone").value=savedAddress.phone;\n  if(savedAddress.rua)$("street").value=savedAddress.rua;\n  if(savedAddress.numero)$("num").value=savedAddress.numero;\n  if(savedAddress.bairro)$("bairro").value=savedAddress.bairro;\n  if(savedAddress.cep)$("cep").value=savedAddress.cep;\n  if(savedAddress.complemento)$("comp").value=savedAddress.complemento;\n}\nfunction demoOrder(){orders.unshift({id:Date.now().toString().slice(-5),customer:"Cliente Demo",items:"1x X-Bacon, 1x Batata P",total:36.9,payment:"Pix",delivery:"Entrega",address:{rua:"Rua Demo",numero:"100",bairro:"Centro",cep:"00000-000",complemento:""},status:"Aguardando pagamento",paid:false,time:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})});localStorage.bv_orders=JSON.stringify(orders);renderAdmin();toast("🔔 Pedido Pix aguardando pagamento")}function toast(t){$("toast").textContent=t;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
+function restoreSavedAddress(){
+  if(!savedAddress)return;
+  if(savedAddress.name)$("name").value=savedAddress.name;
+  if(savedAddress.phone)$("phone").value=savedAddress.phone;
+  if(savedAddress.rua)$("street").value=savedAddress.rua;
+  if(savedAddress.numero)$("num").value=savedAddress.numero;
+  if(savedAddress.bairro)$("bairro").value=savedAddress.bairro;
+  if(savedAddress.cep)$("cep").value=savedAddress.cep;
+  if(savedAddress.complemento)$("comp").value=savedAddress.complemento;
+}
+function demoOrder(){orders.unshift({id:Date.now().toString().slice(-5),customer:"Cliente Demo",items:"1x X-Bacon, 1x Batata P",total:36.9,payment:"Pix",delivery:"Entrega",address:{rua:"Rua Demo",numero:"100",bairro:"Centro",cep:"00000-000",complemento:""},status:"Aguardando pagamento",paid:false,time:new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})});localStorage.bv_orders=JSON.stringify(orders);renderAdmin();toast("🔔 Pedido Pix aguardando pagamento")}function toast(t){$("toast").textContent=t;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2500)}
 function login(){let email=$("email").value.trim().toLowerCase(),pass=$("pass").value;if(email==="admin@bvlanche.com"&&pass==="123456"){sessionStorage.setItem("bv","1");$("login").style.display="none";$("err").textContent="";showPage(pendingAdminPage);renderAdmin()}else $("err").textContent="E-mail ou senha incorretos."}
 function logout(){sessionStorage.removeItem("bv");showPage("inicio");toast("Sessão administrativa encerrada")}
 if(sessionStorage.bv==="1")$("login").style.display="none";showPage(localStorage.bv_page||"inicio");
