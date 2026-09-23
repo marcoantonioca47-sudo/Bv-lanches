@@ -581,31 +581,33 @@ async function statusDB(id,s){
 
   async function usersDB(){
     const box=$('userPermissions');if(!box)return;
-    try{await syncLocalAccounts();await syncLocalBairros()}catch(e){console.warn('Sincronização inicial:',e)}
     const q=String($('userSearch')?.value||'').trim().toLowerCase();
-
-    // Primeiro mostra imediatamente os usuários locais. Assim a tela nunca fica vazia
-    // esperando uma resposta do Supabase.
-    let localUsers=[];
     try{
-      localUsers=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]');
-    }catch(e){localUsers=[]}
-    if(!Array.isArray(localUsers))localUsers=[];
-    renderUserList(localUsers,box,q);
-
-    // Depois tenta complementar a lista com os perfis do Supabase.
-    try{
-      const res=await sb.from('profiles').select('id,name,role,created_at').order('created_at',{ascending:false});
-      if(res.error||!Array.isArray(res.data))return;
-      const merged=[...res.data];
-      localUsers.forEach(u=>{
-        if(!merged.some(x=>String(x.id||'')===String(u.id||'') || (u.email&&x.email&&String(x.email).toLowerCase()===String(u.email).toLowerCase()))){
-          merged.push(u);
-        }
-      });
-      renderUserList(merged,box,q);
+      const {data,error}=await sb.functions.invoke('admin-user',{body:{action:'list'}});
+      if(error||!data?.ok||!Array.isArray(data.users)){
+        console.warn('Lista de usuários:',error||data?.error||'resposta inválida');
+        if($('userCount'))$('userCount').textContent='0 usuários';
+        renderUserList([],box,q);
+        return;
+      }
+      // A lista administrativa usa somente contas reais do Supabase Auth.
+      // Contas locais antigas (ex.: "user-demo") não podem receber permissões nem ser excluídas no servidor.
+      // Também ocultamos contas legadas substituídas durante a migração para evitar duplicidade no painel.
+      const hiddenLegacy=new Set(['admin@bvlanches.com','marcoantonioca47@gmail.com']);
+      const list=data.users
+        .filter(u=>!hiddenLegacy.has(String(u.email||'').trim().toLowerCase()))
+        .map(u=>({
+          id:String(u.id),
+          name:String(u.name||'Usuário'),
+          email:String(u.email||''),
+          role:['administrador','motoboy','usuario'].includes(u.role)?u.role:'usuario',
+          supabase:true
+        }));
+      window.BV_USERS=list;
+      renderUserList(list,box,q);
     }catch(e){
-      console.warn('Usuários do Supabase indisponíveis; mantendo lista local.',e);
+      console.warn('Usuários do Supabase indisponíveis:',e);
+      renderUserList([],box,q);
     }
   }
   window.deleteUser=async(id)=>{
