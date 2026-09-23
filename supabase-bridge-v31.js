@@ -105,7 +105,7 @@
     return !r.error;
   }
 
-  window.refreshDeliveryFeeForNeighborhood=async function(name){const raw=String(name||'').trim();if(!raw)return null;const norm=v=>String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/\\s+/g,' ');try{const {data,error}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true);if(error||!Array.isArray(data))return null;const hit=data.find(x=>norm(x.name)===norm(raw));return hit?Number(hit.fee)||0:Number(config.fee)||0}catch(e){console.warn('Taxa do bairro:',e);return Number(config.fee)||0}};window.refreshDeliveryFees=async function(){try{return await feesDB()}catch(e){console.warn('Taxas:',e);return false}};
+  window.refreshDeliveryFeeForNeighborhood=async function(name){const raw=String(name||'').trim();if(!raw)return null;const norm=v=>String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');try{const {data,error}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true);if(error){console.warn('Taxa do bairro:',error.message);return Number(config.fee)||0}if(!Array.isArray(data))return Number(config.fee)||0;const wanted=norm(raw);const hit=data.find(x=>norm(x.name)===wanted);return hit?Number(hit.fee)||0:Number(config.fee)||0}catch(e){console.warn('Taxa do bairro:',e);return Number(config.fee)||0}};window.refreshDeliveryFees=async function(){try{return await feesDB()}catch(e){console.warn('Taxas:',e);return false}};
   async function feesDB(){
     // O banco é a fonte oficial. A migração local só ocorre se o servidor ainda não possuir taxas.
     let {data,error}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true).order('name');
