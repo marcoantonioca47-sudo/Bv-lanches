@@ -593,16 +593,16 @@ async function statusDB(id,s){
       // A lista administrativa usa somente contas reais do Supabase Auth.
       // Contas locais antigas (ex.: "user-demo") não podem receber permissões nem ser excluídas no servidor.
       // Também ocultamos contas legadas substituídas durante a migração para evitar duplicidade no painel.
-      const hiddenLegacy=new Set(['admin@bvlanches.com','marcoantonioca47@gmail.com']);
       const list=data.users
-        .filter(u=>!hiddenLegacy.has(String(u.email||'').trim().toLowerCase()))
+        .filter(u=>u&&u.id)
         .map(u=>({
           id:String(u.id),
           name:String(u.name||'Usuário'),
           email:String(u.email||''),
           role:['administrador','motoboy','usuario'].includes(u.role)?u.role:'usuario',
           supabase:true
-        }));
+        }))
+        .sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR'));
       window.BV_USERS=list;
       renderUserList(list,box,q);
     }catch(e){
