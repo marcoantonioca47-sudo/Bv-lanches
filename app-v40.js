@@ -36,8 +36,7 @@ function applyAccess(){
      : isMoto ? ['pedidos','taxa-entrega'].includes(p)
      : isUser ? publicPages.includes(p)
      : p==='inicio';
-   if(ok) pg.style.removeProperty('display');
-   else { pg.style.display='none'; pg.classList.remove('activePage'); }
+   if(!ok){ pg.style.display='none'; pg.classList.remove('activePage'); }
  });
 }
 function allowed(p){return moto()&&!admin()?(p==='pedidos'||p==='taxa-entrega'):(admin()||publicPages.includes(p))}
