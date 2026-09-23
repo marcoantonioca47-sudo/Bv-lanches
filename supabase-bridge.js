@@ -138,6 +138,7 @@
       applyAccess();
       const target=(localUser.role==='administrador'||localUser.role==='admin')?'dashboard':localUser.role==='motoboy'?'pedidos':'inicio';
       showPage(target);
+      await syncAllData();startRealtime();
       toast('Login realizado com sucesso!');
       return;
     }
@@ -284,6 +285,55 @@
     if(changed)localStorage.setItem('bv_users',JSON.stringify(local));
   }
 
+  async function syncLocalProducts(){
+    let local=[];try{local=JSON.parse(localStorage.getItem('bv_products')||'[]')}catch(e){local=[]}
+    if(!Array.isArray(local)||!local.length)return;
+    const {data:remote,error}=await sb.from('products').select('id,name');
+    if(error)return;
+    const names=new Set((remote||[]).map(x=>String(x.name||'').trim().toLowerCase()));
+    for(const p of local){
+      const name=String(p.name||'').trim();
+      if(!name||names.has(name.toLowerCase()))continue;
+      const r=await sb.from('products').insert({name,price:Number(p.price)||0,category:p.category||'Lanches',description:p.desc||'',active:true});
+      if(!r.error)names.add(name.toLowerCase());
+    }
+  }
+
+  async function syncLocalOrders(){
+    let local=[];try{local=JSON.parse(localStorage.getItem('bv_orders')||'[]')}catch(e){local=[]}
+    if(!Array.isArray(local)||!local.length)return;
+    let done=[];try{done=JSON.parse(localStorage.getItem('bv_synced_orders')||'[]')}catch(e){done=[]}
+    if(!Array.isArray(done))done=[];
+    const doneSet=new Set(done.map(String));
+    for(const o of local){
+      const legacyId=String(o.id||'');
+      if(!legacyId||doneSet.has(legacyId))continue;
+      const statusMap={'Aguardando pagamento':'recebido','Novo':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
+      const address=o.address&&typeof o.address==='object'?o.address:null;
+      const ir=await sb.from('orders').insert({
+        customer_name:o.customer||'Cliente',phone:o.phone||'',address:address?(address.rua||'')+(address.numero?', '+address.numero:''):'',
+        neighborhood:address?.bairro||'',delivery_fee:address?Number(config?.bairroFees?.[String(address.bairro||'').toLowerCase()])||0:0,
+        subtotal:Number(o.total)||0,total:Number(o.total)||0,payment_method:o.payment==='Pix'?'pix':o.payment==='Cartão'?'cartao':'dinheiro',
+        payment_status:o.paid?'pago':'pendente',status:statusMap[o.status]||'recebido',notes:'Migração local '+legacyId
+      }).select('id').single();
+      if(ir.error){console.warn('Pedido local não sincronizado:',legacyId,ir.error.message);continue;}
+      if(Array.isArray(o.cart)&&o.cart.length){
+        const items=o.cart.map(x=>({order_id:ir.data.id,product_name:x.name,quantity:x.q,unit_price:Number(x.price)||0,total:(Number(x.price)||0)*x.q}));
+        await sb.from('order_items').insert(items);
+      }
+      doneSet.add(legacyId);
+    }
+    localStorage.setItem('bv_synced_orders',JSON.stringify([...doneSet]));
+  }
+
+  async function syncAllData(){
+    try{await syncLocalAccounts()}catch(e){console.warn('Contas:',e)}
+    try{await syncLocalBairros()}catch(e){console.warn('Bairros:',e)}
+    try{await syncLocalProducts()}catch(e){console.warn('Produtos:',e)}
+    try{await syncLocalOrders()}catch(e){console.warn('Pedidos:',e)}
+    try{await Promise.all([productsDB(),feesDB(),ordersDB()])}catch(e){console.warn('Leitura Supabase:',e)}
+  }
+
   async function syncLocalBairros(){
     const local=config?.bairroFees||{};const rows=Object.entries(local).map(([name,fee])=>({name,fee:Number(fee)||0,active:true}));
     if(!rows.length)return;
@@ -321,7 +371,7 @@
     }
   }
   window.deleteUser=async(id)=>{\n    const uid=String(id||'');\n    if(!uid)return toast('Usuário inválido.');\n    if(uid==='admin-marco')return toast('O administrador principal não pode ser excluído.');\n    const current=String(sessionStorage.getItem('bv_user_id')||'');\n    if(current===uid)return toast('Você não pode excluir a própria conta por aqui.');\n    let list=[];try{list=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]')}catch(e){list=[]}\n    const target=Array.isArray(list)?list.find(u=>String(u.id||'')===uid):null;\n    const label=target?.name||target?.email||'este usuário';\n    if(!confirm('Excluir '+label+'?\\n\\nEsta ação remove o cadastro do site e não pode ser desfeita.'))return;\n    localStorage.setItem('bv_users',JSON.stringify(Array.isArray(list)?list.filter(u=>String(u.id||'')!==uid):[]));\n    try{const res=await sb.from('profiles').delete().eq('id',uid);if(res.error&&!target)return toast('Não foi possível excluir o usuário.')}catch(e){console.warn('Exclusão no Supabase:',e)}\n    usersDB();toast('Usuário excluído.');\n  };\n  window.changeUserRole=async(id,role)=>{const {error}=await sb.from('profiles').update({role}).eq('id',id);if(error)return toast('Não foi possível alterar a permissão.');toast('Permissão atualizada.');usersDB()};
-  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.confirmPix=pixDB;window.renderUsers=usersDB;
+  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.confirmPix=pixDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
   const oldLogout=window.logout;
   window.logout=async()=>{stopRealtime();try{await sb.auth.signOut()}catch(e){}if(oldLogout)oldLogout()};
 
