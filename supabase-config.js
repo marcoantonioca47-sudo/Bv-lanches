@@ -2,5 +2,5 @@
 // A publishable key pode ficar no frontend. NUNCA coloque aqui a Secret/service_role key.
 window.BV_SUPABASE_CONFIG={url:'https://eaqngkiegrkmhopaztgz.supabase.co',publishableKey:'sb_publishable_QOlPlN2yFxLxGsHvUpZebg_MIty1Xbh'};
 (function(){
-  var p=document.createElement('script');p.src='supabase-profile-v3.js?v=20260923';p.defer=true;document.head.appendChild(p);
+  var p=document.createElement('script');p.src='supabase-profile-v3.js?v=20260923.4';p.defer=true;document.head.appendChild(p);
 })();
