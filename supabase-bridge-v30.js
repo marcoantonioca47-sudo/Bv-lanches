@@ -11,7 +11,7 @@
 
   function clearLocalData(){
     const keys=[
-      'bv_users','bv_products','bv_orders','bv_cart','bv_config',
+      'bv_users','bv_products','bv_orders','bv_cart',
       'bv_saved_address','bv_synced_orders','bv_profile','bv_session',
       'bv_current_user','bv_current_order','bv_bairroFees','bv_settings'
     ];
@@ -36,7 +36,7 @@
       // Zera também o estado em memória que foi carregado antes deste arquivo.
       try{if(typeof orders!=='undefined')orders=[]}catch(e){}
       try{if(typeof cart!=='undefined')cart=[]}catch(e){}
-      try{if(typeof config!=='undefined')config={fee:5,wa:'5531984595968',bairroFees:{}}}catch(e){}
+      try{if(typeof config!=='undefined'){const keep=config.bairroFees||{};config={...config,bairroFees:keep}}}catch(e){}
       try{if(typeof saved!=='undefined')saved=null}catch(e){}
 
       // Remove Cache Storage e service workers antigos, quando existirem.
@@ -240,6 +240,7 @@
       if(!auth.error&&auth.data?.user){
         const p=await profile();
         session(auth.data.user,p);
+        if(p&&['administrador','admin'].includes(p.role)){try{await syncLocalBairros()}catch(e){console.warn('Migração das taxas:',e)}}
         await syncAllData();
         startRealtime();
         if($('login'))$('login').style.display='none';
@@ -269,6 +270,7 @@
           if(!retry.error&&retry.data?.user){
             const p=await profile();
             session(retry.data.user,p);
+            if(p&&['administrador','admin'].includes(p.role)){try{await syncLocalBairros()}catch(e){console.warn('Migração das taxas:',e)}}
             await syncAllData();startRealtime();
             if($('login'))$('login').style.display='none';
             if(err)err.textContent='';
