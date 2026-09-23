@@ -7,9 +7,65 @@ window.BV_APP_VERSION='2026.09.23.40';
 const usersDefault=[{id:'admin-marco',name:'Marco',email:'marco@bvlanches.com',pass:'01022005',role:'administrador'},{id:'user-demo',name:'Cliente',email:'cliente@bv.com',pass:'01022005',role:'motoboy'}];function users(){let u=safeParse('bv_users',null);if(!Array.isArray(u))u=[];let changed=false;const oldAdmin=u.findIndex(x=>String(x.email||'').trim().toLowerCase()==='admin@bvlanches.com');const newAdmin=u.findIndex(x=>String(x.email||'').trim().toLowerCase()==='marco@bvlanches.com');if(oldAdmin>=0&&newAdmin<0){u[oldAdmin]={...u[oldAdmin],id:'admin-marco',name:'Marco',email:'marco@bvlanches.com',pass:'01022005',role:'administrador'};changed=true}else if(oldAdmin>=0&&newAdmin>=0){u.splice(oldAdmin,1);changed=true}usersDefault.forEach(d=>{const i=u.findIndex(x=>String(x.email||'').trim().toLowerCase()===d.email);if(i<0){u.push({...d});changed=true}else{if(!u[i].id){u[i].id=d.id;changed=true}if(String(d.email).toLowerCase()==='cliente@bv.com'&&u[i].role!=='motoboy'){u[i].role='motoboy';changed=true}else if(!u[i].role){u[i].role=d.role;changed=true}}});if(changed||!localStorage.getItem('bv_users'))localStorage.bv_users=JSON.stringify(u);return u}function role(){return sessionStorage.getItem('bv_role')||''}function admin(){return role()==='administrador'}function moto(){return role()==='motoboy'}
 const pages={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos','taxa-entrega':'Taxa de entrega',produtos:'Produtos',cupons:'Cupons',config:'Configurações'},publicPages=['inicio','cardapio','pedido','acompanhar'];
 function toast(t){const x=$('toast');if(x){x.textContent=t;x.style.display='block';clearTimeout(window._toast);window._toast=setTimeout(()=>x.style.display='none',2200)}}
-function applyAccess(){const isAdmin=admin(),isMoto=moto()&&!isAdmin;document.querySelectorAll('.adminOnly').forEach(x=>x.style.display=isAdmin?'':'none');document.querySelectorAll('.adminHide').forEach(x=>x.style.display=isAdmin?'none':'');document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=isMoto?'':'none');document.querySelectorAll('.sideNav button[data-page]').forEach(x=>{const p=x.dataset.page;let visible=true;if(isMoto)visible=p==='pedidos'||p==='taxa-entrega';else if(isAdmin)visible=!x.classList.contains('adminHide')&&!x.hasAttribute('data-role');else visible=!x.classList.contains('adminOnly')&&!x.hasAttribute('data-role');x.style.display=visible?'none':'';if(visible)x.style.display=''});document.querySelectorAll('.motoboyHide').forEach(x=>x.style.display=isMoto?'none':'');const q=$('adminQuick');if(q)q.style.display=isAdmin?'none':'';if(isMoto){const target=localStorage.getItem('bv_page')==='taxa-entrega'?'taxa-entrega':'pedidos';localStorage.bv_page=target;document.querySelectorAll('.page').forEach(x=>x.classList.remove('activePage'));const pg=$('page-'+target);if(pg)pg.classList.add('activePage');document.querySelectorAll('.sideNav button').forEach(b=>b.classList.toggle('active',b.dataset.page===target));if($('pageTitle'))$('pageTitle').textContent=pages[target]||'Pedidos'}}
+function applyAccess(){
+ const r=role();
+ const isAdmin=r==='administrador';
+ const isMoto=r==='motoboy';
+ const isUser=r==='usuario';
+ document.documentElement.dataset.bvRole=isAdmin?'administrador':isMoto?'motoboy':isUser?'usuario':'visitante';
+
+ document.querySelectorAll('.adminOnly').forEach(el=>el.style.display=isAdmin?'':'none');
+ document.querySelectorAll('[data-role="motoboyOnly"]').forEach(el=>el.style.display=isMoto?'':'none');
+
+ document.querySelectorAll('.sideNav button[data-page]').forEach(btn=>{
+   const p=btn.dataset.page;
+   let visible=false;
+   if(isAdmin) visible=['dashboard','pedidos','produtos','cupons','config'].includes(p);
+   else if(isMoto) visible=['pedidos','taxa-entrega'].includes(p);
+   else if(isUser) visible=['inicio','cardapio','pedido','acompanhar'].includes(p);
+   btn.style.display=visible?'':'none';
+ });
+ document.querySelectorAll('.sideNav .navTitle').forEach(el=>el.style.display=isAdmin?'':'none');
+ document.querySelectorAll('.adminHide').forEach(el=>el.style.display=isAdmin?'none':(isMoto?'none':''));
+ document.querySelectorAll('.motoboyHide').forEach(el=>el.style.display=isMoto?'none':'');
+ const q=$('adminQuick'); if(q) q.style.display=isAdmin?'none':'';
+
+ document.querySelectorAll('.page[id^="page-"]').forEach(pg=>{
+   const p=pg.id.slice(5);
+   const ok=isAdmin ? Object.keys(pages).includes(p)
+     : isMoto ? ['pedidos','taxa-entrega'].includes(p)
+     : isUser ? publicPages.includes(p)
+     : p==='inicio';
+   pg.style.display=ok?'':'none';
+   if(!ok) pg.classList.remove('activePage');
+ });
+}
 function allowed(p){return moto()&&!admin()?(p==='pedidos'||p==='taxa-entrega'):(admin()||publicPages.includes(p))}
-function showPage(p){if(moto()&&!admin()&&!['pedidos','taxa-entrega'].includes(p))p='pedidos';if(!pages[p])p='inicio';if(!allowed(p)){toast('Você não tem permissão para acessar esta tela.');return false}localStorage.bv_page=p;document.querySelectorAll('.page').forEach(x=>x.classList.remove('activePage'));const x=$('page-'+p);if(x)x.classList.add('activePage');document.querySelectorAll('.sideNav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));if($('pageTitle'))$('pageTitle').textContent=pages[p];if($('sidebar'))$('sidebar').classList.remove('open');try{if(p==='cardapio')renderProducts();if(p==='pedido')renderCart();if(p==='taxa-entrega'&&typeof window.renderMotoFeeOnly==='function')window.renderMotoFeeOnly();if(p==='produtos')renderManage();if(admin()||moto())renderAdmin();if(p==='config'){if(typeof window.renderUsers==='function')window.renderUsers();else renderUsers();renderBairroFees()};if(p==='acompanhar')renderTracking()}catch(e){console.error('BV tela:',e)}return true}
+function showPage(p){
+ const r=role();
+ const allowedSet=r==='administrador'?Object.keys(pages):r==='motoboy'?['pedidos','taxa-entrega']:r==='usuario'?publicPages:['inicio'];
+ if(!allowedSet.includes(p)) p=r==='administrador'?'dashboard':r==='motoboy'?'pedidos':'inicio';
+ if(!pages[p]||!allowed(p)) return false;
+ localStorage.bv_page=p;
+ document.querySelectorAll('.page').forEach(x=>x.classList.remove('activePage'));
+ document.querySelectorAll('.page').forEach(x=>x.style.display='none');
+ const x=$('page-'+p);
+ if(x){x.style.display='';x.classList.add('activePage')}
+ document.querySelectorAll('.sideNav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+ if($('pageTitle'))$('pageTitle').textContent=pages[p];
+ if($('sidebar'))$('sidebar').classList.remove('open');
+ try{
+   if(p==='cardapio')renderProducts();
+   if(p==='pedido')renderCart();
+   if(p==='taxa-entrega'&&typeof window.renderMotoFeeOnly==='function')window.renderMotoFeeOnly();
+   if(p==='produtos')renderManage();
+   if(admin()||moto())renderAdmin();
+   if(p==='config'){if(typeof window.renderUsers==='function')window.renderUsers();else renderUsers();renderBairroFees()}
+   if(p==='acompanhar')renderTracking();
+ }catch(e){console.error('BV tela:',e)}
+ applyAccess();
+ return true
+}
 function toggleSidebar(){if($('sidebar'))$('sidebar').classList.toggle('open')}function closeLogin(){if($('login'))$('login').style.display='none';if($('err'))$('err').textContent=''}function openAdmin(p='dashboard'){if(admin())showPage(p);else{if($('login'))$('login').style.display='flex';if($('email'))$('email').focus()}}
 function login(){const e=String($('email')?.value||'').trim().toLowerCase(),p=String($('pass')?.value||'').trim(),list=users(),u=list.find(x=>String(x.email||'').trim().toLowerCase()===e&&String(x.pass??'').trim()===p);if(!e||!p){if($('err'))$('err').textContent='Digite o e-mail e a senha.';return}if(!u){if($('err'))$('err').textContent='E-mail ou senha incorretos. Use os dados exibidos abaixo.';return}sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_role',u.role||'usuario');sessionStorage.setItem('bv',u.role==='administrador'?'1':'0');if($('login'))$('login').style.display='none';if($('err'))$('err').textContent='';applyAccess();showPage(u.role==='administrador'?'dashboard':u.role==='motoboy'?'pedidos':'inicio');toast('Login realizado com sucesso!')}
 function logout(){sessionStorage.clear();localStorage.bv_page='inicio';if($('login'))$('login').style.display='flex';if($('email'))$('email').value='';if($('pass'))$('pass').value='';applyAccess();showPage('inicio');toast('Conta desconectada')}
