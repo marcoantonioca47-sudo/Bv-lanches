@@ -415,7 +415,7 @@ async function statusDB(id,s){
     const map={'Novo':'recebido','Aguardando pagamento':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Em produção':'em_producao','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
     const o=orders.find(x=>x.id===id);if(!o)return;
     if(o.payment==='Pix'&&!o.paid&&s!=='Aguardando pagamento')return toast('Confirme o pagamento Pix primeiro.');
-    if(s==='Saiu para entrega'&&!o.motoboy_id)return toast('Selecione um motoboy antes de enviar o pedido para entrega.');
+    if((s==='Em produção'||s==='Saiu para entrega')&&!o.motoboy_id)return toast('Selecione um motoboy antes de colocar este pedido para entrega.');
     const {error}=await sb.from('orders').update({status:map[s]||s}).eq('id',id);if(error)return toast('Erro ao atualizar pedido: '+error.message);
     await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();toast('Status atualizado.');
   }
