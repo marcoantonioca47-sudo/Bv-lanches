@@ -34,7 +34,25 @@
   // para que o administrador continue autenticado entre aparelhos/reloads.
 
   async function user(){const {data}=await sb.auth.getUser();return data?.user||null}
-  async function profile(){const u=await user();if(!u)return null;const {data}=await sb.from('profiles').select('id,name,role').eq('id',u.id).maybeSingle();return data||null}
+  async function profile(){
+    const u=await user();if(!u)return null;
+    const {data,error}=await sb.from('profiles').select('id,name,role').eq('id',u.id).maybeSingle();
+    if(error){console.warn('Perfil Supabase:',error.message);return null;}
+    if(data){
+      // Auto-correção do administrador principal caso um perfil antigo tenha ficado com papel incorreto.
+      if(String(u.email||'').toLowerCase()==='admin@bvlanches.com' && data.role!=='administrador'){
+        const r=await sb.from('profiles').update({role:'administrador',name:data.name||'Administrador'}).eq('id',u.id);
+        if(!r.error)data.role='administrador';
+      }
+      return data;
+    }
+    // Recupera contas Auth antigas que foram criadas antes do trigger de perfil.
+    const isMainAdmin=String(u.email||'').toLowerCase()==='admin@bvlanches.com';
+    const row={id:u.id,name:u.user_metadata?.name|| (isMainAdmin?'Administrador':'Usuário'),role:isMainAdmin?'administrador':'usuario'};
+    const r=await sb.from('profiles').upsert(row,{onConflict:'id'}).select('id,name,role').maybeSingle();
+    if(r.error){console.warn('Criação automática do perfil:',r.error.message);return null;}
+    return r.data||row;
+}
   function session(u,p){if(!u)return;sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_role',p?.role||'usuario');sessionStorage.setItem('bv','0')}
 
   async function productsDB(){
@@ -78,11 +96,11 @@
     const u=await user();if(!u)return false;
     const p=await profile();
     let q=sb.from('orders').select('*,order_items(*)').order('created_at',{ascending:false});
-    // Administrador recebe todos os pedidos de todos os usuários.
-    // Cliente/usuário continua vendo somente os próprios pedidos.
-    const sessionRole=sessionStorage.getItem('bv_role')||'';
-    const isAdminSession=sessionRole==='administrador'||sessionRole==='admin';
-    if(!(isAdminSession || (p&&['administrador','admin','motoboy'].includes(p.role))))q=q.eq('user_id',u.id);
+    // A decisão de visibilidade usa o perfil real do Supabase.
+    // sessionStorage é apenas UI e nunca deve decidir acesso aos pedidos.
+    const isAdminProfile=!!(p&&['administrador','admin'].includes(p.role));
+    const isMotoProfile=!!(p&&p.role==='motoboy');
+    if(!(isAdminProfile||isMotoProfile))q=q.eq('user_id',u.id);
     const {data,error}=await q;
     if(error||!Array.isArray(data))return false;
     orders=data.map(o=>({
@@ -134,10 +152,13 @@
   function startOrderPolling(){
     if(orderPoll)clearInterval(orderPoll);
     orderPoll=setInterval(async()=>{
-      const r=roleNow();
-      if(r==='administrador'||r==='admin'){
-        try{await ordersDB();if(typeof renderAdmin==='function')renderAdmin()}catch(e){console.warn('Atualização automática dos pedidos:',e)}
-      }
+      try{
+        const p=await profile();
+        if(p&&['administrador','admin'].includes(p.role)){
+          await ordersDB();
+          if(typeof renderAdmin==='function')renderAdmin();
+        }
+      }catch(e){console.warn('Atualização automática dos pedidos:',e)}
     },5000);
   }
   function roleNow(){
