@@ -247,6 +247,26 @@
     }).join('');
   }
 
+  async function createUserDB(){
+    if(typeof admin==='function'&&!admin())return toast('Somente o administrador pode cadastrar usuários.');
+    const name=$('newUserName')?.value.trim()||'',email=$('newUserEmail')?.value.trim().toLowerCase()||'',pass=$('newUserPass')?.value||'';
+    if(!name||!email||!pass)return toast('Preencha nome, e-mail e senha.');
+    if(pass.length<6)return toast('A senha deve ter pelo menos 6 caracteres.');
+    let local=[];try{local=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]')}catch(e){local=[]}
+    if(local.some(u=>String(u.email||'').toLowerCase()===email))return toast('Este e-mail já está cadastrado.');
+    const {data:before}=await sb.auth.getSession();const original=before?.session||null;
+    const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
+    if(error)return toast('Não foi possível cadastrar: '+error.message);
+    if(!data?.user)return toast('Não foi possível criar a conta.');
+    const id=data.user.id;
+    const pr=await sb.from('profiles').upsert({id,name,role:'usuario'});
+    if(pr.error)return toast('Conta criada, mas o perfil não foi salvo: '+pr.error.message);
+    if(data.session&&original)await sb.auth.setSession({access_token:original.access_token,refresh_token:original.refresh_token});
+    local.push({id,name,email,pass,role:'usuario',supabase:true});localStorage.setItem('bv_users',JSON.stringify(local));
+    if($('newUserName'))$('newUserName').value='';if($('newUserEmail'))$('newUserEmail').value='';if($('newUserPass'))$('newUserPass').value='';
+    await usersDB();toast('Usuário cadastrado e sincronizado em todos os aparelhos.');
+  }
+
   async function syncLocalAccounts(){
     let local=[];try{local=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]')}catch(e){local=[]}
     if(!Array.isArray(local)||!local.length)return;
@@ -301,7 +321,7 @@
     }
   }
   window.deleteUser=async(id)=>{\n    const uid=String(id||'');\n    if(!uid)return toast('Usuário inválido.');\n    if(uid==='admin-marco')return toast('O administrador principal não pode ser excluído.');\n    const current=String(sessionStorage.getItem('bv_user_id')||'');\n    if(current===uid)return toast('Você não pode excluir a própria conta por aqui.');\n    let list=[];try{list=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]')}catch(e){list=[]}\n    const target=Array.isArray(list)?list.find(u=>String(u.id||'')===uid):null;\n    const label=target?.name||target?.email||'este usuário';\n    if(!confirm('Excluir '+label+'?\\n\\nEsta ação remove o cadastro do site e não pode ser desfeita.'))return;\n    localStorage.setItem('bv_users',JSON.stringify(Array.isArray(list)?list.filter(u=>String(u.id||'')!==uid):[]));\n    try{const res=await sb.from('profiles').delete().eq('id',uid);if(res.error&&!target)return toast('Não foi possível excluir o usuário.')}catch(e){console.warn('Exclusão no Supabase:',e)}\n    usersDB();toast('Usuário excluído.');\n  };\n  window.changeUserRole=async(id,role)=>{const {error}=await sb.from('profiles').update({role}).eq('id',id);if(error)return toast('Não foi possível alterar a permissão.');toast('Permissão atualizada.');usersDB()};
-  window.login=login;window.registerUser=register;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.confirmPix=pixDB;window.renderUsers=usersDB;
+  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.confirmPix=pixDB;window.renderUsers=usersDB;
   const oldLogout=window.logout;
   window.logout=async()=>{stopRealtime();try{await sb.auth.signOut()}catch(e){}if(oldLogout)oldLogout()};
 
