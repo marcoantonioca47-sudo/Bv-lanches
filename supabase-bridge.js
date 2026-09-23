@@ -79,7 +79,9 @@
     let q=sb.from('orders').select('*,order_items(*)').order('created_at',{ascending:false});
     // Administrador recebe todos os pedidos de todos os usuários.
     // Cliente/usuário continua vendo somente os próprios pedidos.
-    if(!(p&&['administrador','admin','motoboy'].includes(p.role)))q=q.eq('user_id',u.id);
+    const sessionRole=sessionStorage.getItem('bv_role')||'';
+    const isAdminSession=sessionRole==='administrador'||sessionRole==='admin';
+    if(!(isAdminSession || (p&&['administrador','admin','motoboy'].includes(p.role))))q=q.eq('user_id',u.id);
     const {data,error}=await q;
     if(error||!Array.isArray(data))return false;
     orders=data.map(o=>({
