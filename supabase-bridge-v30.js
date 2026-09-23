@@ -52,21 +52,7 @@
     }catch(e){console.warn('Limpeza local:',e)}
   }
 
-  // Limpeza única do cache antigo do aplicativo. Não remove pedidos do banco.
-  // O marcador usa uma versão nova para garantir que aparelhos que já abriram
-  // versões anteriores também sejam higienizados uma vez.
-  (async()=>{
-    const mark='bv_cache_cleanup_v3';
-    if(localStorage.getItem(mark)==='1')return;
-    await clearAllBVLocalData();
-    // Limpa especificamente qualquer rastro de pedidos antigos do navegador.
-    ['bv_orders','bv_synced_orders','bv_last_order','bv_last_order_error','bv_current_order'].forEach(k=>localStorage.removeItem(k));
-    try{if(typeof orders!=='undefined')orders=[]}catch(e){}
-    localStorage.setItem(mark,'1');
-    console.info('BV Lanches: cache local antigo limpo. Dados do Supabase preservados.');
-  })();
-
-  // Não apagar o armazenamento do Supabase a cada carregamento.
+  // O aplicativo não limpa mais localStorage/sessionStorage automaticamente.\n  // Isso preserva a sessão do Supabase e impede que o login seja apagado durante o carregamento.\n\n  // Não apagar o armazenamento do Supabase a cada carregamento.
   // A sessão persistente do Supabase fica no localStorage e é necessária
   // para que o administrador continue autenticado entre aparelhos/reloads.
 
