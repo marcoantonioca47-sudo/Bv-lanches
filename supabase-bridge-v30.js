@@ -662,7 +662,13 @@ async function statusDB(id,s){
   sb.auth.onAuthStateChange(async(ev,s)=>{
     if(ev==='SIGNED_OUT'||!s||syncing)return;
     syncing=true;
-    try{const p=await profile();session(s.user,p);await Promise.all([productsDB(),feesDB(),ordersDB()]);startRealtime()}
-    finally{syncing=false}
+    try{
+      const p=await profile();
+      session(s.user,p);
+      await Promise.all([productsDB(),feesDB(),ordersDB()]);
+      startRealtime();
+      if(typeof applyAccess==='function')applyAccess();
+      if(typeof showPage==='function')showPage(p?.role==='administrador'||p?.role==='admin'?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
+    }finally{syncing=false}
   });
 })();
