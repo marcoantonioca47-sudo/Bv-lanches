@@ -1,46 +1,32 @@
 /* BV LANCHES - sincronização Supabase */
 (function(){
-  const cfg=window.BV_SUPABASE_CONFIG;
-  if(!cfg||!cfg.url||!cfg.publishableKey)return;
-  function load(){
-    if(window.supabase){window.BV_DB=window.supabase.createClient(cfg.url,cfg.publishableKey);init();return;}
-    const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';s.onload=function(){window.BV_DB=window.supabase.createClient(cfg.url,cfg.publishableKey);init()};s.onerror=function(){console.error('Não foi possível carregar o Supabase')};document.head.appendChild(s);
+  const cfg=window.BV_SUPABASE_CONFIG;if(!cfg||!cfg.url||!cfg.publishableKey)return;
+  function load(){if(window.supabase){window.BV_DB=window.supabase.createClient(cfg.url,cfg.publishableKey);init();return}const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';s.onload=function(){window.BV_DB=window.supabase.createClient(cfg.url,cfg.publishableKey);init()};document.head.appendChild(s)}
+  async function applySession(session){const id=session.user.id;let {data:p}=await window.BV_DB.from('profiles').select('id,name,role').eq('id',id).maybeSingle();if(!p){await window.BV_DB.from('profiles').insert({id,name:session.user.user_metadata?.name||'',role:'usuario'});p={id,name:session.user.user_metadata?.name||'',role:'usuario'}}sessionStorage.setItem('bv_user_id',id);sessionStorage.setItem('bv_role',p.role||'usuario');sessionStorage.setItem('bv',p.role==='administrador'?'1':'0');if(typeof applyAccess==='function')applyAccess()}
+  async function init(){const db=window.BV_DB;try{const {data:{session}}=await db.auth.getSession();if(session)await applySession(session);db.auth.onAuthStateChange(async function(_e,s){if(s)await applySession(s);else sessionStorage.clear()})}catch(e){console.error('Supabase Auth:',e)}window.BV_DB_READY=true;window.dispatchEvent(new Event('bv-supabase-ready'));setTimeout(patchApp,0)}
+  window.BV_registerSupabase=async(n,e,p)=>{const {data,error}=await window.BV_DB.auth.signUp({email:e,password:p,options:{data:{name:n}}});if(error)throw error;return data};
+  window.BV_loginSupabase=async(e,p)=>{const {data,error}=await window.BV_DB.auth.signInWithPassword({email:e,password:p});if(error)throw error;return data};
+  window.BV_logoutSupabase=async()=>{if(window.BV_DB)await window.BV_DB.auth.signOut()};
+  window.BV_loadProducts=async()=>{const {data,error}=await window.BV_DB.from('products').select('*').order('created_at',{ascending:true});if(error)throw error;return(data||[]).map(p=>({id:p.id,name:p.name,price:Number(p.price),desc:p.description,category:p.category,emoji:'🍔',active:p.active}))};
+  window.BV_saveProduct=async p=>{const row={name:p.name,description:p.desc||p.description||'',price:Number(p.price)||0,category:p.category||'Lanches',active:p.active!==false};const q=p.id?window.BV_DB.from('products').update(row).eq('id',p.id):window.BV_DB.from('products').insert(row);const {data,error}=await q.select().single();if(error)throw error;return data};
+  window.BV_deleteProduct=async id=>{const {error}=await window.BV_DB.from('products').delete().eq('id',id);if(error)throw error};
+  window.BV_loadFees=async()=>{const {data,error}=await window.BV_DB.from('neighborhood_fees').select('*').eq('active',true).order('name');if(error)throw error;return data||[]};
+  window.BV_saveFee=async(name,fee)=>{const {data,error}=await window.BV_DB.from('neighborhood_fees').upsert({name,fee:Number(fee)||0,active:true},{onConflict:'name'}).select().single();if(error)throw error;return data};
+  window.BV_deleteFee=async id=>{const {error}=await window.BV_DB.from('neighborhood_fees').delete().eq('id',id);if(error)throw error};
+  window.BV_loadUsers=async()=>{const {data,error}=await window.BV_DB.from('profiles').select('id,name,role,created_at').order('created_at',{ascending:false});if(error)throw error;return data||[]};
+  window.BV_setRole=async(id,role)=>{const {data,error}=await window.BV_DB.from('profiles').update({role}).eq('id',id).select().single();if(error)throw error;return data};
+  window.BV_createOrder=async o=>{const uid=sessionStorage.getItem('bv_user_id');if(!uid)throw new Error('Faça login para criar o pedido.');const {data,error}=await window.BV_DB.from('orders').insert({user_id:uid,customer_name:o.customer,phone:o.phone||'',address:o.address?`${o.address.rua}, ${o.address.numero}`:'',neighborhood:o.address?.bairro||'',delivery_fee:o.deliveryFee||0,subtotal:o.subtotal||o.total||0,total:o.total||0,payment_method:(o.payment||'Pix').toLowerCase()==='pix'?'pix':(o.payment||'').toLowerCase()==='dinheiro'?'dinheiro':'cartao',payment_status:o.paid?'pago':'pendente',status:'recebido',notes:o.items||''}).select().single();if(error)throw error;return data};
+  window.BV_loadOrders=async()=>{const {data,error}=await window.BV_DB.from('orders').select('*').order('created_at',{ascending:false});if(error)throw error;return data||[]};
+  window.BV_updateOrder=async(id,status,paymentStatus)=>{const patch={};if(status)patch.status=status;if(paymentStatus)patch.payment_status=paymentStatus;const {data,error}=await window.BV_DB.from('orders').update(patch).eq('id',id).select().single();if(error)throw error;return data};
+  async function patchApp(){
+    if(!window.BV_DB_READY)return;
+    const oldLogin=window.login,oldRegister=window.registerUser,oldLogout=window.logout,oldFinish=window.finish;
+    window.login=async function(){const e=$('email')?.value.trim().toLowerCase()||'',p=$('pass')?.value||'';try{await BV_loginSupabase(e,p);if($('login'))$('login').style.display='none';if($('err'))$('err').textContent='';const r=sessionStorage.getItem('bv_role');if(typeof applyAccess==='function')applyAccess();if(typeof showPage==='function')showPage(r==='administrador'?'dashboard':r==='motoboy'?'pedidos':'inicio');toast('Login realizado')}catch(err){if($('err'))$('err').textContent=err.message||'E-mail ou senha incorretos.'}};
+    window.registerUser=async function(e){if(e)e.preventDefault();const n=$('registerName')?.value.trim()||'',em=$('registerEmail')?.value.trim().toLowerCase()||'',p=$('registerPass')?.value||'',p2=$('registerPass2')?.value||'',er=$('registerErr');if(!n||!em||!p||!p2){if(er)er.textContent='Preencha todos os campos.';return}if(p.length<6){if(er)er.textContent='A senha deve ter pelo menos 6 caracteres.';return}if(p!==p2){if(er)er.textContent='As senhas não coincidem.';return}try{await BV_registerSupabase(n,em,p);$('email').value=em;$('pass').value='';closeRegister();if(er)er.textContent='';toast('Conta criada com sucesso! Agora faça login.')}catch(err){if(er)er.textContent=err.message||'Não foi possível criar a conta.'}};
+    window.logout=async function(){await BV_logoutSupabase();sessionStorage.clear();if($('login'))$('login').style.display='flex';if($('email'))$('email').value='';if($('pass'))$('pass').value='';applyAccess();showPage('inicio');toast('Conta desconectada')};
+    if(window.addEventListener&&!window.__bvSupabasePatch){window.__bvSupabasePatch=true;window.addEventListener('bv-supabase-ready',()=>{});}
+    try{const ps=await BV_loadProducts();if(ps.length){window.products=ps;localStorage.bv_products=JSON.stringify(ps);if(typeof renderProducts==='function')renderProducts()}}catch(e){console.warn('Produtos Supabase:',e)}
+    try{const fs=await BV_loadFees();window.config=window.config||{};window.config.bairroFees={};fs.forEach(f=>window.config.bairroFees[String(f.name).toLowerCase()]=Number(f.fee));localStorage.bv_config=JSON.stringify(window.config)}catch(e){console.warn('Taxas Supabase:',e)}
   }
-  async function init(){
-    const db=window.BV_DB;
-    try{
-      const {data:{session}}=await db.auth.getSession();
-      if(session){await applySession(session)}
-      db.auth.onAuthStateChange(async function(_event,session){if(session)await applySession(session);else{sessionStorage.removeItem('bv_user_id');sessionStorage.removeItem('bv_role');sessionStorage.removeItem('bv')}});
-    }catch(e){console.error('Supabase Auth:',e)}
-    window.BV_DB_READY=true;
-    window.dispatchEvent(new Event('bv-supabase-ready'));
-  }
-  async function applySession(session){
-    const id=session.user.id;let {data:p}=await window.BV_DB.from('profiles').select('id,name,role').eq('id',id).maybeSingle();
-    if(!p){await window.BV_DB.from('profiles').insert({id,name:session.user.user_metadata?.name||'',role:'usuario'});p={id,name:session.user.user_metadata?.name||'',role:'usuario'}}
-    sessionStorage.setItem('bv_user_id',id);sessionStorage.setItem('bv_role',p.role||'usuario');sessionStorage.setItem('bv',p.role==='administrador'?'1':'0');
-    if(typeof applyAccess==='function')applyAccess();
-  }
-  async function registerSupabase(name,email,password){
-    const {data,error}=await window.BV_DB.auth.signUp({email,password,options:{data:{name}}});
-    if(error)throw error;return data;
-  }
-  async function loginSupabase(email,password){
-    const {data,error}=await window.BV_DB.auth.signInWithPassword({email,password});if(error)throw error;return data;
-  }
-  window.BV_registerSupabase=registerSupabase;window.BV_loginSupabase=loginSupabase;
-  window.BV_logoutSupabase=async function(){if(window.BV_DB)await window.BV_DB.auth.signOut()};
-  window.BV_loadProducts=async function(){const {data,error}=await window.BV_DB.from('products').select('*').order('created_at',{ascending:true});if(error)throw error;return (data||[]).map(p=>({id:p.id,name:p.name,price:Number(p.price),desc:p.description,category:p.category,emoji:'🍔',active:p.active}))};
-  window.BV_saveProduct=async function(p){const row={name:p.name,description:p.desc||p.description||'',price:Number(p.price)||0,category:p.category||'Lanches',active:p.active!==false};const q=p.id?window.BV_DB.from('products').update(row).eq('id',p.id):window.BV_DB.from('products').insert(row);const {data,error}=await q.select().single();if(error)throw error;return data};
-  window.BV_deleteProduct=async function(id){const {error}=await window.BV_DB.from('products').delete().eq('id',id);if(error)throw error};
-  window.BV_loadFees=async function(){const {data,error}=await window.BV_DB.from('neighborhood_fees').select('*').eq('active',true).order('name');if(error)throw error;return data||[]};
-  window.BV_saveFee=async function(name,fee){const {data,error}=await window.BV_DB.from('neighborhood_fees').upsert({name,fee:Number(fee)||0,active:true},{onConflict:'name'}).select().single();if(error)throw error;return data};
-  window.BV_deleteFee=async function(id){const {error}=await window.BV_DB.from('neighborhood_fees').delete().eq('id',id);if(error)throw error};
-  window.BV_loadUsers=async function(){const {data,error}=await window.BV_DB.from('profiles').select('id,name,role,created_at').order('created_at',{ascending:false});if(error)throw error;return data||[]};
-  window.BV_setRole=async function(id,role){const {data,error}=await window.BV_DB.from('profiles').update({role}).eq('id',id).select().single();if(error)throw error;return data};
-  window.BV_createOrder=async function(o){const uid=sessionStorage.getItem('bv_user_id');if(!uid)throw new Error('Faça login para criar o pedido.');const {data,error}=await window.BV_DB.from('orders').insert({user_id:uid,customer_name:o.customer,phone:o.phone||'',address:o.address?`${o.address.rua}, ${o.address.numero}`:'',neighborhood:o.address?.bairro||'',delivery_fee:o.deliveryFee||0,subtotal:o.subtotal||o.total||0,total:o.total||0,payment_method:(o.payment||'Pix').toLowerCase()==='pix'?'pix':(o.payment||'').toLowerCase()==='dinheiro'?'dinheiro':'cartao',payment_status:o.paid?'pago':'pendente',status:o.status==='Aguardando pagamento'?'recebido':'recebido',notes:o.items||''}).select().single();if(error)throw error;return data};
-  window.BV_loadOrders=async function(){const {data,error}=await window.BV_DB.from('orders').select('*').order('created_at',{ascending:false});if(error)throw error;return data||[]};
-  window.BV_updateOrder=async function(id,status,paymentStatus){const patch={};if(status)patch.status=status;if(paymentStatus)patch.payment_status=paymentStatus;const {data,error}=await window.BV_DB.from('orders').update(patch).eq('id',id).select().single();if(error)throw error;return data};
   load();
 })();
