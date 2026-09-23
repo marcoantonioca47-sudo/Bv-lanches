@@ -334,12 +334,32 @@
   }
 
   async function addProductDB(e){
-    if(e)e.preventDefault();
-    const name=($('productName')?.value||'').trim(),price=Number($('productPrice')?.value)||0,category=$('productCategory')?.value||'Lanches',description=($('productDesc')?.value||'').trim();
-    if(!name||!description)return toast('Preencha nome, valor e descrição.');
-    const {error}=await sb.from('products').insert({name,price,category,description,active:true});
-    if(error)return toast('Erro: '+error.message);
-    await productsDB();closeProductForm();toast('Produto cadastrado no Supabase.');
+    if(e&&typeof e.preventDefault==='function')e.preventDefault();
+    try{
+      if(!admin())return toast('Somente o administrador pode cadastrar produtos.');
+      const {data:{user:currentUser}}=await sb.auth.getUser();
+      if(!currentUser)return toast('Sua sessão expirou. Faça login novamente.');
+      const name=String($('productName')?.value||'').trim();
+      const rawPrice=$('productPrice')?.value;
+      const price=Number(rawPrice);
+      const category=$('productCategory')?.value||'Lanches';
+      const description=String($('productDesc')?.value||'').trim();
+      if(!name)return toast('Informe o nome do produto.');
+      if(!Number.isFinite(price)||price<0)return toast('Informe um valor válido.');
+      if(!description)return toast('Informe a descrição do produto.');
+      const {error}=await sb.from('products').insert({name,price,category,description,active:true});
+      if(error)return toast('Erro ao cadastrar: '+error.message);
+      await productsDB();
+      if($('productName'))$('productName').value='';
+      if($('productPrice'))$('productPrice').value='';
+      if($('productCategory'))$('productCategory').value='Lanches';
+      if($('productDesc'))$('productDesc').value='';
+      closeProductForm();
+      toast('Produto cadastrado com sucesso!');
+    }catch(err){
+      console.error('Cadastro de produto:',err);
+      toast('Não foi possível cadastrar o produto.');
+    }
   }
 
   async function saveCfgDB(){
