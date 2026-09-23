@@ -21,6 +21,21 @@
     return true;
   }
 
+  async function settingsDB(){
+    const {data,error}=await sb.from('settings').select('id,fee,whatsapp').eq('id',1).maybeSingle();
+    if(error)return false;
+    if(data){
+      config.fee=Number(data.fee)||0;
+      config.wa=String(data.whatsapp||config.wa||'');
+      localStorage.bv_config=JSON.stringify(config);
+      return true;
+    }
+    const fee=Number(config.fee)||0;
+    const whatsapp=String(config.wa||'');
+    const r=await sb.from('settings').upsert({id:1,fee,whatsapp},{onConflict:'id'});
+    return !r.error;
+  }
+
   async function feesDB(){
     const {data}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true).order('name');
     if(!Array.isArray(data))return;
@@ -58,7 +73,7 @@
     try{
       const u=await user();
       if(!u)return;
-      await Promise.all([productsDB(),feesDB(),ordersDB()]);
+      await Promise.all([productsDB(),feesDB(),ordersDB(),settingsDB()]);
       if(typeof renderAdmin==='function' && (admin()||moto())) renderAdmin();
       if(typeof renderTracking==='function') renderTracking();
       if(typeof applyAccess==='function') applyAccess();
@@ -73,6 +88,7 @@
       .on('postgres_changes',{event:'*',schema:'public',table:'products'},()=>refreshRealtimeData())
       .on('postgres_changes',{event:'*',schema:'public',table:'neighborhood_fees'},()=>refreshRealtimeData())
       .on('postgres_changes',{event:'*',schema:'public',table:'profiles'},()=>refreshRealtimeData())
+      .on('postgres_changes',{event:'*',schema:'public',table:'settings'},()=>refreshRealtimeData())
       .subscribe();
   }
 
@@ -190,7 +206,9 @@
     const fee=Number($('feeCfg')?.value)||0;config.fee=fee;config.wa=$('waCfg')?.value||config.wa;
     const localFees=Object.entries(config.bairroFees||{}).map(([name,v])=>({name,fee:Number(v)||0,active:true}));
     if(localFees.length){const r=await sb.from('neighborhood_fees').upsert(localFees,{onConflict:'name'});if(r.error)return toast('Erro ao sincronizar bairros: '+r.error.message);}
-    localStorage.bv_config=JSON.stringify(config);await feesDB();toast('Configurações sincronizadas em todos os aparelhos.');
+    const sr=await sb.from('settings').upsert({id:1,fee,whatsapp:config.wa},{onConflict:'id'});
+    if(sr.error)return toast('Bairros salvos, mas as configurações gerais não foram sincronizadas: '+sr.error.message);
+    localStorage.bv_config=JSON.stringify(config);await Promise.all([settingsDB(),feesDB()]);toast('Configurações sincronizadas em todos os aparelhos.');
   }
 
   async function addFeeDB(){
@@ -332,6 +350,7 @@
   async function syncAllData(){
     try{await syncLocalAccounts()}catch(e){console.warn('Contas:',e)}
     try{await syncLocalBairros()}catch(e){console.warn('Bairros:',e)}
+    try{await settingsDB()}catch(e){console.warn('Configurações:',e)}
     try{await syncLocalProducts()}catch(e){console.warn('Produtos:',e)}
     try{await syncLocalOrders()}catch(e){console.warn('Pedidos:',e)}
     try{await Promise.all([productsDB(),feesDB(),ordersDB()])}catch(e){console.warn('Leitura Supabase:',e)}
