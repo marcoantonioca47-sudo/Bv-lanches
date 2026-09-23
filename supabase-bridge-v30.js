@@ -153,7 +153,7 @@
       motoboys=(!mr.error&&Array.isArray(mr.data))?mr.data:[];
       window.BV_MOTOBOYS=motoboys;
     }else if(isMotoProfile){
-      q=q.eq('motoboy_id',u.id).eq('status','saiu_entrega');
+      q=q.eq('motoboy_id',u.id).eq('status','em_producao');
     }else{
       q=q.eq('user_id',u.id);
     }
@@ -178,7 +178,7 @@
       payment:o.payment_method==='pix'?'Pix':o.payment_method==='cartao'?'Cartão':'Dinheiro',
       delivery:o.address?'Entrega':'Retirada',
       address:o.address?{rua:o.address,numero:'',bairro:o.neighborhood,cep:'',complemento:''}:null,
-      status:({recebido:'Novo',em_preparo:'Em preparo',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'}[o.status]||o.status),
+      status:({recebido:'Novo',em_preparo:'Em preparo',em_producao:'Em produção',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'}[o.status]||o.status),
       paid:o.payment_status==='pago',time:new Date(o.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
     }));
     localStorage.bv_orders=JSON.stringify(orders);
@@ -412,7 +412,7 @@
     toast('Pedido salvo com segurança no Supabase!');
   }
 async function statusDB(id,s){
-    const map={'Novo':'recebido','Aguardando pagamento':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
+    const map={'Novo':'recebido','Aguardando pagamento':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Em produção':'em_producao','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
     const o=orders.find(x=>x.id===id);if(!o)return;
     if(o.payment==='Pix'&&!o.paid&&s!=='Aguardando pagamento')return toast('Confirme o pagamento Pix primeiro.');
     if(s==='Saiu para entrega'&&!o.motoboy_id)return toast('Selecione um motoboy antes de enviar o pedido para entrega.');
