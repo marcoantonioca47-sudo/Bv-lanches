@@ -29,8 +29,9 @@
     }catch(e){console.warn('Limpeza local:',e)}
   }
 
-  // Limpa dados antigos antes de sincronizar novamente com o Supabase.
-  clearAllBVLocalData();
+  // Não apagar o armazenamento do Supabase a cada carregamento.
+  // A sessão persistente do Supabase fica no localStorage e é necessária
+  // para que o administrador continue autenticado entre aparelhos/reloads.
 
   async function user(){const {data}=await sb.auth.getUser();return data?.user||null}
   async function profile(){const u=await user();if(!u)return null;const {data}=await sb.from('profiles').select('id,name,role').eq('id',u.id).maybeSingle();return data||null}
