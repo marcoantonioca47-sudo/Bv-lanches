@@ -191,6 +191,8 @@
     try{
       const u=await user();
       if(!u)return;
+      const p=await profile();
+      session(u,p);
       // Uma tabela com erro não impede as demais de sincronizarem.
       await Promise.allSettled([productsDB(),feesDB(),ordersDB(),settingsDB()]);
       if(typeof renderAdmin==='function' && (admin()||moto())) renderAdmin();
