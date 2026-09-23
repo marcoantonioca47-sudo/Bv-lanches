@@ -661,6 +661,154 @@
     await usersDB();toast('Usuário excluído do sistema.');
   };
   window.changeUserRole=async(id,role)=>{if(!admin())return toast('Somente o administrador pode alterar permissões.');if(String(id)===String(sessionStorage.getItem('bv_user_id')))return toast('Você não pode alterar a própria permissão por aqui.');if(!['usuario','motoboy','administrador'].includes(role))return toast('Permissão inválida.');const {data,error}=await sb.functions.invoke('admin-user',{body:{action:'role',user_id:id,role}});if(error||!data?.ok)return toast('Não foi possível alterar a permissão: '+(data?.error||error?.message||'erro de servidor'));toast('Permissão atualizada.');await usersDB()};
+  /* BV LANCHES — camada de recuperação 2026.09.23
+     Corrige operações de bairros/taxas, evita duplicidade por diferença de maiúsculas
+     e mantém o checkout independente de RPCs antigos. */
+  const bvNormFeeName=v=>String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/\\s+/g,' ');
+  const bvEscFee=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+  async function bvReloadFeesUI(){
+    const {data,error}=await sb.from('neighborhood_fees').select('id,name,fee,active').order('name');
+    if(error){console.error('BV taxas:',error);return false;}
+    const active=(data||[]).filter(x=>x.active!==false);
+    config.bairroFees={};
+    active.forEach(x=>{config.bairroFees[String(x.name).trim().toLowerCase()]=Number(x.fee)||0;});
+    try{localStorage.bv_config=JSON.stringify(config)}catch(e){}
+    const box=$('bairroFees');
+    if(box){
+      box.innerHTML=active.map(x=>'<div class="feeRow"><div><b>'+bvEscFee(x.name)+'</b><small>'+brl(x.fee)+'</small></div><div class="feeActions"><button type="button" onclick="updateBairroFee(\''+String(x.name).replace(/\\/g,'\\\\').replace(/'/g,"\\\\'")+'\')">✏️ Editar</button><button type="button" class="feeDelete" onclick="deleteBairroFee(\''+String(x.name).replace(/\\/g,'\\\\').replace(/'/g,"\\\\'")+'\')">🗑 Excluir</button></div></div>').join('')||'<p class="muted">Nenhum bairro cadastrado.</p>';
+    }
+    return true;
+  }
+
+  window.addBairroFee=async function(){
+    const name=String($('bairroCfg')?.value||'').trim();
+    const raw=String($('bairroFeeCfg')?.value??'').trim().replace(',','.');
+    const value=Number(raw);
+    if(!name||!Number.isFinite(value)||value<0)return toast('Informe um bairro e uma taxa válida.');
+    try{
+      const {data,error}=await sb.from('neighborhood_fees').select('id,name').limit(500);
+      if(error)throw error;
+      const wanted=bvNormFeeName(name);
+      const existing=(data||[]).find(x=>bvNormFeeName(x.name)===wanted);
+      let res;
+      if(existing)res=await sb.from('neighborhood_fees').update({name:existing.name,fee:value,active:true}).eq('id',existing.id);
+      else res=await sb.from('neighborhood_fees').insert({name,fee:value,active:true});
+      if(res.error)throw res.error;
+      $('bairroCfg').value='';$('bairroFeeCfg').value='';
+      await bvReloadFeesUI();
+      if(typeof refreshNeighborhoodFee==='function')refreshNeighborhoodFee();
+      toast(existing?'Taxa do bairro atualizada.':'Bairro cadastrado com sucesso.');
+    }catch(e){console.error('BV adicionar taxa:',e);toast('Não foi possível salvar a taxa: '+(e.message||'erro no servidor'))}
+  };
+
+  window.updateBairroFee=async function(name){
+    const rawName=String(name||'').trim();
+    if(!rawName)return;
+    try{
+      const {data,error}=await sb.from('neighborhood_fees').select('id,name,fee').limit(500);
+      if(error)throw error;
+      const row=(data||[]).find(x=>bvNormFeeName(x.name)===bvNormFeeName(rawName));
+      if(!row)return toast('Bairro não encontrado no servidor.');
+      const answer=prompt('Nova taxa para '+row.name+':',String(Number(row.fee||0).toFixed(2)).replace('.',','));
+      if(answer===null)return;
+      const value=Number(String(answer).trim().replace(',','.'));
+      if(!Number.isFinite(value)||value<0)return toast('Informe uma taxa válida.');
+      const res=await sb.from('neighborhood_fees').update({fee:value,active:true}).eq('id',row.id);
+      if(res.error)throw res.error;
+      await bvReloadFeesUI();
+      if(typeof refreshNeighborhoodFee==='function')refreshNeighborhoodFee();
+      toast('Taxa atualizada com sucesso.');
+    }catch(e){console.error('BV atualizar taxa:',e);toast('Não foi possível atualizar: '+(e.message||'erro no servidor'))}
+  };
+
+  window.deleteBairroFee=async function(name){
+    const rawName=String(name||'').trim();
+    if(!rawName)return;
+    if(!confirm('Excluir a taxa do bairro '+rawName+'?'))return;
+    try{
+      const {data,error}=await sb.from('neighborhood_fees').select('id,name').limit(500);
+      if(error)throw error;
+      const row=(data||[]).find(x=>bvNormFeeName(x.name)===bvNormFeeName(rawName));
+      if(!row)return toast('Bairro já não existe no servidor.');
+      const res=await sb.from('neighborhood_fees').delete().eq('id',row.id);
+      if(res.error)throw res.error;
+      delete config.bairroFees[String(row.name).trim().toLowerCase()];
+      await bvReloadFeesUI();
+      if(typeof refreshNeighborhoodFee==='function')refreshNeighborhoodFee();
+      toast('Bairro excluído com sucesso.');
+    }catch(e){console.error('BV excluir taxa:',e);toast('Não foi possível excluir: '+(e.message||'verifique a permissão de administrador'))}
+  };
+
+  window.refreshDeliveryFeeForNeighborhood=async function(name){
+    const wanted=bvNormFeeName(name);
+    if(!wanted)return null;
+    try{
+      const {data,error}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true).limit(500);
+      if(error)throw error;
+      const row=(data||[]).find(x=>bvNormFeeName(x.name)===wanted);
+      return row?Number(row.fee)||0:Number(config.fee)||0;
+    }catch(e){console.warn('BV consulta taxa:',e);return Number(config.fee)||0}
+  };
+
+  window.refreshDeliveryFees=async function(){return bvReloadFeesUI()};
+
+  window.finish=async function(){
+    try{
+      if(!Array.isArray(cart)||!cart.length)return toast('Adicione um produto.');
+      const u=await user();
+      if(!u)return toast('Faça login para finalizar o pedido.');
+      const delivery=$('address')?.style.display!=='none';
+      const payment=localStorage.bv_payment||'Pix';
+      if(delivery&&(!$('name')?.value||!$('street')?.value||!$('num')?.value||!$('bairro')?.value))return toast('Preencha nome e endereço.');
+      if(!delivery&&!$('name')?.value)return toast('Informe seu nome.');
+      const sub=Number(subtotal())||0;
+      let f=0;
+      if(delivery){
+        f=await window.refreshDeliveryFeeForNeighborhood($('bairro').value);
+        f=Number(f)||0;
+      }
+      const coupon=String($('coupon')?.value||'').trim().toUpperCase();
+      const disc=coupon==='BV10'?sub*.1:coupon==='PRIMEIRA'?5:0;
+      const total=Math.max(0,sub+f-disc);
+      const pm=payment==='Pix'?'pix':payment==='Cartão'?'cartao':'dinheiro';
+      const {data:remote,error:prError}=await sb.from('products').select('id,name,price').eq('active',true);
+      if(prError)throw prError;
+      const items=cart.map(x=>{
+        const p=remote.find(r=>String(r.id)===String(x.id))||remote.find(r=>String(r.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
+        return {product_id:p?.id||null,product_name:x.name,quantity:Math.max(1,Number(x.q)||1),unit_price:Number(x.price)||Number(p?.price)||0};
+      });
+      const missing=items.find(x=>!x.product_id);
+      if(missing)return toast('O produto '+missing.product_name+' não está disponível.');
+      const address=delivery?String($('street').value).trim()+', '+String($('num').value).trim()+(String($('comp')?.value||'').trim()?' — '+String($('comp').value).trim():''):'';
+      const orderPayload={user_id:u.id,customer_name:String($('name').value).trim(),phone:String($('phone')?.value||'').trim(),address,neighborhood:delivery?String($('bairro').value).trim():'',delivery_fee:f,subtotal:sub,total,payment_method:pm,payment_status:payment==='Pix'?'pendente':'pago',status:'recebido',notes:coupon};
+      const ins=await sb.from('orders').insert(orderPayload).select('id,created_at').single();
+      if(ins.error)throw ins.error;
+      const orderId=ins.data.id;
+      const rows=items.map(x=>({order_id:orderId,product_id:x.product_id,product_name:x.product_name,quantity:x.quantity,unit_price:x.unit_price,total:x.unit_price*x.quantity}));
+      const ir=await sb.from('order_items').insert(rows);
+      if(ir.error){
+        await sb.from('orders').delete().eq('id',orderId);
+        throw ir.error;
+      }
+      localStorage.bv_last_order=JSON.stringify({id:orderId,phone:orderPayload.phone});
+      if(delivery)localStorage.bv_saved_address=JSON.stringify({name:orderPayload.customer_name,phone:orderPayload.phone,street:$('street').value,num:$('num').value,bairro:$('bairro').value,cep:$('cep').value,comp:$('comp').value});
+      cart=[];localStorage.bv_cart='[]';
+      await ordersDB();
+      if($('trackId'))$('trackId').value=orderId;
+      if($('trackPhone'))$('trackPhone').value=orderPayload.phone;
+      showPage('acompanhar');
+      renderTracking(orders.find(x=>String(x.id)===String(orderId)));
+      toast('Pedido finalizado com sucesso!');
+    }catch(e){
+      console.error('BV finalização geral:',e);
+      toast('Não foi possível finalizar: '+(e.message||'erro no servidor').slice(0,140));
+    }
+  };
+
+  window.change=window.change||change;
+  setTimeout(()=>{try{bvReloadFeesUI()}catch(e){}},500);
+
   window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.removeProduct=deleteProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.deleteOrder=deleteOrderDB;window.confirmPix=pixDB;window.assignMotoboy=assignMotoboyDB;window.markDeliveryFee=markDeliveryFeeDB;window.finishMotoDelivery=finishMotoDeliveryDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
   const oldLogout=window.logout;
   window.logout=async()=>{stopRealtime();try{await sb.auth.signOut()}catch(e){}if(oldLogout)oldLogout()};
