@@ -392,8 +392,18 @@
       if(delivery&&(!$('name')?.value||!$('street')?.value||!$('num')?.value||!$('bairro')?.value))return toast('Preencha nome e endereço.');
       if(!delivery&&!$('name')?.value)return toast('Informe seu nome.');
       const pm=payment==='Pix'?'pix':payment==='Cartão'?'cartao':'dinheiro';
-      const items=cart.map(x=>({product_id:x.id,quantity:Math.max(1,Number(x.q)||1)}));
-      if(items.some(x=>!x.product_id))return toast('Há um produto inválido no carrinho. Remova e adicione novamente.');
+
+      let remoteProducts=[];
+      const pr=await sb.from('products').select('id,name,price,active').eq('active',true);
+      if(pr.error)return toast('Não foi possível consultar o cardápio. Tente novamente.');
+      remoteProducts=Array.isArray(pr.data)?pr.data:[];
+      const items=cart.map(x=>{
+        const rp=remoteProducts.find(p=>String(p.id)===String(x.id))
+          ||remoteProducts.find(p=>String(p.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
+        return {product_id:rp?.id||null,quantity:Math.max(1,Number(x.q)||1)};
+      });
+      const missing=items.findIndex(x=>!x.product_id);
+      if(missing>=0)return toast('O produto '+(cart[missing]?.name||'item')+' não está disponível no cardápio.');
       const payload={
         p_customer_name:String($('name')?.value||'').trim(),
         p_phone:String($('phone')?.value||'').trim(),
@@ -405,11 +415,9 @@
       };
       const {data:orderId,error}=await sb.rpc('create_bv_order',payload);
       if(error||!orderId){
-        console.error('BV pedido RPC:',error);
-        const msg=String(error?.message||'').toLowerCase();
-        if(msg.includes('produto')||msg.includes('product'))return toast('Um produto do carrinho não está mais disponível no cardápio.');
-        if(msg.includes('auth'))return toast('Sua sessão expirou. Faça login novamente.');
-        return toast('Não foi possível finalizar o pedido. Tente novamente.');
+        console.error('BV pedido RPC:',error,payload,items);
+        const msg=String(error?.message||error?.details||error?.hint||'').replace(/\s+/g,' ').trim();
+        return toast(msg?('Erro ao finalizar: '+msg.slice(0,120)):'Não foi possível finalizar o pedido. Tente novamente.');
       }
       localStorage.bv_last_order=JSON.stringify({id:orderId,phone:payload.p_phone});
       if(delivery)localStorage.bv_saved_address=JSON.stringify({name:payload.p_customer_name,phone:payload.p_phone,street:$('street').value,num:$('num').value,bairro:$('bairro').value,cep:$('cep').value,comp:$('comp').value});
@@ -418,12 +426,11 @@
       if($('trackId'))$('trackId').value=orderId;
       if($('trackPhone'))$('trackPhone').value=payload.p_phone;
       showPage('acompanhar');
-      const created=orders.find(x=>String(x.id)===String(orderId));
-      renderTracking(created);
+      renderTracking(orders.find(x=>String(x.id)===String(orderId)));
       toast('Pedido finalizado com sucesso!');
     }catch(e){
       console.error('Finalização BV:',e);
-      toast('Não foi possível finalizar o pedido. Verifique sua conexão e tente novamente.');
+      toast('Erro ao finalizar pedido. Verifique sua conexão e tente novamente.');
     }
   }
 
