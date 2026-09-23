@@ -78,3 +78,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
 .deleteUserBtn:hover{background:linear-gradient(135deg,#e50914,#a80008);border-color:#ff3943;color:#fff;transform:translateY(-1px);box-shadow:0 7px 20px rgba(229,9,20,.2)}
 .deleteUserBtn:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
 @media(max-width:850px){.userPerm{grid-template-columns:34px minmax(0,1fr);gap:12px}.userPerm select{grid-column:2}.deleteUserBtn{grid-column:2;width:100%}}
+
+/* ===== FORMATAÇÃO DA FOTO — USUÁRIOS E CONTAS ===== */
+.permissionsPanel{max-width:700px;margin:22px auto 0;border-radius:16px;background:#111;border:1px solid #292929;overflow:hidden;box-shadow:0 16px 45px rgba(0,0,0,.32)}
+.permissionsPanel .managerHeader{padding:22px 24px;min-height:112px;background:linear-gradient(145deg,#171717,#101010);display:flex;align-items:flex-start;justify-content:space-between}
+.permissionsPanel .managerHeader h3{font-size:22px;margin:4px 0 6px}.permissionsPanel .managerHeader p{font-size:12px;margin:0;color:#969696}
+.permissionsPanel .managerHeader .pill{margin-top:48px;padding:7px 12px;background:#101717;border-color:#1c8c50;color:#fff}
+.userTools{padding:14px 24px;background:#0d0f12;border-bottom:1px solid #292929}.userTools input{height:44px;font-size:14px}
+.userPerm{display:grid!important;grid-template-columns:36px minmax(0,1fr) 175px 92px!important;align-items:center!important;gap:12px!important;min-height:82px!important;padding:15px 24px!important;background:#111!important;border-bottom:1px solid #292929!important}
+.userPerm:last-child{border-bottom:0!important}.userPerm:hover{background:#151515!important}
+.userIndex{width:30px!important;height:30px!important;border-radius:8px!important;font-size:13px!important}
+.userIdentity{min-width:0!important;overflow:hidden!important}.userIdentity b{font-size:14px!important;margin:0 0 3px!important}.userIdentity small{font-size:11px!important;color:#858b95!important}.userIdentity em{font-size:10px!important;margin-top:4px!important;padding:2px 7px!important}
+.userPerm select{height:40px!important;width:100%!important;min-width:0!important;margin:0!important;font-size:12px!important;padding:0 9px!important}
+.deleteUserBtn{height:40px!important;width:100%!important;padding:0 7px!important;border-radius:9px!important;font-size:11px!important}
+@media(max-width:850px){.permissionsPanel{max-width:100%;margin-top:14px}.permissionsPanel .managerHeader{padding:18px}.permissionsPanel .managerHeader .pill{margin-top:42px}.userTools{padding:12px 18px}.userPerm{grid-template-columns:32px minmax(0,1fr)!important;padding:14px 18px!important;gap:10px!important}.userPerm select,.deleteUserBtn{grid-column:2!important}.userPerm select{width:100%!important}.deleteUserBtn{width:100%!important}}
