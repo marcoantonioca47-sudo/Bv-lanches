@@ -20,7 +20,7 @@ function applyAccess(){
  document.querySelectorAll('.sideNav button[data-page]').forEach(btn=>{
    const p=btn.dataset.page;
    const visible=isAdmin
-     ? ['dashboard','pedidos','produtos','cupons','config'].includes(p)
+     ? ['dashboard','pedidos','produtos','cardapio','cupons','config'].includes(p)
      : isMoto
        ? ['pedidos','taxa-entrega'].includes(p)
        : isUser
