@@ -83,37 +83,57 @@
   }
 
   async function login(){
-    const email=($('email')?.value||'').trim().toLowerCase(),password=$('pass')?.value||'',err=$('err');
-    if(!email||!password){if(err)err.textContent='Digite e-mail e senha.';return}
-
-    // Primeiro tenta o Supabase. Se a conta ainda não estiver cadastrada lá,
-    // usa os usuários locais de demonstração/cadastro para não bloquear o acesso.
-    const {data,error}=await sb.auth.signInWithPassword({email,password});
-    if(!error && data?.user){
-      const p=await profile();session(data.user,p);
-      await Promise.all([productsDB(),feesDB(),ordersDB()]);
-      startRealtime();
-      $('login').style.display='none';applyAccess();
-      showPage(p?.role==='administrador'?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
-      toast('Login realizado com sucesso.');
+    const email=($('email')?.value||'').trim().toLowerCase();
+    const password=$('pass')?.value||'';
+    const err=$('err');
+    if(!email||!password){
+      if(err)err.textContent='Digite o e-mail e a senha.';
       return;
     }
 
+    // O login local é a porta de entrada principal. Assim o acesso não fica
+    // bloqueado por configuração, RLS ou indisponibilidade momentânea do Supabase.
+    let localUser=null;
     try{
       const raw=localStorage.getItem('bv_users');
       const list=raw?JSON.parse(raw):[];
-      const u=Array.isArray(list)?list.find(x=>String(x.email||'').trim().toLowerCase()===email&&String(x.pass||'')===password):null;
-      if(u){
-        sessionStorage.setItem('bv_user_id',u.id||'local-'+Date.now());
-        sessionStorage.setItem('bv_role',u.role||'usuario');
-        sessionStorage.setItem('bv','0');
-        $('login').style.display='none';
+      if(Array.isArray(list)){
+        localUser=list.find(x=>
+          String(x.email||'').trim().toLowerCase()===email &&
+          String(x.pass??'')===password
+        );
+      }
+    }catch(e){console.error('Erro lendo usuários locais:',e)}
+
+    if(localUser){
+      sessionStorage.setItem('bv_user_id',localUser.id||('local-'+Date.now()));
+      sessionStorage.setItem('bv_role',localUser.role||'usuario');
+      sessionStorage.setItem('bv','0');
+      if($('login'))$('login').style.display='none';
+      if(err)err.textContent='';
+      applyAccess();
+      const target=(localUser.role==='administrador'||localUser.role==='admin')?'dashboard':localUser.role==='motoboy'?'pedidos':'inicio';
+      showPage(target);
+      toast('Login realizado com sucesso!');
+      return;
+    }
+
+    // Se não houver usuário local, tenta a autenticação do Supabase.
+    try{
+      const {data,error}=await sb.auth.signInWithPassword({email,password});
+      if(!error && data?.user){
+        const p=await profile();
+        session(data.user,p);
+        await Promise.all([productsDB(),feesDB(),ordersDB()]);
+        startRealtime();
+        if($('login'))$('login').style.display='none';
+        if(err)err.textContent='';
         applyAccess();
-        showPage((u.role==='administrador'||u.role==='admin')?'dashboard':u.role==='motoboy'?'pedidos':'inicio');
+        showPage(p?.role==='administrador'?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
         toast('Login realizado com sucesso.');
         return;
       }
-    }catch(e){console.warn('Fallback local de login:',e)}
+    }catch(e){console.error('Supabase login:',e)}
 
     if(err)err.textContent='E-mail ou senha incorretos.';
   }
