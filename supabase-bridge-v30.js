@@ -90,7 +90,7 @@
     if(r.error){console.warn('Criação automática do perfil:',r.error.message);return null;}
     return r.data||row;
 }
-  function session(u,p){if(!u)return;const email=String(u.email||'').trim().toLowerCase();const mainAdmin=email==='marco@bvlanches.com'||email==='admin@bvlanches.com';const resolvedRole=mainAdmin?'administrador':(email==='cliente@bv.com'?'motoboy':(p?.role||'usuario'));const displayName=String(p?.name||u.user_metadata?.name||email.split('@')[0]||'Usuário').trim();sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_user_name',displayName);sessionStorage.setItem('bv_user_email',email);sessionStorage.setItem('bv_role',resolvedRole);sessionStorage.setItem('bv',resolvedRole==='administrador'?'1':'0');const nameBox=document.getElementById('loggedUserName');if(nameBox)nameBox.textContent=displayName}
+  function session(u,p){if(!u)return;const email=String(u.email||'').trim().toLowerCase();const mainAdmin=email==='marco@bvlanches.com'||email==='admin@bvlanches.com';const resolvedRole=mainAdmin?'administrador':(p?.role||(email==='cliente@bv.com'?'motoboy':'usuario'));const displayName=String(p?.name||u.user_metadata?.name||email.split('@')[0]||'Usuário').trim();sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_user_name',displayName);sessionStorage.setItem('bv_user_email',email);sessionStorage.setItem('bv_role',resolvedRole);sessionStorage.setItem('bv',resolvedRole==='administrador'?'1':'0');const nameBox=document.getElementById('loggedUserName');if(nameBox)nameBox.textContent=displayName}
 
   async function productsDB(){
     const {data,error}=await sb.from('products').select('*').order('created_at',{ascending:true});
