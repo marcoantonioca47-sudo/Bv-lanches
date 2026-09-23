@@ -235,4 +235,4 @@ window.addEventListener('load',()=>{init();$('email')?.addEventListener('keydown
   setTimeout(atualizarTaxaAgora,100);
 })();
 
-window.addEventListener('load',bindNeighborhoodFee);
+window.addEventListener('load',()=>{bindNeighborhoodFee();if($('address')?.style.display!=='none')refreshNeighborhoodFee()});
