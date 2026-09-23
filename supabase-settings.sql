@@ -84,3 +84,100 @@ begin
     end if;
   end loop;
 end $$;
+
+
+-- ============================================================
+-- PEDIDOS: cliente vê os próprios; administrador vê todos.
+-- ============================================================
+alter table public.orders enable row level security;
+alter table public.order_items enable row level security;
+alter table public.profiles enable row level security;
+
+create or replace function private.is_bv_admin()
+returns boolean
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = (select auth.uid())
+      and role in ('administrador','admin')
+  );
+$$;
+
+revoke execute on function private.is_bv_admin() from public;
+grant execute on function private.is_bv_admin() to authenticated;
+
+drop policy if exists "orders_select_own_or_admin" on public.orders;
+create policy "orders_select_own_or_admin"
+on public.orders for select
+to authenticated
+using (
+  user_id = (select auth.uid())
+  or (select private.is_bv_admin())
+);
+
+drop policy if exists "orders_insert_own" on public.orders;
+create policy "orders_insert_own"
+on public.orders for insert
+to authenticated
+with check (user_id = (select auth.uid()));
+
+drop policy if exists "orders_update_admin" on public.orders;
+create policy "orders_update_admin"
+on public.orders for update
+to authenticated
+using ((select private.is_bv_admin()))
+with check ((select private.is_bv_admin()));
+
+drop policy if exists "orders_delete_admin" on public.orders;
+create policy "orders_delete_admin"
+on public.orders for delete
+to authenticated
+using ((select private.is_bv_admin()));
+
+drop policy if exists "order_items_select_own_or_admin" on public.order_items;
+create policy "order_items_select_own_or_admin"
+on public.order_items for select
+to authenticated
+using (
+  exists (
+    select 1 from public.orders o
+    where o.id = order_items.order_id
+      and (o.user_id = (select auth.uid()) or (select private.is_bv_admin()))
+  )
+);
+
+drop policy if exists "order_items_insert_own" on public.order_items;
+create policy "order_items_insert_own"
+on public.order_items for insert
+to authenticated
+with check (
+  exists (
+    select 1 from public.orders o
+    where o.id = order_items.order_id
+      and o.user_id = (select auth.uid())
+  )
+);
+
+drop policy if exists "order_items_update_admin" on public.order_items;
+create policy "order_items_update_admin"
+on public.order_items for update
+to authenticated
+using ((select private.is_bv_admin()))
+with check ((select private.is_bv_admin()));
+
+drop policy if exists "order_items_delete_admin" on public.order_items;
+create policy "order_items_delete_admin"
+on public.order_items for delete
+to authenticated
+using ((select private.is_bv_admin()));
+
+-- PERFIS: cada usuário lê o próprio perfil; administrador lê todos.
+drop policy if exists "profiles_select_own_or_admin" on public.profiles;
+create policy "profiles_select_own_or_admin"
+on public.profiles for select
+to authenticated
+using (id = (select auth.uid()) or (select private.is_bv_admin()));
