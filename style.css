@@ -169,3 +169,31 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
     font-size:12px;
   }
 }
+
+
+/* BV LANCHES — tela de entregas do motoboy */
+.motoDeliveryPanel{margin-bottom:14px;border-color:rgba(229,9,20,.18)}
+.motoLive{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:20px;background:rgba(229,9,20,.10);border:1px solid rgba(229,9,20,.25);color:#fff;font-size:10px;font-weight:900}
+.motoDeliverySummary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.motoDeliverySummary>div{padding:13px;border:1px solid #292929;border-radius:11px;background:#0d0d0d}
+.motoDeliverySummary small{display:block;color:#8e959f;font-size:10px;margin-bottom:5px}
+.motoDeliverySummary b{font-size:18px;color:#fff}
+.motoOrder{border-color:rgba(229,9,20,.20)!important}
+.motoFeeCard{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:13px 14px;border-radius:11px;background:linear-gradient(135deg,rgba(229,9,20,.10),#101010);border:1px solid rgba(229,9,20,.18)}
+.motoFeeCard span{color:#aaa;font-size:12px;font-weight:700}
+.motoFeeCard strong{font-size:20px;color:#fff}
+.motoFeeBtn,.motoFinishBtn{width:100%;margin-top:9px;height:44px;border-radius:10px;border:1px solid #343434;font-weight:900;cursor:pointer}
+.motoFeeBtn{background:linear-gradient(135deg,#1d1d1d,#121212);color:#ffd76a;border-color:#5a4920}
+.motoFeeBtn:hover{background:#2a2514;border-color:#8a7029}
+.motoFinishBtn{background:linear-gradient(135deg,#e50914,#b90008);color:#fff;border-color:#ff2530;box-shadow:0 8px 22px rgba(229,9,20,.18)}
+.feeCollected{margin-top:9px;padding:11px 13px;border-radius:9px;background:rgba(25,212,107,.08);border:1px solid rgba(25,212,107,.20);color:#6de89c;font-size:12px;font-weight:900;text-align:center}
+.motoHint{display:block;margin-top:9px;padding:10px 12px;border-radius:9px;background:#151515;color:#858b95;font-size:11px;text-align:center}
+.motoAssign{margin-top:10px;padding:10px 12px;border:1px solid #292929;border-radius:10px;background:#0e0e0e}
+.motoAssign small{display:block;color:#8d939d;font-size:10px;font-weight:800;margin-bottom:6px}
+.motoAssign select{margin:0;width:100%;height:40px}
+@media(max-width:600px){
+  .motoDeliverySummary{grid-template-columns:1fr}
+  .motoDeliverySummary>div{display:flex;align-items:center;justify-content:space-between}
+  .motoDeliverySummary small{margin:0}
+  .motoDeliverySummary b{font-size:16px}
+}
