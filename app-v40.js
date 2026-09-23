@@ -19,14 +19,17 @@ function applyAccess(){
 
  document.querySelectorAll('.sideNav button[data-page]').forEach(btn=>{
    const p=btn.dataset.page;
-   let visible=false;
-   if(isAdmin) visible=['dashboard','pedidos','produtos','cupons','config'].includes(p);
-   else if(isMoto) visible=['pedidos','taxa-entrega'].includes(p);
-   else if(isUser) visible=['inicio','cardapio','pedido','acompanhar'].includes(p);
+   const visible=isAdmin
+     ? ['dashboard','pedidos','produtos','cupons','config'].includes(p)
+     : isMoto
+       ? ['pedidos','taxa-entrega'].includes(p)
+       : isUser
+         ? publicPages.includes(p)
+         : p==='inicio';
    btn.style.display=visible?'':'none';
  });
  document.querySelectorAll('.sideNav .navTitle').forEach(el=>el.style.display=isAdmin?'':'none');
- document.querySelectorAll('.adminHide').forEach(el=>el.style.display=isAdmin?'none':(isMoto?'none':''));
+ document.querySelectorAll('.adminHide').forEach(el=>el.style.display=isAdmin||isMoto?'none':'');
  document.querySelectorAll('.motoboyHide').forEach(el=>el.style.display=isMoto?'none':'');
  const q=$('adminQuick'); if(q) q.style.display=isAdmin?'none':'';
 
@@ -36,7 +39,7 @@ function applyAccess(){
      : isMoto ? ['pedidos','taxa-entrega'].includes(p)
      : isUser ? publicPages.includes(p)
      : p==='inicio';
-   if(!ok){ pg.style.display='none'; pg.classList.remove('activePage'); }
+   pg.classList.toggle('bvDeniedPage',!ok);
  });
 }
 function allowed(p){return moto()&&!admin()?(p==='pedidos'||p==='taxa-entrega'):(admin()||publicPages.includes(p))}
