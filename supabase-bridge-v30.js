@@ -406,6 +406,16 @@
     renderTracking(created);
     toast('Pedido salvo com segurança no Supabase!');
   }
+
+  async function notifyWhatsAppDelivery(order){
+    try{
+      if(!order?.phone||!order?.id)return {ok:false,skipped:true};
+      const {data,error}=await sb.functions.invoke('whatsapp-delivery-notify',{body:{order_id:String(order.id),customer:order.customer||'Cliente',phone:order.phone}});
+      if(error){console.warn('WhatsApp entrega:',error);return {ok:false,error:error.message||'Erro na função'};}
+      if(!data?.ok){console.warn('WhatsApp entrega:',data?.error||data);return {ok:false,error:data?.error||'WhatsApp não configurado'};}
+      return {ok:true};
+    }catch(e){console.warn('WhatsApp entrega:',e);return {ok:false,error:e?.message||'Erro'};}
+  }
 async function statusDB(id,s){
     const map={'Novo':'recebido','Aguardando pagamento':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Em produção':'em_producao','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
     const o=orders.find(x=>x.id===id);if(!o)return;
@@ -413,6 +423,12 @@ async function statusDB(id,s){
     if((s==='Em produção'||s==='Saiu para entrega')&&!o.motoboy_id)return toast('Selecione um motoboy antes de colocar este pedido para entrega.');
     const {error}=await sb.from('orders').update({status:map[s]||s}).eq('id',id);if(error)return toast('Erro ao atualizar pedido: '+error.message);
     await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();
+    if(s==='Saiu para entrega'){
+      const fresh=orders.find(x=>String(x.id)===String(id))||o;
+      const wa=await notifyWhatsAppDelivery(fresh);
+      if(wa.ok) toast('Pedido saiu para entrega e o WhatsApp do cliente foi avisado.');
+      else if(!wa.skipped) toast('Pedido saiu para entrega. WhatsApp ainda não está configurado.');
+    }
   window.renderMotoFeeOnly=function(){
     const box=document.getElementById('motoFeeOrders'); if(!box)return;
     if(!moto()||admin()){box.innerHTML='<p class="muted">Acesso exclusivo para motoboys.</p>';return}
