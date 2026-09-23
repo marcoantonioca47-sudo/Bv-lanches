@@ -90,7 +90,7 @@
     if(r.error){console.warn('Criação automática do perfil:',r.error.message);return null;}
     return r.data||row;
 }
-  function session(u,p){if(!u)return;sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_role',p?.role||'usuario');sessionStorage.setItem('bv','0')}
+  function session(u,p){if(!u)return;const email=String(u.email||'').trim().toLowerCase();const mainAdmin=email==='marco@bvlanches.com'||email==='admin@bvlanches.com';const resolvedRole=mainAdmin?'administrador':(p?.role||'usuario');sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_role',resolvedRole);sessionStorage.setItem('bv',resolvedRole==='administrador'?'1':'0')}
 
   async function productsDB(){
     const {data,error}=await sb.from('products').select('*').order('created_at',{ascending:true});
