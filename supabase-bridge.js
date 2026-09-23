@@ -124,7 +124,8 @@
     try{
       const u=await user();
       if(!u)return;
-      await Promise.all([productsDB(),feesDB(),ordersDB(),settingsDB()]);
+      // Uma tabela com erro não impede as demais de sincronizarem.
+      await Promise.allSettled([productsDB(),feesDB(),ordersDB(),settingsDB()]);
       if(typeof renderAdmin==='function' && (admin()||moto())) renderAdmin();
       if(typeof renderTracking==='function') renderTracking();
       if(typeof applyAccess==='function') applyAccess();
@@ -154,12 +155,16 @@
     if(orderPoll)clearInterval(orderPoll);
     orderPoll=setInterval(async()=>{
       try{
+        const u=await user();
+        if(!u)return;
         const p=await profile();
-        if(p&&['administrador','admin'].includes(p.role)){
-          await ordersDB();
-          if(typeof renderAdmin==='function')renderAdmin();
-        }
-      }catch(e){console.warn('Atualização automática dos pedidos:',e)}
+        await ordersDB();
+        // Produtos, taxas e configurações também são atualizados periodicamente,
+        // para que qualquer aparelho veja as mesmas informações.
+        await Promise.allSettled([productsDB(),feesDB(),settingsDB()]);
+        if(typeof renderAdmin==='function' && (p&&['administrador','admin','motoboy'].includes(p.role)))renderAdmin();
+        if(typeof renderTracking==='function')renderTracking();
+      }catch(e){console.warn('Sincronização automática BV:',e)}
     },5000);
   }
   function roleNow(){
