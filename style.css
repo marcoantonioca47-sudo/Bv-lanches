@@ -107,3 +107,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
 @media(max-width:600px){.productManageTools{align-items:stretch;flex-direction:column;padding:13px}.productManageTools select{width:100%}.feeRow{align-items:flex-start}.feeActions{flex-wrap:wrap;justify-content:flex-end}.feeActions button{height:36px}.feeRow b{font-size:13px}}
 
 .deleteOrderBtn{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;height:38px;padding:0 13px;border-radius:9px;border:1px solid #5b2026;background:#241013;color:#ff7b83;font-weight:800;font-size:11px;cursor:pointer}.deleteOrderBtn:hover{background:#e50914;border-color:#ff3943;color:#fff}.order select{margin-top:8px}
+
+/* BV LANCHES — abas do cardápio */
+.menuCategoryTabs{display:flex;gap:10px;margin:-4px 0 18px;padding:5px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:#0e0e0e;width:max-content;max-width:100%;box-shadow:0 8px 25px rgba(0,0,0,.18)}
+.menuCategoryTabs button{border:1px solid transparent;background:#171717;color:#9d9d9d;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:900;cursor:pointer;transition:.2s;min-width:130px}
+.menuCategoryTabs button:hover{color:#fff;border-color:#333;transform:translateY(-1px)}
+.menuCategoryTabs button.active{color:#fff;background:linear-gradient(135deg,#e50914,#b90008);border-color:#ff2530;box-shadow:0 7px 20px rgba(229,9,20,.2)}
+.emptyMenu{grid-column:1/-1;padding:45px 20px;text-align:center;color:#888;border:1px dashed #333;border-radius:14px;background:#101010}
+@media(max-width:520px){.menuCategoryTabs{width:100%;gap:6px}.menuCategoryTabs button{flex:1;min-width:0;padding:11px 8px;font-size:12px}}
