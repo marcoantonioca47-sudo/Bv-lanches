@@ -299,7 +299,7 @@
     const {data:o,error}=await sb.from('orders').insert({user_id:u.id,customer_name:$('name').value,phone:$('phone').value||'',address,neighborhood:delivery?$('bairro').value:'',delivery_fee:f,subtotal:sub,total,payment_method:pm,payment_status:payment==='Pix'?'pendente':'pago',status:'recebido',notes:$('coupon')?.value||''}).select().single();
     if(error)return toast('Erro ao criar pedido: '+error.message);
     const ir=await sb.from('order_items').insert(cart.map(x=>({order_id:o.id,product_id:x.id,product_name:x.name,quantity:x.q,unit_price:Number(x.price)||0,total:(Number(x.price)||0)*x.q})));
-    if(ir.error){await sb.from('orders').delete().eq('id',o.id);return toast('Erro ao salvar itens.')}
+    if(ir.error){console.error('BV pedido — INSERT order_items:',ir.error);localStorage.bv_last_order=JSON.stringify({id:o.id,phone:$('phone').value});cart=[];localStorage.bv_cart='[]';await ordersDB();if($('trackId'))$('trackId').value=o.id;if($('trackPhone'))$('trackPhone').value=$('phone').value;showPage('acompanhar');renderTracking(orders.find(x=>String(x.id)===String(o.id)));return toast('Pedido salvo, mas houve erro nos itens: '+(ir.error.message||'erro Supabase'))}
     localStorage.bv_last_order=JSON.stringify({id:o.id,phone:$('phone').value});cart=[];localStorage.bv_cart='[]';
     await ordersDB();
     if($('trackId'))$('trackId').value=o.id;if($('trackPhone'))$('trackPhone').value=$('phone').value;
