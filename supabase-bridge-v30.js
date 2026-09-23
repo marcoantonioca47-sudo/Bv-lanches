@@ -342,7 +342,7 @@
     localStorage.bv_config=JSON.stringify(config);await Promise.all([settingsDB(),feesDB()]);toast('Configurações sincronizadas em todos os aparelhos.');
   }
 
-  async function addFeeDB(){
+  async function updateFeeDB(name,fee){const oldName=String(name||'').trim();const value=Number(fee);if(!oldName||!Number.isFinite(value)||value<0)return toast('Taxa inválida.');const {error}=await sb.from('neighborhood_fees').update({fee:value,active:true}).eq('name',oldName);if(error)return toast('Erro ao atualizar bairro: '+error.message);config.bairroFees[oldName.toLowerCase()]=value;localStorage.bv_config=JSON.stringify(config);await feesDB();toast('Taxa do bairro atualizada em todos os aparelhos.')}async function deleteFeeDB(name){const oldName=String(name||'').trim();if(!oldName)return;if(!confirm('Excluir a taxa do bairro '+oldName+'?'))return;const {error}=await sb.from('neighborhood_fees').delete().eq('name',oldName);if(error)return toast('Erro ao excluir bairro: '+error.message);delete config.bairroFees[oldName.toLowerCase()];localStorage.bv_config=JSON.stringify(config);await feesDB();toast('Bairro excluído em todos os aparelhos.')}\n\nasync function addFeeDB(){
     const name=($('bairroCfg')?.value||'').trim(),fee=Number($('bairroFeeCfg')?.value)||0;
     if(!name)return toast('Informe o bairro.');
     const {error}=await sb.from('neighborhood_fees').upsert({name,fee,active:true},{onConflict:'name'});
@@ -583,7 +583,7 @@ async function statusDB(id,s){
     await usersDB();toast('Usuário excluído do sistema.');
   };
   window.changeUserRole=async(id,role)=>{const {error}=await sb.from('profiles').update({role}).eq('id',id);if(error)return toast('Não foi possível alterar a permissão.');toast('Permissão atualizada.');usersDB()};
-  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.confirmPix=pixDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
+  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.confirmPix=pixDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
   const oldLogout=window.logout;
   window.logout=async()=>{stopRealtime();try{await sb.auth.signOut()}catch(e){}if(oldLogout)oldLogout()};
 
