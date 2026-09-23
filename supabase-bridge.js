@@ -83,13 +83,14 @@
   }
 
   async function feesDB(){
-    const {data}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true).order('name');
-    if(!Array.isArray(data))return;
+    const {data,error}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true).order('name');
+    if(error||!Array.isArray(data))return false;
     config.bairroFees={};
     data.forEach(x=>config.bairroFees[String(x.name).trim().toLowerCase()]=Number(x.fee)||0);
     localStorage.bv_config=JSON.stringify(config);
     const box=$('bairroFees');
     if(box)box.innerHTML=data.map(x=>`<div class="line"><span>${x.name}</span><b>${brl(x.fee)}</b></div>`).join('')||'<p class="muted">Nenhum bairro cadastrado.</p>';
+    return true;
   }
 
   async function ordersDB(){
@@ -296,6 +297,7 @@
     if(!delivery&&!$('name')?.value)return toast('Informe seu nome.');
     const sub=subtotal(),f=delivery?fee():0,c=($('coupon')?.value||'').toUpperCase(),disc=c==='BV10'?sub*.1:c==='PRIMEIRA'?5:0,total=Math.max(0,sub+f-disc),pm=payment==='Pix'?'pix':payment==='Cartão'?'cartao':'dinheiro';
     const address=delivery?`${$('street').value}, ${$('num').value}${$('comp').value?' — '+$('comp').value:''}`:'';
+    const createdAt=new Date();
     const {error}=await sb.from('orders').insert({user_id:u.id,customer_name:$('name').value,phone:$('phone').value||'',address,neighborhood:delivery?$('bairro').value:'',delivery_fee:f,subtotal:sub,total,payment_method:pm,payment_status:payment==='Pix'?'pendente':'pago',status:'recebido',notes:$('coupon')?.value||''});
     if(error){
       console.error('BV pedido — INSERT orders:',error);
@@ -306,7 +308,6 @@
       return;
     }
     // O INSERT não usa .select(): isso elimina dependência de uma SELECT policy para criar o pedido.
-    const createdAt=new Date();
     const {data:recent,error:latestError}=await sb.from('orders')
       .select('id,created_at')
       .eq('user_id',u.id)
@@ -435,7 +436,9 @@
     const doneSet=new Set(done.map(String));
     for(const o of local){
       const legacyId=String(o.id||'');
-      if(!legacyId||doneSet.has(legacyId))continue;
+      // Registros já vindos do Supabase usam UUID. Não recriar esses pedidos.
+      const looksRemoteId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(legacyId);
+      if(!legacyId||looksRemoteId||doneSet.has(legacyId))continue;
       const statusMap={'Aguardando pagamento':'recebido','Novo':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
       const address=o.address&&typeof o.address==='object'?o.address:null;
       const currentUser=await user();
