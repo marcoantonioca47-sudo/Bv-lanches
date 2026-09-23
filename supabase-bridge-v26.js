@@ -345,61 +345,45 @@
     const delivery=$('address')?.style.display!=='none',payment=localStorage.bv_payment||'Pix';
     if(delivery&&(!$('name')?.value||!$('street')?.value||!$('num')?.value||!$('bairro')?.value))return toast('Preencha nome e endereço.');
     if(!delivery&&!$('name')?.value)return toast('Informe seu nome.');
-    const sub=subtotal(),f=delivery?fee():0,c=($('coupon')?.value||'').toUpperCase(),disc=c==='BV10'?sub*.1:c==='PRIMEIRA'?5:0,total=Math.max(0,sub+f-disc),pm=payment==='Pix'?'pix':payment==='Cartão'?'cartao':'dinheiro';
-    const address=delivery?`${$('street').value}, ${$('num').value}${$('comp').value?' — '+$('comp').value:''}`:'';
-    const createdAt=new Date();
-    const {error}=await sb.from('orders').insert({user_id:u.id,customer_name:$('name').value,phone:$('phone').value||'',address,neighborhood:delivery?$('bairro').value:'',delivery_fee:f,subtotal:sub,total,payment_method:pm,payment_status:payment==='Pix'?'pendente':'pago',status:'recebido',notes:$('coupon')?.value||''});
-    if(error){
-      console.error('BV pedido — INSERT orders:',error);
-      const msg='ERRO AO SALVAR PEDIDO: '+(error.message||error.code||error.details||'Supabase');
-      try{localStorage.setItem('bv_last_order_error',JSON.stringify({message:error.message||'',code:error.code||'',details:error.details||'',hint:error.hint||'',at:new Date().toISOString()}))}catch(e){}
-      toast(msg);
-      setTimeout(()=>{try{alert(msg)}catch(e){}},100);
-      return;
-    }
-    // O INSERT não usa .select(): isso elimina dependência de uma SELECT policy para criar o pedido.
-    const {data:recent,error:latestError}=await sb.from('orders')
-      .select('id,created_at')
-      .eq('user_id',u.id)
-      .gte('created_at',createdAt.toISOString())
-      .order('created_at',{ascending:false})
-      .limit(1);
-    if(latestError||!recent?.length){
-      console.error('BV pedido — SELECT após INSERT:',latestError);
-      return toast('PEDIDO CRIADO, MAS NÃO FOI LOCALIZADO: '+(latestError?.message||'sem registro'));
-    }
-    const o=recent[0];
-    // O carrinho pode conter IDs antigos do localStorage. Resolve pelo ID remoto ou, como fallback, pelo nome.
+    const pm=payment==='Pix'?'pix':payment==='Cartão'?'cartao':'dinheiro';
     let remoteProducts=[];
     try{
-      const pr=await sb.from('products').select('id,name,price,active');
-      if(!pr.error&&Array.isArray(pr.data))remoteProducts=pr.data;
-    }catch(e){}
+      const pr=await sb.from('products').select('id,name,price,active').eq('active',true);
+      if(pr.error)throw pr.error;
+      remoteProducts=Array.isArray(pr.data)?pr.data:[];
+    }catch(e){return toast('Não foi possível carregar o cardápio do servidor.');}
     const items=cart.map(x=>{
-      const rp=remoteProducts.find(p=>String(p.id)===String(x.id))
-        ||remoteProducts.find(p=>String(p.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
-      return {order_id:o.id,product_id:rp?.id||null,product_name:x.name,quantity:x.q,unit_price:Number(x.price)||Number(rp?.price)||0,total:(Number(x.price)||Number(rp?.price)||0)*x.q};
+      const rp=remoteProducts.find(p=>String(p.id)===String(x.id))||remoteProducts.find(p=>String(p.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
+      return {product_id:rp?.id||null,quantity:Number(x.q)||1};
     });
-    const missing=items.find((item,i)=>!item.product_id);
-    if(missing){
-      console.error('BV pedido — produto não encontrado no Supabase:',missing);
-      return toast('Produto não sincronizado no servidor: '+missing.product_name);
+    const missing=items.findIndex(x=>!x.product_id);
+    if(missing>=0)return toast('Produto não sincronizado no servidor: '+(cart[missing]?.name||'item'));
+    const payload={
+      p_customer_name:$('name').value.trim(),
+      p_phone:($('phone')?.value||'').trim(),
+      p_address:delivery?($('street').value.trim()+', '+$('num').value.trim()+($('comp')?.value.trim()?' — '+$('comp').value.trim():'')):'',
+      p_neighborhood:delivery?($('bairro').value||'').trim():'',
+      p_payment_method:pm,
+      p_coupon:($('coupon')?.value||'').trim().toUpperCase(),
+      p_items:items
+    };
+    const {data:orderId,error}=await sb.rpc('create_bv_order',payload);
+    if(error||!orderId){
+      console.error('BV pedido RPC:',error);
+      return toast('Não foi possível salvar o pedido: '+(error?.message||'erro Supabase'));
     }
-    let ir=await sb.from('order_items').insert(items);
-    if(ir.error){
-      console.error('BV pedido — INSERT order_items:',ir.error);
-      // Evita deixar pedido órfão sem itens.
-      const rollback=await sb.from('orders').delete().eq('id',o.id);
-      if(rollback.error)console.error('BV pedido — rollback:',rollback.error);
-      return toast('Não foi possível salvar os itens. O pedido foi desfeito.');
-    }
-    localStorage.bv_last_order=JSON.stringify({id:o.id,phone:$('phone').value});cart=[];localStorage.bv_cart='[]';
+    localStorage.bv_last_order=JSON.stringify({id:orderId,phone:$('phone').value||''});
+    if(delivery)localStorage.bv_saved_address=JSON.stringify({name:payload.p_customer_name,phone:payload.p_phone,street:$('street').value,num:$('num').value,bairro:$('bairro').value,cep:$('cep').value,comp:$('comp').value});
+    cart=[];localStorage.bv_cart='[]';
     await ordersDB();
-    if($('trackId'))$('trackId').value=o.id;if($('trackPhone'))$('trackPhone').value=$('phone').value;
-    showPage('acompanhar');renderTracking(orders[0]);toast('Pedido salvo no Supabase!');
+    if($('trackId'))$('trackId').value=orderId;
+    if($('trackPhone'))$('trackPhone').value=payload.p_phone;
+    showPage('acompanhar');
+    const created=orders.find(x=>String(x.id)===String(orderId));
+    renderTracking(created);
+    toast('Pedido salvo com segurança no Supabase!');
   }
-
-  async function statusDB(id,s){
+async function statusDB(id,s){
     const map={'Novo':'recebido','Aguardando pagamento':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
     const o=orders.find(x=>x.id===id);if(!o)return;
     if(o.payment==='Pix'&&!o.paid&&s!=='Aguardando pagamento')return toast('Confirme o pagamento Pix primeiro.');
