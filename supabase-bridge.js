@@ -299,7 +299,11 @@
     const {error}=await sb.from('orders').insert({user_id:u.id,customer_name:$('name').value,phone:$('phone').value||'',address,neighborhood:delivery?$('bairro').value:'',delivery_fee:f,subtotal:sub,total,payment_method:pm,payment_status:payment==='Pix'?'pendente':'pago',status:'recebido',notes:$('coupon')?.value||''});
     if(error){
       console.error('BV pedido — INSERT orders:',error);
-      return toast('ERRO AO SALVAR PEDIDO: '+(error.message||error.code||'Supabase'));
+      const msg='ERRO AO SALVAR PEDIDO: '+(error.message||error.code||error.details||'Supabase');
+      try{localStorage.setItem('bv_last_order_error',JSON.stringify({message:error.message||'',code:error.code||'',details:error.details||'',hint:error.hint||'',at:new Date().toISOString()}))}catch(e){}
+      toast(msg);
+      setTimeout(()=>{try{alert(msg)}catch(e){}},100);
+      return;
     }
     const {data:latest,error:latestError}=await sb.from('orders').select('id,created_at').eq('user_id',u.id).order('created_at',{ascending:false}).limit(1);
     if(latestError||!latest?.length){
