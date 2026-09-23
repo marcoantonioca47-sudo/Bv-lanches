@@ -77,7 +77,9 @@
     const u=await user();if(!u)return false;
     const p=await profile();
     let q=sb.from('orders').select('*,order_items(*)').order('created_at',{ascending:false});
-    if(!(p&&['administrador','motoboy'].includes(p.role)))q=q.eq('user_id',u.id);
+    // Administrador recebe todos os pedidos de todos os usuários.
+    // Cliente/usuário continua vendo somente os próprios pedidos.
+    if(!(p&&['administrador','admin','motoboy'].includes(p.role)))q=q.eq('user_id',u.id);
     const {data,error}=await q;
     if(error||!Array.isArray(data))return false;
     orders=data.map(o=>({
