@@ -615,8 +615,8 @@ async function statusDB(id,s){
     if(!uid)return toast('Usuário inválido.');
     const current=String(sessionStorage.getItem('bv_user_id')||'');
     if(current===uid)return toast('Você não pode excluir a própria conta por aqui.');
-    let list=[];try{list=JSON.parse(localStorage.getItem('bv_users')||'[]')}catch(e){list=[]}
-    const target=Array.isArray(list)?list.find(u=>String(u.id||'')===uid):null;
+    const list=Array.isArray(window.BV_USERS)?window.BV_USERS:[];
+    const target=list.find(u=>String(u.id||'')===uid);
     const label=target?.name||target?.email||'este usuário';
     if(!confirm('Excluir '+label+'?\\n\\nA conta será removida do Auth e do perfil.'))return;
     const {data,error}=await sb.functions.invoke('admin-user',{body:{action:'delete',user_id:uid}});
