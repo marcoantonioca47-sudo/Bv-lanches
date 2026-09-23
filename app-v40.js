@@ -116,3 +116,27 @@ window.addEventListener('load',()=>{init();$('email')?.addEventListener('keydown
   setTimeout(syncFees,900);
   setInterval(syncFees,10000);
 })();
+
+/* BV LANCHES 2026.09.23.10 — atualização instantânea da taxa por bairro */
+(function(){
+  const norm=v=>String(v||'').trim().toLowerCase().replace(/\\s+/g,' ');
+  function atualizarTaxaAgora(){
+    try{
+      const el=document.getElementById('bairro');
+      if(!el)return;
+      const bairro=norm(el.value);
+      let taxa=Number(config?.fee)||0;
+      const mapa=config?.bairroFees||{};
+      const chave=Object.keys(mapa).find(k=>norm(k)===bairro);
+      if(bairro && chave!=null)taxa=Number(mapa[chave])||0;
+      if(typeof renderCart==='function')renderCart();
+      const taxaEls=document.querySelectorAll('[data-delivery-fee],#deliveryFee,#taxaEntrega,.delivery-fee');
+      taxaEls.forEach(x=>x.textContent=brl(taxa));
+    }catch(e){console.warn('Taxa por bairro:',e)}
+  }
+  document.addEventListener('input',e=>{if(e.target?.id==='bairro')atualizarTaxaAgora()},true);
+  document.addEventListener('change',e=>{if(e.target?.id==='bairro')atualizarTaxaAgora()},true);
+  document.addEventListener('blur',e=>{if(e.target?.id==='bairro')atualizarTaxaAgora()},true);
+  window.atualizarTaxaEntrega=atualizarTaxaAgora;
+  setTimeout(atualizarTaxaAgora,100);
+})();
