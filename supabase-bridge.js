@@ -18,16 +18,48 @@
     sessionStorage.clear();
   }
 
-  function clearAllBVLocalData(){
+  async function clearAllBVLocalData(){
+    // Limpa somente o cache/dados locais do aplicativo. Os dados do Supabase
+    // não são apagados e a sessão de autenticação continua preservada.
     try{
+      const keep=['supabase.auth.token'];
       Object.keys(localStorage).forEach(k=>{
-        if(/^bv/i.test(k)||/^supabase/i.test(k)||/^supa/i.test(k)) localStorage.removeItem(k);
+        const isBV=/^bv/i.test(k);
+        const isSupabase=/^supabase|^supa/i.test(k);
+        if(isBV || (isSupabase && !keep.includes(k))) localStorage.removeItem(k);
       });
       Object.keys(sessionStorage).forEach(k=>{
         if(/^bv/i.test(k)||/^supabase/i.test(k)||/^supa/i.test(k)) sessionStorage.removeItem(k);
       });
+
+      // Zera também o estado em memória que foi carregado antes deste arquivo.
+      try{if(typeof orders!=='undefined')orders=[]}catch(e){}
+      try{if(typeof cart!=='undefined')cart=[]}catch(e){}
+      try{if(typeof config!=='undefined')config={fee:5,wa:'5531984595968',bairroFees:{}}}catch(e){}
+      try{if(typeof saved!=='undefined')saved=null}catch(e){}
+
+      // Remove Cache Storage e service workers antigos, quando existirem.
+      if(window.caches&&caches.keys){
+        const names=await caches.keys();
+        await Promise.all(names.map(n=>caches.delete(n)));
+      }
+      if(navigator.serviceWorker?.getRegistrations){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+      }
     }catch(e){console.warn('Limpeza local:',e)}
   }
+
+  // Limpeza única do cache antigo do aplicativo. Não remove pedidos do banco.
+  // O marcador usa uma versão nova para garantir que aparelhos que já abriram
+  // versões anteriores também sejam higienizados uma vez.
+  (async()=>{
+    const mark='bv_cache_cleanup_v2';
+    if(localStorage.getItem(mark)==='1')return;
+    await clearAllBVLocalData();
+    localStorage.setItem(mark,'1');
+    console.info('BV Lanches: cache local antigo limpo. Dados do Supabase preservados.');
+  })();
 
   // Não apagar o armazenamento do Supabase a cada carregamento.
   // A sessão persistente do Supabase fica no localStorage e é necessária
