@@ -3,6 +3,7 @@
   if(!window.supabase || !window.BV_SUPABASE_CONFIG) return;
   const sb=window.supabase.createClient(BV_SUPABASE_CONFIG.url,BV_SUPABASE_CONFIG.publishableKey);
   window.BV_SUPABASE=sb;
+  window.BV_DB_READY=true;
   const $=id=>document.getElementById(id);
   let syncing=false;
   let realtimeChannel=null;
