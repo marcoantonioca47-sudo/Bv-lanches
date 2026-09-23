@@ -126,9 +126,8 @@
   }
 
   function stopRealtime(){
-    if(!realtimeChannel)return;
-    sb.removeChannel(realtimeChannel);
-    realtimeChannel=null;
+    if(realtimeChannel){sb.removeChannel(realtimeChannel);realtimeChannel=null;}
+    if(orderPoll){clearInterval(orderPoll);orderPoll=null;}
   }
 
   let orderPoll=null;
@@ -149,123 +148,84 @@
     const email=($('email')?.value||'').trim().toLowerCase();
     const password=$('pass')?.value||'';
     const err=$('err');
-    if(!email||!password){
-      if(err)err.textContent='Digite o e-mail e a senha.';
-      return;
-    }
+    if(!email||!password){if(err)err.textContent='Digite o e-mail e a senha.';return;}
 
-    // LOGIN LOCAL PRIMEIRO: garante que o acesso de demonstração funcione
-    // mesmo que o Supabase/RLS esteja com problema ou que exista cadastro antigo
-    // no navegador.
-    let localUser=null;
+    // A partir daqui a autenticação do Supabase é a fonte oficial.
+    // O login local antigo não pode liberar uma conta administrativa sem sessão
+    // real, porque pedidos de outros aparelhos dependem dessa sessão + RLS.
     try{
-      let list=[];
-      if(typeof window.users==='function'){
-        list=window.users();
-      }else{
-        const raw=localStorage.getItem('bv_users');
-        list=raw?JSON.parse(raw):[];
-      }
-      if(!Array.isArray(list))list=[];
-
-      // Reforça os dois acessos padrão, inclusive se um cadastro antigo
-      // tiver sido salvo no navegador com senha diferente.
-      const defaults=[
-        {id:'admin-marco',name:'Administrador',email:'admin@bvlanches.com',pass:'BV123456',role:'administrador'},
-        {id:'user-demo',name:'Usuário',email:'cliente@bvlanches.com',pass:'BV123456',role:'usuario'}
-      ];
-      defaults.forEach(d=>{
-        const i=list.findIndex(x=>String(x.email||'').trim().toLowerCase()===d.email);
-        if(i<0) list.push({...d});
-        else {
-          list[i].id=list[i].id||d.id;
-          list[i].name=list[i].name||d.name;
-          list[i].pass=d.pass;
-          list[i].role=list[i].role||d.role;
-        }
-      });
-      localStorage.setItem('bv_users',JSON.stringify(list));
-
-      localUser=list.find(x=>
-        String(x.email||'').trim().toLowerCase()===email &&
-        String(x.pass??'')===password
-      );
-    }catch(e){console.error('Erro lendo usuários locais:',e)}
-
-    if(localUser && (localUser.supabase===true || (String(localUser.id||'').length===36))){
-      try{
-        const {data,error}=await sb.auth.signInWithPassword({email,password});
-        if(!error && data?.user){
-          const p=await profile();
-          session(data.user,p);
-          await syncAllData();startRealtime();
-          if($('login'))$('login').style.display='none';
-          if(err)err.textContent='';
-          applyAccess();
-          showPage(p?.role==='administrador'?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
-          toast('Login realizado com sucesso!');
-          return;
-        }
-      }catch(e){console.warn('Login Supabase; usando sessão local:',e)}
-    }
-
-    if(localUser){
-      // Migra a conta local e, quando possível, cria uma sessão real do Supabase.
-      // Isso é o que permite que configurações, pedidos e permissões sejam
-      // realmente compartilhados entre aparelhos.
-      try{
-        await syncLocalAccounts();
-        const migrated=JSON.parse(localStorage.getItem('bv_users')||'[]').find(x=>String(x.email||'').toLowerCase()===email);
-        const authTry=await sb.auth.signInWithPassword({email,password});
-        if(!authTry.error && authTry.data?.user){
-          const p=await profile();
-          session(authTry.data.user,p);
-          await syncAllData();startRealtime();
-          if($('login'))$('login').style.display='none';
-          if(err)err.textContent='';
-          applyAccess();
-          const target=(p?.role==='administrador'||p?.role==='admin')?'dashboard':p?.role==='motoboy'?'pedidos':'inicio';
-          showPage(target);
-          toast('Login realizado e sincronizado com o Supabase!');
-          return;
-        }
-        console.warn('Conta local ainda sem sessão Supabase:',authTry.error?.message||'sem sessão');
-      }catch(e){console.warn('Migração/login Supabase:',e)}
-      
-      // Fallback somente quando a conta ainda não pode autenticar no Supabase.
-      sessionStorage.setItem('bv_user_id',localUser.id||('local-'+Date.now()));
-      sessionStorage.setItem('bv_role',localUser.role||'usuario');
-      sessionStorage.setItem('bv','0');
-      if($('login'))$('login').style.display='none';
-      if(err)err.textContent='';
-      applyAccess();
-      const target=(localUser.role==='administrador'||localUser.role==='admin')?'dashboard':localUser.role==='motoboy'?'pedidos':'inicio';
-      showPage(target);
-      await syncAllData();startRealtime();
-      toast('Login realizado localmente. A conta precisa ser autenticada no Supabase para sincronização completa.');
-      return;
-    }
-
-    // Se não houver usuário local, tenta a autenticação do Supabase.
-    try{
-      const {data,error}=await sb.auth.signInWithPassword({email,password});
-      if(!error && data?.user){
+      const auth=await sb.auth.signInWithPassword({email,password});
+      if(!auth.error&&auth.data?.user){
         const p=await profile();
-        session(data.user,p);
-        await Promise.all([productsDB(),feesDB(),ordersDB(),settingsDB()]);
+        session(auth.data.user,p);
+        await syncAllData();
         startRealtime();
         if($('login'))$('login').style.display='none';
         if(err)err.textContent='';
         applyAccess();
-        showPage(p?.role==='administrador'?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
-        toast('Login realizado com sucesso.');
+        const target=(p?.role==='administrador'||p?.role==='admin')?'dashboard':p?.role==='motoboy'?'pedidos':'inicio';
+        showPage(target);
+        toast('Login realizado e sincronizado com o Supabase!');
         return;
       }
-    }catch(e){console.error('Supabase login:',e)}
+      const authMsg=auth.error?.message||'Falha na autenticação.';
+      
+      // Compatibilidade: contas antigas que só existiam no navegador são
+      // migradas para o Auth. Se o projeto exigir confirmação de e-mail,
+      // não liberamos o fallback local, pois ele não funciona entre aparelhos.
+      let localUser=null;
+      try{
+        const list=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]');
+        if(Array.isArray(list))localUser=list.find(x=>String(x.email||'').trim().toLowerCase()===email&&String(x.pass??'')===password)||null;
+      }catch(e){}
 
-    if(err)err.textContent='E-mail ou senha incorretos.';
+      if(localUser){
+        const mig=await sb.auth.signUp({email,password,options:{data:{name:localUser.name||'Usuário'}}});
+        if(mig.error){
+          // Já existe no Auth: tenta novamente para devolver o erro real ao usuário.
+          const retry=await sb.auth.signInWithPassword({email,password});
+          if(!retry.error&&retry.data?.user){
+            const p=await profile();
+            session(retry.data.user,p);
+            await syncAllData();startRealtime();
+            if($('login'))$('login').style.display='none';
+            if(err)err.textContent='';
+            applyAccess();
+            showPage((p?.role==='administrador'||p?.role==='admin')?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
+            toast('Login realizado e sincronizado com o Supabase!');
+            return;
+          }
+          const msg=retry.error?.message||mig.error?.message||authMsg;
+          if(err)err.textContent='Esta conta ainda não está autenticada no Supabase: '+msg;
+          return;
+        }
+        if(mig.data?.user){
+          const pr=await sb.from('profiles').upsert({id:mig.data.user.id,name:localUser.name||'Usuário',role:localUser.role||'usuario'});
+          if(pr.error){if(err)err.textContent='Conta criada, mas o perfil não foi salvo: '+pr.error.message;return;}
+          if(mig.data.session){
+            session(mig.data.user,{id:mig.data.user.id,name:localUser.name||'Usuário',role:localUser.role||'usuario'});
+            localUser.id=mig.data.user.id;localUser.supabase=true;
+            const list=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]');
+            const idx=Array.isArray(list)?list.findIndex(x=>String(x.email||'').toLowerCase()===email):-1;
+            if(idx>=0){list[idx]=localUser;localStorage.setItem('bv_users',JSON.stringify(list));}
+            await syncAllData();startRealtime();
+            if($('login'))$('login').style.display='none';
+            if(err)err.textContent='';
+            applyAccess();
+            showPage((localUser.role==='administrador'||localUser.role==='admin')?'dashboard':localUser.role==='motoboy'?'pedidos':'inicio');
+            toast('Conta migrada e sincronizada!');
+            return;
+          }
+          if(err)err.textContent='A conta foi criada no Supabase, mas o e-mail precisa ser confirmado antes do primeiro acesso. Verifique sua caixa de entrada.';
+          return;
+        }
+      }
+      if(err)err.textContent='E-mail ou senha incorretos. Verifique a conta no Supabase.';
+    }catch(e){
+      console.error('Login Supabase:',e);
+      if(err)err.textContent='Não foi possível autenticar no Supabase. Tente novamente.';
+    }
   }
-
   async function register(e){
     if(e)e.preventDefault();
     const name=($('registerName')?.value||'').trim(),email=($('registerEmail')?.value||'').trim().toLowerCase(),password=$('registerPass')?.value||'',password2=$('registerPass2')?.value||'',err=$('registerErr');
