@@ -114,6 +114,7 @@ window.addEventListener('load',()=>{init();$('email')?.addEventListener('keydown
       return '<div class="order"><div class="line"><b>#'+esc(o.id)+' — '+esc(o.customer)+'</b><span class="status">'+esc(o.status)+'</span></div><p><b>Itens:</b> '+esc(o.items)+'</p><p>📍 '+adr+'</p><p>💳 '+esc(o.payment)+(o.paid?' · Pago':'')+'</p><div class="orderMeta"><span>'+esc(o.phone||'Sem telefone')+'</span><span>'+brl(o.total)+'</span><span>Taxa '+brl(o.deliveryFee||0)+'</span></div>'+assign+'<select onchange="statusOrder(\''+String(o.id).replace(/'/g,"\\'")+'\',this.value)">'+opts+'</select><button class="deleteOrderBtn" type="button" onclick="deleteOrder(\''+String(o.id).replace(/'/g,"\\'")+'\')">🗑 Excluir pedido</button>'+(o.payment==='Pix'&&!o.paid?'<button class="confirmPix" onclick="confirmPix(\''+String(o.id).replace(/'/g,"\\'")+'\')">✅ Confirmar Pix</button>':'')+'</div>';
     }).join('');
   }
+  window.renderFilteredOrders=renderFilteredOrders;
   window.clearOrderFilters=function(){['orderSearch','orderStatusFilter','orderPaymentFilter','orderDateFilter'].forEach(id=>{const x=document.getElementById(id);if(x)x.value=''});renderFilteredOrders()};
   ['orderSearch','orderStatusFilter','orderPaymentFilter','orderDateFilter'].forEach(id=>{document.addEventListener('input',e=>{if(e.target&&e.target.id===id)renderFilteredOrders()});document.addEventListener('change',e=>{if(e.target&&e.target.id===id)renderFilteredOrders()})});
   const oldRender=window.renderAdmin;
