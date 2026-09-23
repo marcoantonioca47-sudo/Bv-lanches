@@ -809,7 +809,7 @@
   window.change=window.change||change;
   setTimeout(()=>{try{bvReloadFeesUI()}catch(e){}},500);
 
-  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.removeProduct=deleteProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.deleteOrder=deleteOrderDB;window.confirmPix=pixDB;window.assignMotoboy=assignMotoboyDB;window.markDeliveryFee=markDeliveryFeeDB;window.finishMotoDelivery=finishMotoDeliveryDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
+  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.removeProduct=deleteProductDB;window.saveCfg=saveCfgDB;/* As funções de bairros/taxas da camada de recuperação ficam ativas. Não sobrescrever com as rotinas antigas. */window.statusOrder=statusDB;window.deleteOrder=deleteOrderDB;window.confirmPix=pixDB;window.assignMotoboy=assignMotoboyDB;window.markDeliveryFee=markDeliveryFeeDB;window.finishMotoDelivery=finishMotoDeliveryDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
   const oldLogout=window.logout;
   window.logout=async()=>{stopRealtime();try{await sb.auth.signOut()}catch(e){}if(oldLogout)oldLogout()};
 
