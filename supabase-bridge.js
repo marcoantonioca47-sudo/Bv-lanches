@@ -11,13 +11,26 @@
   function clearLocalData(){
     const keys=[
       'bv_users','bv_products','bv_orders','bv_cart','bv_config',
-      'bv_saved_address','bv_synced_orders'
+      'bv_saved_address','bv_synced_orders','bv_profile','bv_session',
+      'bv_current_user','bv_current_order','bv_bairroFees','bv_settings'
     ];
     keys.forEach(k=>localStorage.removeItem(k));
-    sessionStorage.removeItem('bv_user_id');
-    sessionStorage.removeItem('bv_role');
-    sessionStorage.removeItem('bv');
+    sessionStorage.clear();
   }
+
+  function clearAllBVLocalData(){
+    try{
+      Object.keys(localStorage).forEach(k=>{
+        if(/^bv/i.test(k)||/^supabase/i.test(k)||/^supa/i.test(k)) localStorage.removeItem(k);
+      });
+      Object.keys(sessionStorage).forEach(k=>{
+        if(/^bv/i.test(k)||/^supabase/i.test(k)||/^supa/i.test(k)) sessionStorage.removeItem(k);
+      });
+    }catch(e){console.warn('Limpeza local:',e)}
+  }
+
+  // Limpa dados antigos antes de sincronizar novamente com o Supabase.
+  clearAllBVLocalData();
 
   async function user(){const {data}=await sb.auth.getUser();return data?.user||null}
   async function profile(){const u=await user();if(!u)return null;const {data}=await sb.from('profiles').select('id,name,role').eq('id',u.id).maybeSingle();return data||null}
