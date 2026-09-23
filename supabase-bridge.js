@@ -84,14 +84,38 @@
 
   async function login(){
     const email=($('email')?.value||'').trim().toLowerCase(),password=$('pass')?.value||'',err=$('err');
+    if(!email||!password){if(err)err.textContent='Digite e-mail e senha.';return}
+
+    // Primeiro tenta o Supabase. Se a conta ainda não estiver cadastrada lá,
+    // usa os usuários locais de demonstração/cadastro para não bloquear o acesso.
     const {data,error}=await sb.auth.signInWithPassword({email,password});
-    if(error){if(err)err.textContent='E-mail ou senha incorretos.';return}
-    const p=await profile();session(data.user,p);
-    await Promise.all([productsDB(),feesDB(),ordersDB()]);
-    startRealtime();
-    $('login').style.display='none';applyAccess();
-    showPage(p?.role==='administrador'?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
-    toast('Login realizado com sucesso.');
+    if(!error && data?.user){
+      const p=await profile();session(data.user,p);
+      await Promise.all([productsDB(),feesDB(),ordersDB()]);
+      startRealtime();
+      $('login').style.display='none';applyAccess();
+      showPage(p?.role==='administrador'?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
+      toast('Login realizado com sucesso.');
+      return;
+    }
+
+    try{
+      const raw=localStorage.getItem('bv_users');
+      const list=raw?JSON.parse(raw):[];
+      const u=Array.isArray(list)?list.find(x=>String(x.email||'').trim().toLowerCase()===email&&String(x.pass||'')===password):null;
+      if(u){
+        sessionStorage.setItem('bv_user_id',u.id||'local-'+Date.now());
+        sessionStorage.setItem('bv_role',u.role||'usuario');
+        sessionStorage.setItem('bv','0');
+        $('login').style.display='none';
+        applyAccess();
+        showPage((u.role==='administrador'||u.role==='admin')?'dashboard':u.role==='motoboy'?'pedidos':'inicio');
+        toast('Login realizado com sucesso.');
+        return;
+      }
+    }catch(e){console.warn('Fallback local de login:',e)}
+
+    if(err)err.textContent='E-mail ou senha incorretos.';
   }
 
   async function register(e){
