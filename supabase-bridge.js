@@ -186,15 +186,19 @@
   }
 
   async function saveCfgDB(){
-    const fee=Number($('feeCfg')?.value)||0;config.fee=fee;config.wa=$('waCfg')?.value||config.wa;localStorage.bv_config=JSON.stringify(config);await feesDB();toast('Configurações sincronizadas.');
+    const fee=Number($('feeCfg')?.value)||0;config.fee=fee;config.wa=$('waCfg')?.value||config.wa;
+    const localFees=Object.entries(config.bairroFees||{}).map(([name,v])=>({name,fee:Number(v)||0,active:true}));
+    if(localFees.length){const r=await sb.from('neighborhood_fees').upsert(localFees,{onConflict:'name'});if(r.error)return toast('Erro ao sincronizar bairros: '+r.error.message);}
+    localStorage.bv_config=JSON.stringify(config);await feesDB();toast('Configurações sincronizadas em todos os aparelhos.');
   }
 
   async function addFeeDB(){
     const name=($('bairroCfg')?.value||'').trim(),fee=Number($('bairroFeeCfg')?.value)||0;
     if(!name)return toast('Informe o bairro.');
     const {error}=await sb.from('neighborhood_fees').upsert({name,fee,active:true},{onConflict:'name'});
-    if(error)return toast('Erro: '+error.message);
-    $('bairroCfg').value='';$('bairroFeeCfg').value='';await feesDB();toast('Bairro salvo no Supabase.');
+    if(error)return toast('Erro ao salvar bairro no servidor: '+error.message);
+    config.bairroFees[String(name).toLowerCase()]=fee;localStorage.bv_config=JSON.stringify(config);
+    $('bairroCfg').value='';$('bairroFeeCfg').value='';await feesDB();toast('Bairro sincronizado em todos os aparelhos.');
   }
 
   async function finishDB(){
@@ -243,8 +247,33 @@
     }).join('');
   }
 
+  async function syncLocalAccounts(){
+    let local=[];try{local=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]')}catch(e){local=[]}
+    if(!Array.isArray(local)||!local.length)return;
+    const {data:current}=await sb.auth.getSession();const original=current?.session||null;
+    let changed=false;
+    for(const u of local){
+      if(!u.email||!u.pass||u.id&&String(u.id).length===36)continue;
+      const {data,error}=await sb.auth.signUp({email:u.email,password:u.pass,options:{data:{name:u.name||'Usuário'}}});
+      if(!error&&data?.user){
+        u.id=data.user.id;changed=true;
+        await sb.from('profiles').upsert({id:data.user.id,name:u.name||'Usuário',role:u.role||'usuario'});
+        if(data.session&&original)await sb.auth.setSession({access_token:original.access_token,refresh_token:original.refresh_token});
+      }
+    }
+    if(changed)localStorage.setItem('bv_users',JSON.stringify(local));
+  }
+
+  async function syncLocalBairros(){
+    const local=config?.bairroFees||{};const rows=Object.entries(local).map(([name,fee])=>({name,fee:Number(fee)||0,active:true}));
+    if(!rows.length)return;
+    const r=await sb.from('neighborhood_fees').upsert(rows,{onConflict:'name'});
+    if(!r.error)await feesDB();
+  }
+
   async function usersDB(){
     const box=$('userPermissions');if(!box)return;
+    try{await syncLocalAccounts();await syncLocalBairros()}catch(e){console.warn('Sincronização inicial:',e)}
     const q=String($('userSearch')?.value||'').trim().toLowerCase();
 
     // Primeiro mostra imediatamente os usuários locais. Assim a tela nunca fica vazia
