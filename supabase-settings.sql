@@ -51,7 +51,7 @@ drop policy if exists "settings_update_authenticated" on public.settings;
 
 create policy "settings_select_authenticated"
 on public.settings for select
-to authenticated
+to anon, authenticated
 using (true);
 
 create policy "settings_insert_admin"
