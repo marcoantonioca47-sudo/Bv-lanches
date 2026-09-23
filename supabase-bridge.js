@@ -113,6 +113,7 @@
   }
 
   function startRealtime(){
+    startOrderPolling();
     if(realtimeChannel) return;
     realtimeChannel=sb.channel('bv-lanches-realtime')
       .on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>refreshRealtimeData())
@@ -128,6 +129,20 @@
     if(!realtimeChannel)return;
     sb.removeChannel(realtimeChannel);
     realtimeChannel=null;
+  }
+
+  let orderPoll=null;
+  function startOrderPolling(){
+    if(orderPoll)clearInterval(orderPoll);
+    orderPoll=setInterval(async()=>{
+      const r=roleNow();
+      if(r==='administrador'||r==='admin'){
+        try{await ordersDB();if(typeof renderAdmin==='function')renderAdmin()}catch(e){console.warn('Atualização automática dos pedidos:',e)}
+      }
+    },5000);
+  }
+  function roleNow(){
+    return sessionStorage.getItem('bv_role')||'';
   }
 
   async function login(){
