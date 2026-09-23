@@ -54,9 +54,12 @@
   // O marcador usa uma versão nova para garantir que aparelhos que já abriram
   // versões anteriores também sejam higienizados uma vez.
   (async()=>{
-    const mark='bv_cache_cleanup_v2';
+    const mark='bv_cache_cleanup_v3';
     if(localStorage.getItem(mark)==='1')return;
     await clearAllBVLocalData();
+    // Limpa especificamente qualquer rastro de pedidos antigos do navegador.
+    ['bv_orders','bv_synced_orders','bv_last_order','bv_last_order_error','bv_current_order'].forEach(k=>localStorage.removeItem(k));
+    try{if(typeof orders!=='undefined')orders=[]}catch(e){}
     localStorage.setItem(mark,'1');
     console.info('BV Lanches: cache local antigo limpo. Dados do Supabase preservados.');
   })();
