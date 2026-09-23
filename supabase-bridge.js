@@ -296,8 +296,17 @@
     if(!delivery&&!$('name')?.value)return toast('Informe seu nome.');
     const sub=subtotal(),f=delivery?fee():0,c=($('coupon')?.value||'').toUpperCase(),disc=c==='BV10'?sub*.1:c==='PRIMEIRA'?5:0,total=Math.max(0,sub+f-disc),pm=payment==='Pix'?'pix':payment==='Cartão'?'cartao':'dinheiro';
     const address=delivery?`${$('street').value}, ${$('num').value}${$('comp').value?' — '+$('comp').value:''}`:'';
-    const {data:o,error}=await sb.from('orders').insert({user_id:u.id,customer_name:$('name').value,phone:$('phone').value||'',address,neighborhood:delivery?$('bairro').value:'',delivery_fee:f,subtotal:sub,total,payment_method:pm,payment_status:payment==='Pix'?'pendente':'pago',status:'recebido',notes:$('coupon')?.value||''}).select().single();
-    if(error)return toast('Erro ao criar pedido: '+error.message);
+    const {error}=await sb.from('orders').insert({user_id:u.id,customer_name:$('name').value,phone:$('phone').value||'',address,neighborhood:delivery?$('bairro').value:'',delivery_fee:f,subtotal:sub,total,payment_method:pm,payment_status:payment==='Pix'?'pendente':'pago',status:'recebido',notes:$('coupon')?.value||''});
+    if(error){
+      console.error('BV pedido — INSERT orders:',error);
+      return toast('ERRO AO SALVAR PEDIDO: '+(error.message||error.code||'Supabase'));
+    }
+    const {data:latest,error:latestError}=await sb.from('orders').select('id,created_at').eq('user_id',u.id).order('created_at',{ascending:false}).limit(1);
+    if(latestError||!latest?.length){
+      console.error('BV pedido — SELECT após INSERT:',latestError);
+      return toast('PEDIDO SALVO, MAS NÃO FOI POSSÍVEL LOCALIZAR: '+(latestError?.message||'sem registro'));
+    }
+    const o=latest[0];
     const ir=await sb.from('order_items').insert(cart.map(x=>({order_id:o.id,product_id:x.id,product_name:x.name,quantity:x.q,unit_price:Number(x.price)||0,total:(Number(x.price)||0)*x.q})));
     if(ir.error){console.error('BV pedido — INSERT order_items:',ir.error);localStorage.bv_last_order=JSON.stringify({id:o.id,phone:$('phone').value});cart=[];localStorage.bv_cart='[]';await ordersDB();if($('trackId'))$('trackId').value=o.id;if($('trackPhone'))$('trackPhone').value=$('phone').value;showPage('acompanhar');renderTracking(orders.find(x=>String(x.id)===String(o.id)));return toast('Pedido salvo, mas houve erro nos itens: '+(ir.error.message||'erro Supabase'))}
     localStorage.bv_last_order=JSON.stringify({id:o.id,phone:$('phone').value});cart=[];localStorage.bv_cart='[]';
