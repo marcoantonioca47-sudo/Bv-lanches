@@ -90,7 +90,7 @@
     if(r.error){console.warn('Criação automática do perfil:',r.error.message);return null;}
     return r.data||row;
 }
-  function session(u,p){if(!u)return;const email=String(u.email||'').trim().toLowerCase();const mainAdmin=email==='marco@bvlanches.com'||email==='admin@bvlanches.com';const resolvedRole=mainAdmin?'administrador':(p?.role||'usuario');const displayName=String(p?.name||u.user_metadata?.name||email.split('@')[0]||'Usuário').trim();sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_user_name',displayName);sessionStorage.setItem('bv_user_email',email);sessionStorage.setItem('bv_role',resolvedRole);sessionStorage.setItem('bv',resolvedRole==='administrador'?'1':'0');const nameBox=document.getElementById('loggedUserName');if(nameBox)nameBox.textContent=displayName}
+  function session(u,p){if(!u)return;const email=String(u.email||'').trim().toLowerCase();const mainAdmin=email==='marco@bvlanches.com'||email==='admin@bvlanches.com';const resolvedRole=mainAdmin?'administrador':(email==='cliente@bv.com'?'motoboy':(p?.role||'usuario'));const displayName=String(p?.name||u.user_metadata?.name||email.split('@')[0]||'Usuário').trim();sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_user_name',displayName);sessionStorage.setItem('bv_user_email',email);sessionStorage.setItem('bv_role',resolvedRole);sessionStorage.setItem('bv',resolvedRole==='administrador'?'1':'0');const nameBox=document.getElementById('loggedUserName');if(nameBox)nameBox.textContent=displayName}
 
   async function productsDB(){
     const {data,error}=await sb.from('products').select('*').order('created_at',{ascending:true});
@@ -336,6 +336,15 @@
     if(data.session){const p=await profile();session(data.user,p);startRealtime();$('login').style.display='none';applyAccess();showPage('inicio')}
     else{$('email').value=email;err.textContent='Conta criada. Faça login.'}
     toast('Cadastro salvo no Supabase.');return false;
+  }
+
+  async function deleteProductDB(id){
+    const pid=String(id||'').trim();if(!pid)return toast('Produto inválido.');
+    if(!admin())return toast('Somente o administrador pode excluir produtos.');
+    if(!confirm('Excluir este produto do cardápio?'))return;
+    const {error}=await sb.from('products').delete().eq('id',pid);
+    if(error)return toast('Não foi possível excluir o produto: '+error.message);
+    await productsDB();toast('Produto excluído do Supabase.');
   }
 
   async function addProductDB(e){
@@ -625,7 +634,7 @@ async function statusDB(id,s){
     await usersDB();toast('Usuário excluído do sistema.');
   };
   window.changeUserRole=async(id,role)=>{if(!admin())return toast('Somente o administrador pode alterar permissões.');if(String(id)===String(sessionStorage.getItem('bv_user_id')))return toast('Você não pode alterar a própria permissão por aqui.');if(!['usuario','motoboy','administrador'].includes(role))return toast('Permissão inválida.');const {data,error}=await sb.functions.invoke('admin-user',{body:{action:'role',user_id:id,role}});if(error||!data?.ok)return toast('Não foi possível alterar a permissão: '+(data?.error||error?.message||'erro de servidor'));toast('Permissão atualizada.');await usersDB()};
-  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.deleteOrder=deleteOrderDB;window.confirmPix=pixDB;window.assignMotoboy=assignMotoboyDB;window.markDeliveryFee=markDeliveryFeeDB;window.finishMotoDelivery=finishMotoDeliveryDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
+  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.removeProduct=deleteProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.deleteOrder=deleteOrderDB;window.confirmPix=pixDB;window.assignMotoboy=assignMotoboyDB;window.markDeliveryFee=markDeliveryFeeDB;window.finishMotoDelivery=finishMotoDeliveryDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
   const oldLogout=window.logout;
   window.logout=async()=>{stopRealtime();try{await sb.auth.signOut()}catch(e){}if(oldLogout)oldLogout()};
 
