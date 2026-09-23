@@ -400,8 +400,10 @@ async function statusDB(id,s){
     const o=orders.find(x=>x.id===id);if(!o)return;
     if(o.payment==='Pix'&&!o.paid&&s!=='Aguardando pagamento')return toast('Confirme o pagamento Pix primeiro.');
     const {error}=await sb.from('orders').update({status:map[s]||s}).eq('id',id);if(error)return toast('Erro ao atualizar pedido.');
-    await ordersDB();renderAdmin();toast('Status atualizado.');
+    await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();toast('Status atualizado.');
   }
+
+  async function deleteOrderDB(id){const oid=String(id||'').trim();if(!oid)return toast('Pedido inválido.');const o=orders.find(x=>String(x.id)===oid);if(!o)return toast('Pedido não encontrado.');if(!confirm('Excluir o pedido #'+oid+'?'))return;const child=await sb.from('order_items').delete().eq('order_id',oid);if(child.error)return toast('Não foi possível excluir os itens: '+child.error.message);const r=await sb.from('orders').delete().eq('id',oid);if(r.error)return toast('Não foi possível excluir o pedido: '+r.error.message);await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();toast('Pedido excluído.')}
 
   async function pixDB(id){
     const {error}=await sb.from('orders').update({payment_status:'pago',status:'recebido'}).eq('id',id);if(error)return toast('Erro ao confirmar Pix.');
@@ -583,7 +585,7 @@ async function statusDB(id,s){
     await usersDB();toast('Usuário excluído do sistema.');
   };
   window.changeUserRole=async(id,role)=>{const {error}=await sb.from('profiles').update({role}).eq('id',id);if(error)return toast('Não foi possível alterar a permissão.');toast('Permissão atualizada.');usersDB()};
-  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.confirmPix=pixDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
+  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.deleteOrder=deleteOrderDB;window.confirmPix=pixDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
   const oldLogout=window.logout;
   window.logout=async()=>{stopRealtime();try{await sb.auth.signOut()}catch(e){}if(oldLogout)oldLogout()};
 
