@@ -279,7 +279,10 @@
       if(!error&&data?.user){
         u.id=data.user.id;changed=true;
         await sb.from('profiles').upsert({id:data.user.id,name:u.name||'Usuário',role:u.role||'usuario'});
-        if(data.session&&original)await sb.auth.setSession({access_token:original.access_token,refresh_token:original.refresh_token});
+        if(data.session){
+          if(original)await sb.auth.setSession({access_token:original.access_token,refresh_token:original.refresh_token});
+          else await sb.auth.signOut();
+        }
       }
     }
     if(changed)localStorage.setItem('bv_users',JSON.stringify(local));
