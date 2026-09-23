@@ -28,6 +28,8 @@
       config.fee=Number(data.fee)||0;
       config.wa=String(data.whatsapp||config.wa||'');
       localStorage.bv_config=JSON.stringify(config);
+      if($('feeCfg'))$('feeCfg').value=String(config.fee||0);
+      if($('waCfg'))$('waCfg').value=config.wa||'';
       return true;
     }
     const fee=Number(config.fee)||0;
@@ -89,7 +91,7 @@
       .on('postgres_changes',{event:'*',schema:'public',table:'neighborhood_fees'},()=>refreshRealtimeData())
       .on('postgres_changes',{event:'*',schema:'public',table:'profiles'},()=>refreshRealtimeData())
       .on('postgres_changes',{event:'*',schema:'public',table:'settings'},()=>refreshRealtimeData())
-      .subscribe();
+      .subscribe((status,err)=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Realtime BV:',status,err||'');});
   }
 
   function stopRealtime(){
@@ -145,6 +147,23 @@
       );
     }catch(e){console.error('Erro lendo usuários locais:',e)}
 
+    if(localUser && (localUser.supabase===true || (String(localUser.id||'').length===36))){
+      try{
+        const {data,error}=await sb.auth.signInWithPassword({email,password});
+        if(!error && data?.user){
+          const p=await profile();
+          session(data.user,p);
+          await syncAllData();startRealtime();
+          if($('login'))$('login').style.display='none';
+          if(err)err.textContent='';
+          applyAccess();
+          showPage(p?.role==='administrador'?'dashboard':p?.role==='motoboy'?'pedidos':'inicio');
+          toast('Login realizado com sucesso!');
+          return;
+        }
+      }catch(e){console.warn('Login Supabase; usando sessão local:',e)}
+    }
+
     if(localUser){
       sessionStorage.setItem('bv_user_id',localUser.id||('local-'+Date.now()));
       sessionStorage.setItem('bv_role',localUser.role||'usuario');
@@ -165,7 +184,7 @@
       if(!error && data?.user){
         const p=await profile();
         session(data.user,p);
-        await Promise.all([productsDB(),feesDB(),ordersDB()]);
+        await Promise.all([productsDB(),feesDB(),ordersDB(),settingsDB()]);
         startRealtime();
         if($('login'))$('login').style.display='none';
         if(err)err.textContent='';
@@ -295,7 +314,7 @@
       if(!u.email||!u.pass||u.id&&String(u.id).length===36)continue;
       const {data,error}=await sb.auth.signUp({email:u.email,password:u.pass,options:{data:{name:u.name||'Usuário'}}});
       if(!error&&data?.user){
-        u.id=data.user.id;changed=true;
+        u.id=data.user.id;u.supabase=true;changed=true;
         await sb.from('profiles').upsert({id:data.user.id,name:u.name||'Usuário',role:u.role||'usuario'});
         if(data.session){
           if(original)await sb.auth.setSession({access_token:original.access_token,refresh_token:original.refresh_token});
@@ -331,12 +350,19 @@
       if(!legacyId||doneSet.has(legacyId))continue;
       const statusMap={'Aguardando pagamento':'recebido','Novo':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
       const address=o.address&&typeof o.address==='object'?o.address:null;
-      const ir=await sb.from('orders').insert({
+      const currentUser=await user();
+      const orderPayload={
+        ...(currentUser?.id?{user_id:currentUser.id}:{}),
         customer_name:o.customer||'Cliente',phone:o.phone||'',address:address?(address.rua||'')+(address.numero?', '+address.numero:''):'',
         neighborhood:address?.bairro||'',delivery_fee:address?Number(config?.bairroFees?.[String(address.bairro||'').toLowerCase()])||0:0,
         subtotal:Number(o.total)||0,total:Number(o.total)||0,payment_method:o.payment==='Pix'?'pix':o.payment==='Cartão'?'cartao':'dinheiro',
         payment_status:o.paid?'pago':'pendente',status:statusMap[o.status]||'recebido',notes:'Migração local '+legacyId
-      }).select('id').single();
+      };
+      let ir=await sb.from('orders').insert(orderPayload).select('id').single();
+      if(ir.error && Object.prototype.hasOwnProperty.call(orderPayload,'user_id')){
+        const retryPayload={...orderPayload};delete retryPayload.user_id;
+        ir=await sb.from('orders').insert(retryPayload).select('id').single();
+      }
       if(ir.error){console.warn('Pedido local não sincronizado:',legacyId,ir.error.message);continue;}
       if(Array.isArray(o.cart)&&o.cart.length){
         const items=o.cart.map(x=>({order_id:ir.data.id,product_name:x.name,quantity:x.q,unit_price:Number(x.price)||0,total:(Number(x.price)||0)*x.q}));
