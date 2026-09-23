@@ -54,11 +54,13 @@ on public.settings for select
 to anon, authenticated
 using (true);
 
+drop policy if exists "settings_insert_admin" on public.settings;
 create policy "settings_insert_admin"
 on public.settings for insert
 to authenticated
 with check ((select private.is_bv_admin()));
 
+drop policy if exists "settings_update_admin" on public.settings;
 create policy "settings_update_admin"
 on public.settings for update
 to authenticated
