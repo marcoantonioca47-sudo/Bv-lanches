@@ -108,8 +108,8 @@
       // Reforça os dois acessos padrão, inclusive se um cadastro antigo
       // tiver sido salvo no navegador com senha diferente.
       const defaults=[
-        {id:'admin-marco',name:'Administrador',email:'marco@bv.com',pass:'123456',role:'administrador'},
-        {id:'user-demo',name:'Usuário',email:'usuario@bv.com',pass:'123456',role:'usuario'}
+        {id:'admin-marco',name:'Administrador',email:'admin@bvlanches.com',pass:'BV123456',role:'administrador'},
+        {id:'user-demo',name:'Usuário',email:'cliente@bvlanches.com',pass:'BV123456',role:'usuario'}
       ];
       defaults.forEach(d=>{
         const i=list.findIndex(x=>String(x.email||'').trim().toLowerCase()===d.email);
