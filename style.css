@@ -71,3 +71,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
 .userPerm select:focus{border-color:rgba(229,9,20,.7);box-shadow:0 0 0 3px rgba(229,9,20,.08)}
 .emptyUsers{padding:38px 28px;background:#101010;text-align:center}
 @media(max-width:850px){.permissionsPanel{max-width:none;margin-top:14px}.permissionsPanel .managerHeader{padding:18px;align-items:flex-start}.permissionsPanel .managerHeader h3{font-size:20px}.permissionsPanel .managerHeader .pill{padding:7px 10px;font-size:11px}.userTools{padding:13px 18px}.userPerm{grid-template-columns:34px minmax(0,1fr);gap:12px;padding:15px 18px;min-height:0}.userPerm select{grid-column:2;width:100%;height:40px}.userIndex{width:32px;height:32px}.userIdentity b{font-size:14px}.userIdentity small{font-size:11px}}
+
+/* Botão excluir usuário */
+.userPerm{grid-template-columns:42px minmax(0,1fr) 190px 105px}
+.deleteUserBtn{height:42px;border-radius:10px;border:1px solid #5a2025;background:linear-gradient(135deg,#3a1115,#250b0e);color:#ff7b83;font-size:12px;font-weight:900;cursor:pointer;transition:.2s}
+.deleteUserBtn:hover{background:linear-gradient(135deg,#e50914,#a80008);border-color:#ff3943;color:#fff;transform:translateY(-1px);box-shadow:0 7px 20px rgba(229,9,20,.2)}
+.deleteUserBtn:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+@media(max-width:850px){.userPerm{grid-template-columns:34px minmax(0,1fr);gap:12px}.userPerm select{grid-column:2}.deleteUserBtn{grid-column:2;width:100%}}
