@@ -77,14 +77,14 @@
     if(error){console.warn('Perfil Supabase:',error.message);return null;}
     if(data){
       // Auto-correção do administrador principal caso um perfil antigo tenha ficado com papel incorreto.
-      if(String(u.email||'').toLowerCase()==='admin@bvlanches.com' && data.role!=='administrador'){
+      if((String(u.email||'').toLowerCase()==='marco@bvlanches.com'||String(u.email||'').toLowerCase()==='marco@bvlanches.com') && data.role!=='administrador'){
         const r=await sb.from('profiles').update({role:'administrador',name:data.name||'Administrador'}).eq('id',u.id);
         if(!r.error)data.role='administrador';
       }
       return data;
     }
     // Recupera contas Auth antigas que foram criadas antes do trigger de perfil.
-    const isMainAdmin=String(u.email||'').toLowerCase()==='admin@bvlanches.com';
+    const isMainAdmin=(String(u.email||'').toLowerCase()==='marco@bvlanches.com'||String(u.email||'').toLowerCase()==='admin@bvlanches.com');
     const row={id:u.id,name:u.user_metadata?.name|| (isMainAdmin?'Administrador':'Usuário'),role:isMainAdmin?'administrador':'usuario'};
     const r=await sb.from('profiles').upsert(row,{onConflict:'id'}).select('id,name,role').maybeSingle();
     if(r.error){console.warn('Criação automática do perfil:',r.error.message);return null;}
