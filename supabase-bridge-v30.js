@@ -105,7 +105,7 @@
     return !r.error;
   }
 
-  window.refreshDeliveryFees=async function(){try{return await feesDB()}catch(e){console.warn('Taxas:',e);return false}};
+  window.refreshDeliveryFeeForNeighborhood=async function(name){const raw=String(name||'').trim();if(!raw)return null;try{const {data,error}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true).ilike('name',raw).limit(1);if(error||!Array.isArray(data)||!data.length)return null;return Number(data[0].fee)||0}catch(e){console.warn('Taxa do bairro:',e);return null}};window.refreshDeliveryFees=async function(){try{return await feesDB()}catch(e){console.warn('Taxas:',e);return false}};
   async function feesDB(){
     // O banco é a fonte oficial. A migração local só ocorre se o servidor ainda não possuir taxas.
     let {data,error}=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true).order('name');
