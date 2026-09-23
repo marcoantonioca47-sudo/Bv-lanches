@@ -8,6 +8,17 @@
   let syncing=false;
   let realtimeChannel=null;
 
+  function clearLocalData(){
+    const keys=[
+      'bv_users','bv_products','bv_orders','bv_cart','bv_config',
+      'bv_saved_address','bv_synced_orders'
+    ];
+    keys.forEach(k=>localStorage.removeItem(k));
+    sessionStorage.removeItem('bv_user_id');
+    sessionStorage.removeItem('bv_role');
+    sessionStorage.removeItem('bv');
+  }
+
   async function user(){const {data}=await sb.auth.getUser();return data?.user||null}
   async function profile(){const u=await user();if(!u)return null;const {data}=await sb.from('profiles').select('id,name,role').eq('id',u.id).maybeSingle();return data||null}
   function session(u,p){if(!u)return;sessionStorage.setItem('bv_user_id',u.id);sessionStorage.setItem('bv_role',p?.role||'usuario');sessionStorage.setItem('bv','0')}
