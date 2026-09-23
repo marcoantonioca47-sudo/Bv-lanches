@@ -426,7 +426,20 @@ async function statusDB(id,s){
     if(o.payment==='Pix'&&!o.paid&&s!=='Aguardando pagamento')return toast('Confirme o pagamento Pix primeiro.');
     if((s==='Em produção'||s==='Saiu para entrega')&&!o.motoboy_id)return toast('Selecione um motoboy antes de colocar este pedido para entrega.');
     const {error}=await sb.from('orders').update({status:map[s]||s}).eq('id',id);if(error)return toast('Erro ao atualizar pedido: '+error.message);
-    await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();toast('Status atualizado.');
+    await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();
+  window.renderMotoFeeOnly=function(){
+    const box=document.getElementById('motoFeeOrders'); if(!box)return;
+    if(!moto()||admin()){box.innerHTML='<p class="muted">Acesso exclusivo para motoboys.</p>';return}
+    const uid=String(sessionStorage.getItem('bv_user_id')||'');
+    const list=(Array.isArray(orders)?orders:[]).filter(o=>String(o.motoboy_id||'')===uid&&o.status==='Em produção');
+    if(!list.length){box.innerHTML='<div class="emptyFilter motoEmpty"><b>Nenhuma taxa de entrega pendente.</b><small>As taxas das entregas atribuídas a você aparecerão aqui.</small></div>';return}
+    const pending=list.filter(o=>!o.deliveryFeeCollected).reduce((s,o)=>s+(Number(o.deliveryFee)||0),0);
+    box.innerHTML='<div class="motoDeliverySummary"><div><small>Entregas</small><b>'+list.length+'</b></div><div><small>Taxas a receber</small><b>'+brl(pending)+'</b></div></div>'+list.map(o=>{
+      const fee=Number(o.deliveryFee)||0, adr=o.address?esc((o.address.rua||'')+', '+(o.address.numero||'')+' — '+(o.address.bairro||'')):'Retirada no local';
+      const action=o.deliveryFeeCollected?'<div class="feeCollected">✓ Taxa marcada como recebida</div>':'<button class="motoFeeBtn" type="button" onclick="markDeliveryFee(\''+String(o.id).replace(/'/g,"\\'")+'\')">💰 Marcar taxa recebida · '+brl(fee)+'</button>';
+      return '<div class="order motoOrder"><div class="line"><b>#'+esc(o.id)+' — '+esc(o.customer)+'</b><span class="status">'+esc(o.status)+'</span></div><p>📍 '+adr+'</p><p>📞 '+esc(o.phone||'Não informado')+'</p><div class="motoFeeCard"><span>Taxa de entrega</span><strong>'+brl(fee)+'</strong></div>'+action+'</div>';
+    }).join('');
+  };toast('Status atualizado.');
   }
 
   async function assignMotoboyDB(id,motoboyId){
