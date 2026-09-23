@@ -22,18 +22,65 @@ drop policy if exists "settings_select_authenticated" on public.settings;
 drop policy if exists "settings_insert_authenticated" on public.settings;
 drop policy if exists "settings_update_authenticated" on public.settings;
 
+
+-- Segurança: somente administradores podem alterar as configurações gerais.
+-- A função lê o perfil do usuário autenticado sem expor a tabela de perfis à política.
+create schema if not exists private;
+
+create or replace function private.is_bv_admin()
+returns boolean
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = (select auth.uid())
+      and role = 'administrador'
+  );
+$$;
+
+revoke execute on function private.is_bv_admin() from public;
+grant execute on function private.is_bv_admin() to authenticated;
+
+drop policy if exists "settings_select_authenticated" on public.settings;
+drop policy if exists "settings_insert_authenticated" on public.settings;
+drop policy if exists "settings_update_authenticated" on public.settings;
+
 create policy "settings_select_authenticated"
 on public.settings for select
 to authenticated
 using (true);
 
-create policy "settings_insert_authenticated"
+create policy "settings_insert_admin"
 on public.settings for insert
 to authenticated
-with check (true);
+with check ((select private.is_bv_admin()));
 
-create policy "settings_update_authenticated"
+create policy "settings_update_admin"
 on public.settings for update
 to authenticated
-using (true)
-with check (true);
+using ((select private.is_bv_admin()))
+with check ((select private.is_bv_admin()));
+
+-- Mantém as tabelas do BV disponíveis para Postgres Changes quando ainda não
+-- estiverem na publicação do Realtime.
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['settings','products','orders','order_items','profiles','neighborhood_fees']
+  loop
+    if not exists (
+      select 1
+      from pg_publication_tables
+      where pubname='supabase_realtime'
+        and schemaname='public'
+        and tablename=t
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I',t);
+    end if;
+  end loop;
+end $$;
