@@ -305,14 +305,40 @@
       setTimeout(()=>{try{alert(msg)}catch(e){}},100);
       return;
     }
-    const {data:latest,error:latestError}=await sb.from('orders').select('id,created_at').eq('user_id',u.id).order('created_at',{ascending:false}).limit(1);
-    if(latestError||!latest?.length){
+    // O INSERT não usa .select(): isso elimina dependência de uma SELECT policy para criar o pedido.
+    const createdAt=new Date();
+    const {data:recent,error:latestError}=await sb.from('orders')
+      .select('id,created_at')
+      .eq('user_id',u.id)
+      .gte('created_at',createdAt.toISOString())
+      .order('created_at',{ascending:false})
+      .limit(1);
+    if(latestError||!recent?.length){
       console.error('BV pedido — SELECT após INSERT:',latestError);
-      return toast('PEDIDO SALVO, MAS NÃO FOI POSSÍVEL LOCALIZAR: '+(latestError?.message||'sem registro'));
+      return toast('PEDIDO CRIADO, MAS NÃO FOI LOCALIZADO: '+(latestError?.message||'sem registro'));
     }
-    const o=latest[0];
-    const ir=await sb.from('order_items').insert(cart.map(x=>({order_id:o.id,product_id:x.id,product_name:x.name,quantity:x.q,unit_price:Number(x.price)||0,total:(Number(x.price)||0)*x.q})));
-    if(ir.error){console.error('BV pedido — INSERT order_items:',ir.error);localStorage.bv_last_order=JSON.stringify({id:o.id,phone:$('phone').value});cart=[];localStorage.bv_cart='[]';await ordersDB();if($('trackId'))$('trackId').value=o.id;if($('trackPhone'))$('trackPhone').value=$('phone').value;showPage('acompanhar');renderTracking(orders.find(x=>String(x.id)===String(o.id)));return toast('Pedido salvo, mas houve erro nos itens: '+(ir.error.message||'erro Supabase'))}
+    const o=recent[0];
+    // O carrinho pode conter IDs antigos do localStorage. Resolve pelo ID remoto ou, como fallback, pelo nome.
+    let remoteProducts=[];
+    try{
+      const pr=await sb.from('products').select('id,name,price,active');
+      if(!pr.error&&Array.isArray(pr.data))remoteProducts=pr.data;
+    }catch(e){}
+    const items=cart.map(x=>{
+      const rp=remoteProducts.find(p=>String(p.id)===String(x.id))
+        ||remoteProducts.find(p=>String(p.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
+      return {order_id:o.id,product_id:rp?.id||null,product_name:x.name,quantity:x.q,unit_price:Number(x.price)||Number(rp?.price)||0,total:(Number(x.price)||Number(rp?.price)||0)*x.q};
+    });
+    const missing=items.find((item,i)=>!item.product_id);
+    if(missing){
+      console.error('BV pedido — produto não encontrado no Supabase:',missing);
+      return toast('Produto não sincronizado no servidor: '+missing.product_name);
+    }
+    let ir=await sb.from('order_items').insert(items);
+    if(ir.error){
+      console.error('BV pedido — INSERT order_items:',ir.error);
+      return toast('Pedido salvo, mas os itens não foram sincronizados: '+(ir.error.message||'erro Supabase'));
+    }
     localStorage.bv_last_order=JSON.stringify({id:o.id,phone:$('phone').value});cart=[];localStorage.bv_cart='[]';
     await ordersDB();
     if($('trackId'))$('trackId').value=o.id;if($('trackPhone'))$('trackPhone').value=$('phone').value;
@@ -436,12 +462,36 @@
   }
 
   async function syncAllData(){
-    try{await syncLocalAccounts()}catch(e){console.warn('Contas:',e)}
-    try{await syncLocalBairros()}catch(e){console.warn('Bairros:',e)}
-    try{await settingsDB()}catch(e){console.warn('Configurações:',e)}
-    try{await syncLocalProducts()}catch(e){console.warn('Produtos:',e)}
-    try{await syncLocalOrders()}catch(e){console.warn('Pedidos:',e)}
-    try{await Promise.all([productsDB(),feesDB(),ordersDB()])}catch(e){console.warn('Leitura Supabase:',e)}
+    // Motor de sincronização centralizado: Supabase é a fonte oficial.
+    // Primeiro lemos o servidor; só depois migramos dados locais que ainda não existem.
+    const result={accounts:false,products:false,fees:false,settings:false,orders:false};
+    try{await syncLocalAccounts();result.accounts=true}catch(e){console.warn('Contas:',e)}
+    try{
+      const r=await productsDB();
+      result.products=!!r;
+      if(!r)await syncLocalProducts();
+      await productsDB();
+    }catch(e){console.warn('Produtos:',e)}
+    try{
+      const r=await feesDB();
+      result.fees=true;
+      if(!r)await syncLocalBairros();
+      await feesDB();
+    }catch(e){console.warn('Taxas:',e)}
+    try{
+      const r=await settingsDB();
+      result.settings=!!r;
+    }catch(e){console.warn('Configurações:',e)}
+    try{
+      const r=await ordersDB();
+      result.orders=!!r;
+      // Migra pedidos antigos do navegador somente quando o servidor puder ser lido.
+      // Nunca usa o localStorage como fonte principal nem duplica registros já sincronizados.
+      if(r)await syncLocalOrders();
+      await ordersDB();
+    }catch(e){console.warn('Pedidos:',e)}
+    window.BV_SYNC_STATUS={...result,lastSync:new Date().toISOString()};
+    return result;
   }
 
   async function syncLocalBairros(){
