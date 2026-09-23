@@ -394,7 +394,16 @@
       const pr=await sb.from('products').select('id,name,price,active').eq('active',true);
       if(pr.error)throw pr.error;
       remoteProducts=Array.isArray(pr.data)?pr.data:[];
-    }catch(e){return toast('Não foi possível carregar o cardápio do servidor.');}
+    }catch(e){
+      console.error('BV cardápio no checkout:',e);
+      // Usa os produtos já sincronizados no aparelho apenas para montar os IDs;
+      // o pedido continua sendo criado e validado pelo Supabase.
+      try{
+        const cached=JSON.parse(localStorage.getItem('bv_products')||'[]');
+        remoteProducts=Array.isArray(cached)?cached:[];
+      }catch(_){}
+      if(!remoteProducts.length)return toast('Não foi possível consultar o cardápio. Verifique sua conexão e tente novamente.');
+    }
     const items=cart.map(x=>{
       const rp=remoteProducts.find(p=>String(p.id)===String(x.id))||remoteProducts.find(p=>String(p.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
       return {product_id:rp?.id||null,quantity:Number(x.q)||1};
