@@ -166,6 +166,29 @@
     }
 
     if(localUser){
+      // Migra a conta local e, quando possível, cria uma sessão real do Supabase.
+      // Isso é o que permite que configurações, pedidos e permissões sejam
+      // realmente compartilhados entre aparelhos.
+      try{
+        await syncLocalAccounts();
+        const migrated=JSON.parse(localStorage.getItem('bv_users')||'[]').find(x=>String(x.email||'').toLowerCase()===email);
+        const authTry=await sb.auth.signInWithPassword({email,password});
+        if(!authTry.error && authTry.data?.user){
+          const p=await profile();
+          session(authTry.data.user,p);
+          await syncAllData();startRealtime();
+          if($('login'))$('login').style.display='none';
+          if(err)err.textContent='';
+          applyAccess();
+          const target=(p?.role==='administrador'||p?.role==='admin')?'dashboard':p?.role==='motoboy'?'pedidos':'inicio';
+          showPage(target);
+          toast('Login realizado e sincronizado com o Supabase!');
+          return;
+        }
+        console.warn('Conta local ainda sem sessão Supabase:',authTry.error?.message||'sem sessão');
+      }catch(e){console.warn('Migração/login Supabase:',e)}
+      
+      // Fallback somente quando a conta ainda não pode autenticar no Supabase.
       sessionStorage.setItem('bv_user_id',localUser.id||('local-'+Date.now()));
       sessionStorage.setItem('bv_role',localUser.role||'usuario');
       sessionStorage.setItem('bv','0');
@@ -175,7 +198,7 @@
       const target=(localUser.role==='administrador'||localUser.role==='admin')?'dashboard':localUser.role==='motoboy'?'pedidos':'inicio';
       showPage(target);
       await syncAllData();startRealtime();
-      toast('Login realizado com sucesso!');
+      toast('Login realizado localmente. A conta precisa ser autenticada no Supabase para sincronização completa.');
       return;
     }
 
