@@ -228,36 +228,49 @@
     await ordersDB();renderAdmin();toast('Pix confirmado.');
   }
 
-  async function usersDB(){
-    const box=$('userPermissions');if(!box)return;
-    const q=String($('userSearch')?.value||'').trim().toLowerCase();
-    let dbUsers=[], dbError=null;
-    try{
-      const res=await sb.from('profiles').select('id,name,role,created_at').order('created_at',{ascending:false});
-      dbUsers=Array.isArray(res.data)?res.data:[]; dbError=res.error||null;
-    }catch(e){dbError=e}
-    let localUsers=[];
-    try{localUsers=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]')}catch(e){localUsers=[]}
-    const merged=[...dbUsers];
-    localUsers.forEach(u=>{
-      if(!merged.some(x=>String(x.email||'').toLowerCase()===String(u.email||'').toLowerCase() && u.email) &&
-         !merged.some(x=>String(x.id||'')===String(u.id||''))){
-        merged.push(u);
-      }
-    });
-    const list=q?merged.filter(u=>String(u.name||'').toLowerCase().includes(q)||String(u.email||'').toLowerCase().includes(q)):merged;
-    if($('userCount'))$('userCount').textContent=merged.length+' usuário'+(merged.length===1?'':'s');
-    if(!list.length){
-      box.innerHTML='<div class="emptyUsers"><b>Nenhum usuário cadastrado.</b><small>'+(dbError?'A conta atual não conseguiu consultar os perfis do Supabase. Os usuários locais continuam disponíveis.':'Cadastre uma conta para ela aparecer nesta lista.')+'</small></div>';
+  function renderUserList(list,box,q=''){
+    if(!box)return;
+    const filtered=q?list.filter(u=>String(u.name||'').toLowerCase().includes(q)||String(u.email||'').toLowerCase().includes(q)):list;
+    if($('userCount'))$('userCount').textContent=list.length+' usuário'+(list.length===1?'':'s');
+    if(!filtered.length){
+      box.innerHTML='<div class="emptyUsers"><b>Nenhum usuário cadastrado.</b><small>Cadastre uma conta para ela aparecer nesta lista.</small></div>';
       return;
     }
-    box.innerHTML=list.map((u,i)=>{
+    box.innerHTML=filtered.map((u,i)=>{
       const role=u.role==='administrador'?'🔐 Administrador':u.role==='motoboy'?'🏍️ Motoboy':'👤 Usuário';
       const id=String(u.id||'').replace(/'/g,"\\'");
-      return `<div class="userPerm"><div class="userIndex">${i+1}</div><div class="userIdentity"><b>${String(u.name||'Sem nome').replace(/</g,'&lt;')}</b><small>${String(u.email||'E-mail não disponível').replace(/</g,'&lt;')}</small><em>${role}</em></div><select onchange="changeUserRole('${id}',this.value)" ${u.id==='admin-marco'?'disabled':''}><option value="usuario" ${u.role==='usuario'?'selected':''}>👤 Usuário</option><option value="motoboy" ${u.role==='motoboy'?'selected':''}>🏍️ Motoboy</option><option value="administrador" ${u.role==='administrador'?'selected':''}>🔐 Administrador</option></select></div>`;
+      return \`<div class="userPerm"><div class="userIndex">\${i+1}</div><div class="userIdentity"><b>\${String(u.name||'Sem nome').replace(/</g,'&lt;')}</b><small>\${String(u.email||'E-mail não disponível').replace(/</g,'&lt;')}</small><em>\${role}</em></div><select onchange="changeUserRole('\${id}',this.value)" \${u.id==='admin-marco'?'disabled':''}><option value="usuario" \${u.role==='usuario'?'selected':''}>👤 Usuário</option><option value="motoboy" \${u.role==='motoboy'?'selected':''}>🏍️ Motoboy</option><option value="administrador" \${u.role==='administrador'?'selected':''}>🔐 Administrador</option></select></div>\`;
     }).join('');
   }
 
+  async function usersDB(){
+    const box=$('userPermissions');if(!box)return;
+    const q=String($('userSearch')?.value||'').trim().toLowerCase();
+
+    // Primeiro mostra imediatamente os usuários locais. Assim a tela nunca fica vazia
+    // esperando uma resposta do Supabase.
+    let localUsers=[];
+    try{
+      localUsers=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]');
+    }catch(e){localUsers=[]}
+    if(!Array.isArray(localUsers))localUsers=[];
+    renderUserList(localUsers,box,q);
+
+    // Depois tenta complementar a lista com os perfis do Supabase.
+    try{
+      const res=await sb.from('profiles').select('id,name,role,created_at').order('created_at',{ascending:false});
+      if(res.error||!Array.isArray(res.data))return;
+      const merged=[...res.data];
+      localUsers.forEach(u=>{
+        if(!merged.some(x=>String(x.id||'')===String(u.id||'') || (u.email&&x.email&&String(x.email).toLowerCase()===String(u.email).toLowerCase()))){
+          merged.push(u);
+        }
+      });
+      renderUserList(merged,box,q);
+    }catch(e){
+      console.warn('Usuários do Supabase indisponíveis; mantendo lista local.',e);
+    }
+  }
   window.changeUserRole=async(id,role)=>{const {error}=await sb.from('profiles').update({role}).eq('id',id);if(error)return toast('Não foi possível alterar a permissão.');toast('Permissão atualizada.');usersDB()};
   window.login=login;window.registerUser=register;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.confirmPix=pixDB;window.renderUsers=usersDB;
   const oldLogout=window.logout;
