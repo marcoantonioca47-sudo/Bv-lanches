@@ -8,6 +8,7 @@
   const $=id=>document.getElementById(id);
   let syncing=false;
   let realtimeChannel=null;
+  let motoboys=[];
 
   function clearLocalData(){
     const keys=[
@@ -147,7 +148,15 @@
     // sessionStorage é apenas UI e nunca deve decidir acesso aos pedidos.
     const isAdminProfile=!!(p&&['administrador','admin'].includes(p.role));
     const isMotoProfile=!!(p&&p.role==='motoboy');
-    if(!(isAdminProfile||isMotoProfile))q=q.eq('user_id',u.id);
+    if(isAdminProfile){
+      const mr=await sb.from('profiles').select('id,name').eq('role','motoboy').order('name');
+      motoboys=(!mr.error&&Array.isArray(mr.data))?mr.data:[];
+      window.BV_MOTOBOYS=motoboys;
+    }else if(isMotoProfile){
+      q=q.eq('motoboy_id',u.id).eq('status','saiu_entrega');
+    }else{
+      q=q.eq('user_id',u.id);
+    }
     const {data,error}=await q;
     if(error||!Array.isArray(data))return false;
     // Supabase é a fonte oficial. Se não houver pedidos no banco, zera imediatamente qualquer cache antigo.
@@ -161,6 +170,9 @@
     }
     orders=data.map(o=>({
       id:o.id,created_at:o.created_at,customer:o.customer_name,phone:o.phone,
+      motoboy_id:o.motoboy_id||null,
+      deliveryFee:Number(o.delivery_fee)||0,
+      deliveryFeeCollected:!!o.delivery_fee_collected,
       items:(o.order_items||[]).map(i=>`${i.quantity}x ${i.product_name}`).join(', '),
       total:Number(o.total)||0,
       payment:o.payment_method==='pix'?'Pix':o.payment_method==='cartao'?'Cartão':'Dinheiro',
@@ -399,8 +411,30 @@ async function statusDB(id,s){
     const map={'Novo':'recebido','Aguardando pagamento':'recebido','Confirmado':'recebido','Em preparo':'em_preparo','Pronto':'em_preparo','Saiu para entrega':'saiu_entrega','Entregue':'entregue','Cancelado':'cancelado'};
     const o=orders.find(x=>x.id===id);if(!o)return;
     if(o.payment==='Pix'&&!o.paid&&s!=='Aguardando pagamento')return toast('Confirme o pagamento Pix primeiro.');
-    const {error}=await sb.from('orders').update({status:map[s]||s}).eq('id',id);if(error)return toast('Erro ao atualizar pedido.');
+    if(s==='Saiu para entrega'&&!o.motoboy_id)return toast('Selecione um motoboy antes de enviar o pedido para entrega.');
+    const {error}=await sb.from('orders').update({status:map[s]||s}).eq('id',id);if(error)return toast('Erro ao atualizar pedido: '+error.message);
     await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();toast('Status atualizado.');
+  }
+
+  async function assignMotoboyDB(id,motoboyId){
+    if(!id)return;
+    const value=String(motoboyId||'').trim()||null;
+    const {error}=await sb.from('orders').update({motoboy_id:value}).eq('id',id);
+    if(error)return toast('Não foi possível atribuir o motoboy: '+error.message);
+    await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();
+    toast(value?'Pedido atribuído ao motoboy.':'Motoboy removido do pedido.');
+  }
+
+  async function markDeliveryFeeDB(id){
+    const {data,error}=await sb.rpc('motoboy_update_delivery',{p_order_id:id,p_fee_collected:true,p_mark_delivered:false});
+    if(error||data!==true)return toast('Não foi possível marcar a taxa: '+(error?.message||'erro'));
+    await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();toast('Taxa de entrega marcada como recebida.');
+  }
+
+  async function finishMotoDeliveryDB(id){
+    const {data,error}=await sb.rpc('motoboy_update_delivery',{p_order_id:id,p_fee_collected:true,p_mark_delivered:true});
+    if(error||data!==true)return toast('Não foi possível finalizar a entrega: '+(error?.message||'erro'));
+    await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();toast('Entrega finalizada.');
   }
 
   async function deleteOrderDB(id){const oid=String(id||'').trim();if(!oid)return toast('Pedido inválido.');const o=orders.find(x=>String(x.id)===oid);if(!o)return toast('Pedido não encontrado.');if(!confirm('Excluir o pedido #'+oid+'?'))return;const child=await sb.from('order_items').delete().eq('order_id',oid);if(child.error)return toast('Não foi possível excluir os itens: '+child.error.message);const r=await sb.from('orders').delete().eq('id',oid);if(r.error)return toast('Não foi possível excluir o pedido: '+r.error.message);await ordersDB();renderAdmin();if(typeof window.renderFilteredOrders==='function')window.renderFilteredOrders();toast('Pedido excluído.')}
@@ -585,7 +619,7 @@ async function statusDB(id,s){
     await usersDB();toast('Usuário excluído do sistema.');
   };
   window.changeUserRole=async(id,role)=>{const {error}=await sb.from('profiles').update({role}).eq('id',id);if(error)return toast('Não foi possível alterar a permissão.');toast('Permissão atualizada.');usersDB()};
-  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.deleteOrder=deleteOrderDB;window.confirmPix=pixDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
+  window.login=login;window.registerUser=register;window.createUser=createUserDB;window.addProduct=addProductDB;window.saveCfg=saveCfgDB;window.addBairroFee=addFeeDB;window.updateBairroFee=updateFeeDB;window.deleteBairroFee=deleteFeeDB;window.finish=finishDB;window.statusOrder=statusDB;window.deleteOrder=deleteOrderDB;window.confirmPix=pixDB;window.assignMotoboy=assignMotoboyDB;window.markDeliveryFee=markDeliveryFeeDB;window.finishMotoDelivery=finishMotoDeliveryDB;window.renderUsers=usersDB;window.syncAllData=syncAllData;
   const oldLogout=window.logout;
   window.logout=async()=>{stopRealtime();try{await sb.auth.signOut()}catch(e){}if(oldLogout)oldLogout()};
 
