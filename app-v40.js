@@ -4,7 +4,7 @@ const defaultProducts=[{id:1,name:'X-Salada',price:10.99,emoji:'🍔',desc:'Pão
 let products=safeParse('bv_products',null);if(!Array.isArray(products)){products=defaultProducts;localStorage.bv_products=JSON.stringify(products)}
 localStorage.removeItem('bv_orders');localStorage.removeItem('bv_synced_orders');localStorage.removeItem('bv_last_order');localStorage.removeItem('bv_current_order');
 let cart=safeParse('bv_cart',[]),orders=[],config=safeParse('bv_config',{fee:5,wa:'5531984595968',bairroFees:{}}),saved=safeParse('bv_saved_address',null);if(!Array.isArray(cart))cart=[];if(!config||typeof config!=='object')config={fee:5,wa:'5531984595968',bairroFees:{}};if(!config.bairroFees||typeof config.bairroFees!=='object')config.bairroFees={};
-window.BV_APP_VERSION='2026.09.23.14';
+window.BV_APP_VERSION='2026.09.23.15';
 const usersDefault=[{id:'admin-marco',name:'Administrador',email:'admin@bvlanches.com',pass:'BV123456',role:'administrador'},{id:'user-demo',name:'Usuário',email:'cliente@bvlanches.com',pass:'BV123456',role:'usuario'}];function users(){let u=safeParse('bv_users',null);if(!Array.isArray(u))u=[];let changed=false;usersDefault.forEach(d=>{const i=u.findIndex(x=>String(x.email||'').trim().toLowerCase()===d.email);if(i<0){u.push({...d});changed=true}else{if(!u[i].id){u[i].id=d.id;changed=true}if(!u[i].role){u[i].role=d.role;changed=true}}});if(changed||!localStorage.getItem('bv_users'))localStorage.bv_users=JSON.stringify(u);return u}function role(){return sessionStorage.getItem('bv_role')||''}function admin(){return role()==='administrador'}function moto(){return role()==='motoboy'}
 const pages={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',produtos:'Produtos',cupons:'Cupons',config:'Configurações'},publicPages=['inicio','cardapio','pedido','acompanhar'];
 function toast(t){const x=$('toast');if(x){x.textContent=t;x.style.display='block';clearTimeout(window._toast);window._toast=setTimeout(()=>x.style.display='none',2200)}}
@@ -66,6 +66,34 @@ window.addEventListener('load',()=>{init();$('email')?.addEventListener('keydown
   window.toggleNotifications=function(){const x=document.getElementById('notificationCenter');if(!x)return;const open=x.classList.toggle('show');x.setAttribute('aria-hidden',open?'false':'true');if(open)renderNotifications()};
   function renderFilteredOrders(){
     const box=document.getElementById('orders');if(!box)return;
+    const motoMode=moto()&&!admin();
+    const motoPanel=document.getElementById('motoDeliveryPanel');
+    const adminFilters=document.getElementById('adminOrderFilters');
+    if(motoMode){
+      if(motoPanel)motoPanel.style.display='';
+      if(adminFilters)adminFilters.style.display='none';
+      const list=orders.filter(o=>o.status==='Saiu para entrega');
+      const totalFees=list.reduce((s,o)=>s+(Number(o.deliveryFee)||0),0);
+      const collectedFees=list.reduce((s,o)=>s+(o.deliveryFeeCollected?Number(o.deliveryFee)||0:0),0);
+      const pendingFees=totalFees-collectedFees;
+      const summary=document.getElementById('motoDeliverySummary');
+      if(summary)summary.innerHTML='<div><small>Entregas em rota</small><b>'+list.length+'</b></div><div><small>Taxas a receber</small><b>'+brl(pendingFees)+'</b></div><div><small>Taxas marcadas</small><b>'+brl(collectedFees)+'</b></div>';
+      if(!list.length){box.innerHTML='<div class="emptyFilter motoEmpty"><b>Nenhuma entrega no momento.</b><small>Quando um pedido for atribuído a você e marcado como “Saiu para entrega”, ele aparecerá aqui.</small></div>';return}
+      box.innerHTML=list.map(o=>{
+        const adr=o.address?esc((o.address.rua||'')+', '+(o.address.numero||'')+' — '+(o.address.bairro||'')):'Retirada no local';
+        const fee=Number(o.deliveryFee)||0;
+        const feeAction=o.deliveryFeeCollected
+          ? '<div class="feeCollected">✓ Taxa marcada como recebida</div>'
+          : '<button class="motoFeeBtn" type="button" onclick="markDeliveryFee(\''+String(o.id).replace(/'/g,"\\'")+'\')">💰 Marcar taxa recebida · '+brl(fee)+'</button>';
+        const finish=o.deliveryFeeCollected
+          ? '<button class="motoFinishBtn" type="button" onclick="finishMotoDelivery(\''+String(o.id).replace(/'/g,"\\'")+'\')">✓ Marcar pedido como entregue</button>'
+          : '<small class="motoHint">Marque a taxa recebida para liberar a finalização da entrega.</small>';
+        return '<div class="order motoOrder"><div class="line"><b>#'+esc(o.id)+' — '+esc(o.customer)+'</b><span class="status">Saiu para entrega</span></div><p><b>Itens:</b> '+esc(o.items)+'</p><p>📍 '+adr+'</p><p>📞 '+esc(o.phone||'Não informado')+'</p><div class="motoFeeCard"><span>Taxa de entrega</span><strong>'+brl(fee)+'</strong></div>'+feeAction+finish+'</div>';
+      }).join('');
+      return;
+    }
+    if(motoPanel)motoPanel.style.display='none';
+    if(adminFilters)adminFilters.style.display='';
     const q=(document.getElementById('orderSearch')?.value||'').trim().toLowerCase();
     const status=document.getElementById('orderStatusFilter')?.value||'';
     const payment=document.getElementById('orderPaymentFilter')?.value||'';
@@ -77,10 +105,13 @@ window.addEventListener('load',()=>{init();$('email')?.addEventListener('keydown
       return (!q||hay.includes(q))&&(!status||o.status===status)&&(!payment||o.payment===payment)&&(!cutoff||t>=cutoff);
     });
     if(!list.length){box.innerHTML='<div class="emptyFilter">Nenhum pedido encontrado com esses filtros.</div>';return}
+    const motoboys=Array.isArray(window.BV_MOTOBOYS)?window.BV_MOTOBOYS:[];
     box.innerHTML=list.map(o=>{
       const adr=o.address?esc((o.address.rua||'')+', '+(o.address.numero||'')+' — '+(o.address.bairro||'')):'Retirada no local';
       const opts=['Novo','Confirmado','Em preparo','Pronto','Saiu para entrega','Entregue','Cancelado'].map(s=>'<option '+(o.status===s?'selected':'')+'>'+s+'</option>').join('');
-      return '<div class="order"><div class="line"><b>#'+esc(o.id)+' — '+esc(o.customer)+'</b><span class="status">'+esc(o.status)+'</span></div><p><b>Itens:</b> '+esc(o.items)+'</p><p>📍 '+adr+'</p><p>💳 '+esc(o.payment)+(o.paid?' · Pago':'')+'</p><div class="orderMeta"><span>'+esc(o.phone||'Sem telefone')+'</span><span>'+brl(o.total)+'</span></div><select onchange="statusOrder(\''+String(o.id).replace(/'/g,"\\'")+'\',this.value)">'+opts+'</select><button class="deleteOrderBtn" type="button" onclick="deleteOrder(\''+String(o.id).replace(/'/g,"\\'")+'\')">🗑 Excluir pedido</button>'+(o.payment==='Pix'&&!o.paid?'<button class="confirmPix" onclick="confirmPix(\''+String(o.id).replace(/'/g,"\\'")+'\')">✅ Confirmar Pix</button>':'')+'</div>';
+      const motoOptions='<option value="">Sem motoboy</option>'+motoboys.map(m=>'<option value="'+esc(m.id)+'" '+(String(o.motoboy_id||'')===String(m.id)?'selected':'')+'>🏍️ '+esc(m.name)+'</option>').join('');
+      const assign=motoboys.length?'<div class="motoAssign"><small>Motoboy da entrega</small><select onchange="assignMotoboy(\''+String(o.id).replace(/'/g,"\\'")+'\',this.value)">'+motoOptions+'</select></div>':'';
+      return '<div class="order"><div class="line"><b>#'+esc(o.id)+' — '+esc(o.customer)+'</b><span class="status">'+esc(o.status)+'</span></div><p><b>Itens:</b> '+esc(o.items)+'</p><p>📍 '+adr+'</p><p>💳 '+esc(o.payment)+(o.paid?' · Pago':'')+'</p><div class="orderMeta"><span>'+esc(o.phone||'Sem telefone')+'</span><span>'+brl(o.total)+'</span><span>Taxa '+brl(o.deliveryFee||0)+'</span></div>'+assign+'<select onchange="statusOrder(\''+String(o.id).replace(/'/g,"\\'")+'\',this.value)">'+opts+'</select><button class="deleteOrderBtn" type="button" onclick="deleteOrder(\''+String(o.id).replace(/'/g,"\\'")+'\')">🗑 Excluir pedido</button>'+(o.payment==='Pix'&&!o.paid?'<button class="confirmPix" onclick="confirmPix(\''+String(o.id).replace(/'/g,"\\'")+'\')">✅ Confirmar Pix</button>':'')+'</div>';
     }).join('');
   }
   window.clearOrderFilters=function(){['orderSearch','orderStatusFilter','orderPaymentFilter','orderDateFilter'].forEach(id=>{const x=document.getElementById(id);if(x)x.value=''});renderFilteredOrders()};
