@@ -230,9 +230,32 @@
 
   async function usersDB(){
     const box=$('userPermissions');if(!box)return;
-    const {data,error}=await sb.from('profiles').select('id,name,role,created_at').order('created_at',{ascending:false});
-    if(error){box.innerHTML='<p class="muted">Não foi possível carregar usuários. Execute a atualização do RLS no Supabase.</p>';return}
-    box.innerHTML=(data||[]).map(u=>`<div class="line"><span><b>${u.name||'Sem nome'}</b></span><select onchange="changeUserRole('${u.id}',this.value)"><option value="usuario" ${u.role==='usuario'?'selected':''}>Usuário</option><option value="motoboy" ${u.role==='motoboy'?'selected':''}>Motoboy</option><option value="administrador" ${u.role==='administrador'?'selected':''}>Administrador</option></select></div>`).join('')||'<p class="muted">Nenhum usuário cadastrado.</p>';
+    const q=String($('userSearch')?.value||'').trim().toLowerCase();
+    let dbUsers=[], dbError=null;
+    try{
+      const res=await sb.from('profiles').select('id,name,role,created_at').order('created_at',{ascending:false});
+      dbUsers=Array.isArray(res.data)?res.data:[]; dbError=res.error||null;
+    }catch(e){dbError=e}
+    let localUsers=[];
+    try{localUsers=typeof window.users==='function'?window.users():JSON.parse(localStorage.getItem('bv_users')||'[]')}catch(e){localUsers=[]}
+    const merged=[...dbUsers];
+    localUsers.forEach(u=>{
+      if(!merged.some(x=>String(x.email||'').toLowerCase()===String(u.email||'').toLowerCase() && u.email) &&
+         !merged.some(x=>String(x.id||'')===String(u.id||''))){
+        merged.push(u);
+      }
+    });
+    const list=q?merged.filter(u=>String(u.name||'').toLowerCase().includes(q)||String(u.email||'').toLowerCase().includes(q)):merged;
+    if($('userCount'))$('userCount').textContent=merged.length+' usuário'+(merged.length===1?'':'s');
+    if(!list.length){
+      box.innerHTML='<div class="emptyUsers"><b>Nenhum usuário cadastrado.</b><small>'+(dbError?'A conta atual não conseguiu consultar os perfis do Supabase. Os usuários locais continuam disponíveis.':'Cadastre uma conta para ela aparecer nesta lista.')+'</small></div>';
+      return;
+    }
+    box.innerHTML=list.map((u,i)=>{
+      const role=u.role==='administrador'?'🔐 Administrador':u.role==='motoboy'?'🏍️ Motoboy':'👤 Usuário';
+      const id=String(u.id||'').replace(/'/g,"\\'");
+      return `<div class="userPerm"><div class="userIndex">${i+1}</div><div class="userIdentity"><b>${String(u.name||'Sem nome').replace(/</g,'&lt;')}</b><small>${String(u.email||'E-mail não disponível').replace(/</g,'&lt;')}</small><em>${role}</em></div><select onchange="changeUserRole('${id}',this.value)" ${u.id==='admin-marco'?'disabled':''}><option value="usuario" ${u.role==='usuario'?'selected':''}>👤 Usuário</option><option value="motoboy" ${u.role==='motoboy'?'selected':''}>🏍️ Motoboy</option><option value="administrador" ${u.role==='administrador'?'selected':''}>🔐 Administrador</option></select></div>`;
+    }).join('');
   }
 
   window.changeUserRole=async(id,role)=>{const {error}=await sb.from('profiles').update({role}).eq('id',id);if(error)return toast('Não foi possível alterar a permissão.');toast('Permissão atualizada.');usersDB()};
