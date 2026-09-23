@@ -91,18 +91,42 @@
       return;
     }
 
-    // O login local é a porta de entrada principal. Assim o acesso não fica
-    // bloqueado por configuração, RLS ou indisponibilidade momentânea do Supabase.
+    // LOGIN LOCAL PRIMEIRO: garante que o acesso de demonstração funcione
+    // mesmo que o Supabase/RLS esteja com problema ou que exista cadastro antigo
+    // no navegador.
     let localUser=null;
     try{
-      const raw=localStorage.getItem('bv_users');
-      const list=raw?JSON.parse(raw):[];
-      if(Array.isArray(list)){
-        localUser=list.find(x=>
-          String(x.email||'').trim().toLowerCase()===email &&
-          String(x.pass??'')===password
-        );
+      let list=[];
+      if(typeof window.users==='function'){
+        list=window.users();
+      }else{
+        const raw=localStorage.getItem('bv_users');
+        list=raw?JSON.parse(raw):[];
       }
+      if(!Array.isArray(list))list=[];
+
+      // Reforça os dois acessos padrão, inclusive se um cadastro antigo
+      // tiver sido salvo no navegador com senha diferente.
+      const defaults=[
+        {id:'admin-marco',name:'Administrador',email:'marco@bv.com',pass:'123456',role:'administrador'},
+        {id:'user-demo',name:'Usuário',email:'usuario@bv.com',pass:'123456',role:'usuario'}
+      ];
+      defaults.forEach(d=>{
+        const i=list.findIndex(x=>String(x.email||'').trim().toLowerCase()===d.email);
+        if(i<0) list.push({...d});
+        else {
+          list[i].id=list[i].id||d.id;
+          list[i].name=list[i].name||d.name;
+          list[i].pass=d.pass;
+          list[i].role=list[i].role||d.role;
+        }
+      });
+      localStorage.setItem('bv_users',JSON.stringify(list));
+
+      localUser=list.find(x=>
+        String(x.email||'').trim().toLowerCase()===email &&
+        String(x.pass??'')===password
+      );
     }catch(e){console.error('Erro lendo usuários locais:',e)}
 
     if(localUser){
