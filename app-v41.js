@@ -53,7 +53,7 @@ function showPage(p){
  document.querySelectorAll('.page').forEach(x=>x.classList.remove('activePage'));
  document.querySelectorAll('.page').forEach(x=>x.style.display='none');
  const x=$('page-'+p);
- if(x){x.style.display='';x.classList.add('activePage')}
+ if(x){x.style.display='block';x.classList.add('activePage')}
  document.querySelectorAll('.sideNav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
  if($('pageTitle'))$('pageTitle').textContent=pages[p];
  if($('sidebar'))$('sidebar').classList.remove('open');
