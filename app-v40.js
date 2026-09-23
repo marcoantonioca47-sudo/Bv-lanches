@@ -71,7 +71,7 @@ window.addEventListener('load',()=>{init();$('email')?.addEventListener('keydown
     const payment=document.getElementById('orderPaymentFilter')?.value||'';
     const range=document.getElementById('orderDateFilter')?.value||'';
     const cutoff=range==='today'?new Date(new Date().setHours(0,0,0,0)).getTime():range?Date.now()-Number(range)*86400000:0;
-    const list=orders.filter(o=>{
+    const list=orders.filter(o=>o.status!=='Entregue'&&o.status!=='Cancelado').filter(o=>{
       const hay=[o.id,o.customer,o.phone,o.items,o.address?.rua,o.address?.bairro].join(' ').toLowerCase();
       const t=o.created_at?new Date(o.created_at).getTime():0;
       return (!q||hay.includes(q))&&(!status||o.status===status)&&(!payment||o.payment===payment)&&(!cutoff||t>=cutoff);
