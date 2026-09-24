@@ -1,9 +1,13 @@
-/* BV LANCHES — PWA: instalar como aplicativo + área segura */
+/* BV LANCHES — PWA: instalação, atualização automática e área segura */
 (function(){
   let deferredPrompt=null;
+  let hadController=!!navigator.serviceWorker?.controller;
+  let reloading=false;
+
   function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
   function button(){return document.getElementById('bvInstallAppBtn')}
   function show(){const b=button();if(b&&!isStandalone())b.style.display='inline-flex'}
+
   function applySafeArea(){
     if(!isStandalone())return;
     const id='bv-pwa-safe-area-v1';
@@ -16,14 +20,39 @@
       '.content{padding-bottom:calc(24px + var(--bv-safe-bottom))}';
     document.head.appendChild(s);
   }
+
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;show()});
   window.addEventListener('appinstalled',()=>{deferredPrompt=null;const b=button();if(b)b.style.display='none'});
+
   window.bvInstallApp=async function(){
-    if(deferredPrompt){deferredPrompt.prompt();try{await deferredPrompt.userChoice}catch(e){}deferredPrompt=null;const b=button();if(b)b.style.display='none';return;}
-    if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!isStandalone()){alert('No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início”.');return;}
+    if(deferredPrompt){
+      deferredPrompt.prompt();
+      try{await deferredPrompt.userChoice}catch(e){}
+      deferredPrompt=null;
+      const b=button();if(b)b.style.display='none';
+      return;
+    }
+    if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!isStandalone()){
+      alert('No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início”.');return;
+    }
     alert('Abra o menu do navegador e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”.');
   };
-  if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).catch(()=>{}));
+
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(!hadController||reloading)return;
+      reloading=true;
+      window.location.reload();
+    });
+    window.addEventListener('load',async()=>{
+      try{
+        const reg=await navigator.serviceWorker.register('./service-worker.js',{scope:'./'});
+        await reg.update();
+        hadController=hadController||!!navigator.serviceWorker.controller;
+      }catch(e){}
+    });
+  }
+
   document.addEventListener('DOMContentLoaded',()=>{show();applySafeArea()},{once:true});
   window.addEventListener('pageshow',applySafeArea);
 })();
