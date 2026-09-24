@@ -274,12 +274,13 @@
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'orders',filter:'user_id=eq.'+user.id},async payload=>{
         await window.BV_REFRESH_ORDERS?.();
         if(document.getElementById('page-acompanhar')?.classList.contains('activePage')){
-          window.renderTracking?.();
+          const updated=(window.orders||[]).find(x=>String(x.id)===String(payload.new?.id));
+          window.renderTracking?.(updated);
         }
       })
-      .subscribe();
+      .subscribe(status=>{console.log('[BV TRACKING] Realtime:',status);});
   };
-  window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()))||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')));b.innerHTML=o?`<div class="trackingCard"><small>PEDIDO</small><h3>#${esc(window.orderLabel(o))}</h3><b>${esc(o.status)}</b><p>${esc(o.items||'')}</p><strong>${money(o.total)}</strong></div>`:'<p class="muted">Nenhum pedido em andamento.</p>'};
+  window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')))||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()));b.innerHTML=o?`<div class="trackingCard"><small>PEDIDO</small><h3>#${esc(window.orderLabel(o))}</h3><b>${esc(o.status)}</b><p>${esc(o.items||'')}</p><strong>${money(o.total)}</strong></div>`:'<p class="muted">Nenhum pedido em andamento.</p>'};
   window.trackLastOrder=async()=>{try{await window.BV_REFRESH_ORDERS?.();const o=(window.orders||[])[0];if(!o)return toast('Você ainda não possui pedidos.');localStorage.setItem('bv_track_id',o.id);window.renderTracking(o)}catch{toast('Não foi possível consultar seu último pedido.')}};
   window.trackOrder=async()=>{
     try{
