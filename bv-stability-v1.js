@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.80';
+  window.BV_STABILITY_VERSION='2026.09.24.81';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -605,17 +605,66 @@
   window.loadApp=async()=>{
     if(!sb)return;
     if(!firstLoginDone()){ $('login')&&$('login').style.setProperty('display','flex','important'); return; }
-    const {data:{user},error}=await sb.auth.getUser();if(error||!user){$('login')&&($('login').style.display='flex');return}
-    const p=await sb.from('profiles').select('name,role').eq('id',user.id).maybeSingle();if(p.error||!p.data){toast('Seu perfil não foi encontrado.');return}
-    window.BV_ROLE=p.data.role||'usuario';window.BV_USER_NAME=p.data.name||user.email;window.applyAccess();
-    $('login')&&($('login').style.display='none');
-    const [pr,st]=await Promise.all([sb.from('products').select('*').order('created_at'),sb.from('settings').select('fee,whatsapp').eq('id',1).maybeSingle()]);
-    if(!pr.error){window.products=pr.data||[];localStorage.setItem('bv_products',JSON.stringify(window.products))}
-    window.BV_DEFAULT_FEE=st.data?Number(st.data.fee)||0:5;if($('feeCfg'))$('feeCfg').value=window.BV_DEFAULT_FEE;if($('waCfg'))$('waCfg').value=st.data?.whatsapp||'';
-    window.renderProducts();await window.BV_REFRESH_ORDERS();await window.loadProfile();
-    // A restauração da sessão é assíncrona. Se o usuário já clicou em outra aba,
-    // nunca sobrescreva a navegação dele com Dashboard/Pedidos.
+
+    // Abre a interface imediatamente usando o último perfil/produtos salvos.
+    // As informações do Supabase são atualizadas em segundo plano.
+    let cachedProfile=null;
+    try{cachedProfile=JSON.parse(localStorage.getItem('bv_profile_cache')||'null')}catch(e){}
+    let cachedProducts=null;
+    try{cachedProducts=JSON.parse(localStorage.getItem('bv_products')||'null')}catch(e){}
+    if(cachedProfile?.role){
+      window.BV_ROLE=cachedProfile.role;
+      window.BV_USER_NAME=cachedProfile.name||'';
+      window.applyAccess();
+      $('login')&&$('login').style.setProperty('display','none','important');
+    }
+    if(Array.isArray(cachedProducts)&&cachedProducts.length){
+      window.products=cachedProducts;
+      window.renderProducts();
+    }
+
+    const {data:{session},error}=await sb.auth.getSession();
+    const user=session?.user;
+    if(error||!user){
+      $('login')&&$('login').style.setProperty('display','flex','important');
+      return;
+    }
+
+    // Se não houver cache, busca o perfil antes de liberar a tela.
+    if(!cachedProfile?.role){
+      const p=await sb.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
+      if(p.error||!p.data){toast('Seu perfil não foi encontrado.');return}
+      window.BV_ROLE=p.data.role||'usuario';
+      window.BV_USER_NAME=p.data.name||user.email;
+      try{localStorage.setItem('bv_profile_cache',JSON.stringify({name:window.BV_USER_NAME,role:window.BV_ROLE,userId:user.id}))}catch(e){}
+      window.applyAccess();
+      $('login')&&$('login').style.setProperty('display','none','important');
+    }
+
     if(!window.BV_HAS_NAVIGATED)window.showPage('inicio',true);
+
+    // Atualização de dados sem bloquear a abertura do aplicativo.
+    Promise.all([
+      sb.from('profiles').select('name,role').eq('id',user.id).maybeSingle(),
+      sb.from('products').select('*').order('created_at'),
+      sb.from('settings').select('fee,whatsapp').eq('id',1).maybeSingle()
+    ]).then(async([p,pr,st])=>{
+      if(p?.data){
+        window.BV_ROLE=p.data.role||'usuario';
+        window.BV_USER_NAME=p.data.name||user.email;
+        try{localStorage.setItem('bv_profile_cache',JSON.stringify({name:window.BV_USER_NAME,role:window.BV_ROLE,userId:user.id}))}catch(e){}
+        window.applyAccess();
+      }
+      if(!pr.error){
+        window.products=pr.data||[];
+        try{localStorage.setItem('bv_products',JSON.stringify(window.products))}catch(e){}
+        window.renderProducts();
+      }
+      window.BV_DEFAULT_FEE=st?.data?Number(st.data.fee)||0:5;
+      if($('feeCfg'))$('feeCfg').value=window.BV_DEFAULT_FEE;
+      if($('waCfg'))$('waCfg').value=st?.data?.whatsapp||'';
+      await Promise.allSettled([window.BV_REFRESH_ORDERS?.(),window.loadProfile?.()]);
+    }).catch(e=>console.error('[BV] background sync',e));
   };
 
   window.addEventListener?.('error',e=>{console.error('BV error',e.error||e.message)});
