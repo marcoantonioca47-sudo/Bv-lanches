@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.61';
+  window.BV_STABILITY_VERSION='2026.09.24.65';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -219,7 +219,7 @@
     const done=all.filter(o=>o.rawStatus==='entregue'||o.status==='Entregue');
     const delivered=done.filter(byDate);
     const pending=filtered.filter(o=>!['Entregue','Cancelado'].includes(o.status));
-    const purchaseTotal=o=>Math.max(0,Number(o.total||0)-Number(o.deliveryFee||0));
+    const purchaseTotal=o=>{const total=Number(o?.total)||0;const fee=Number(o?.deliveryFee ?? o?.delivery_fee)||0;return Math.max(0,total-fee)};
     const rev=delivered.reduce((s,o)=>s+purchaseTotal(o),0);
     if($('sOrders'))$('sOrders').textContent=delivered.length;
     if($('sRevenue'))$('sRevenue').textContent=money(rev);
