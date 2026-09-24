@@ -56,15 +56,15 @@
   window.renderMotoFeeOrders=async()=>{
     if(window.BV_ROLE!=='motoboy')return;
     const b=$('motoFeeOrders');if(!b||!sb)return;
-    b.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando entregas...</b></div>';
+    b.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
     try{
       const {data:{user}}=await sb.auth.getUser();if(!user)return;
-      const r=await sb.from('orders').select('id,order_number,total,delivery_fee,created_at').eq('motoboy_id',user.id).eq('status','entregue').order('created_at',{ascending:false});
+      const r=await sb.from('orders').select('id,order_number,delivery_fee,created_at').eq('motoboy_id',user.id).eq('status','entregue').order('created_at',{ascending:false});
       if(r.error)throw r.error;
       const rows=r.data||[];
       const totalFees=rows.reduce((s,o)=>s+Number(o.delivery_fee||0),0);
-      b.innerHTML=rows.length?'<div class="motoFeeSummary"><div><small>ENTREGAS</small><strong>'+rows.length+'</strong></div><div><small>TOTAL DAS TAXAS</small><strong>'+money(totalFees)+'</strong></div></div><div class="motoFeeList">'+rows.map(o=>'<article class="motoFeeOrder"><div><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b></div><div><small>VALOR DO PEDIDO</small><strong>'+money(o.total)+'</strong></div><div><small>TAXA DE ENTREGA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>Nenhuma entrega finalizada</b><small>Quando você marcar um pedido como entregue, ele aparecerá aqui.</small></div>';
-    }catch(e){console.error('Moto fee orders',e);b.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as entregas</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>'}
+      b.innerHTML=rows.length?'<div class="motoFeeHeader"><div><small>ENTREGAS REALIZADAS</small><strong>'+rows.length+'</strong></div><div><small>TOTAL A RECEBER</small><strong>'+money(totalFees)+'</strong></div></div><div class="motoFeeList">'+rows.map(o=>'<article class="motoFeeOrder"><div class="motoFeeOrderNumber"><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b></div><div class="motoFeeValue"><small>TAXA DE ENTREGA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>Nenhuma entrega finalizada</b><small>Quando você marcar um pedido como entregue, ele aparecerá aqui.</small></div>';
+    }catch(e){console.error('Moto fee orders',e);b.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as taxas</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>'}
   };
 
   window.setMenuCategory=(c,b)=>{document.querySelectorAll('[data-menu-category]').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_CAT=c;window.renderProducts()};
