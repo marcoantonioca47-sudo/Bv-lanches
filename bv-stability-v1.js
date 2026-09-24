@@ -7,7 +7,8 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.17';
+  window.BV_STABILITY_VERSION='2026.09.24.18';
+  window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
   try{window.cart=Array.isArray(window.cart)?window.cart:(JSON.parse(localStorage.getItem('bv_cart')||'[]')||[])}catch{window.cart=[]}
@@ -39,7 +40,8 @@
   };
   window.toggleSidebar=()=>{$('sidebar')?.classList.toggle('open')};
   window.openAdmin=p=>{if(!window.admin())return toast('Acesso restrito ao administrador.');window.showPage(p||'dashboard')};
-  window.showPage=p=>{
+  window.showPage=(p,internal=false)=>{
+    if(!internal)window.BV_HAS_NAVIGATED=true;
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('activePage'));
     $('page-'+p)?.classList.add('activePage');
     if($('pageTitle'))$('pageTitle').textContent=labels[p]||p;
@@ -264,7 +266,9 @@
     if(!pr.error){window.products=pr.data||[];localStorage.setItem('bv_products',JSON.stringify(window.products))}
     window.BV_DEFAULT_FEE=st.data?Number(st.data.fee)||0:5;if($('feeCfg'))$('feeCfg').value=window.BV_DEFAULT_FEE;if($('waCfg'))$('waCfg').value=st.data?.whatsapp||'';
     window.renderProducts();await window.BV_REFRESH_ORDERS();await window.loadProfile();
-    if(window.BV_ROLE==='administrador')window.showPage('dashboard');else if(window.BV_ROLE==='motoboy')window.showPage('pedidos');else window.showPage('inicio');
+    // A restauração da sessão é assíncrona. Se o usuário já clicou em outra aba,
+    // nunca sobrescreva a navegação dele com Dashboard/Pedidos.
+    if(!window.BV_HAS_NAVIGATED)window.showPage('inicio',true);
   };
 
   window.addEventListener?.('error',e=>{console.error('BV error',e.error||e.message)});
