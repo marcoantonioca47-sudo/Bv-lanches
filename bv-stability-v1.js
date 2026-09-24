@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.38';
+  window.BV_STABILITY_VERSION='2026.09.24.39';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -18,7 +18,7 @@
   if(sb)window.BV_SUPABASE=sb;
 
   const labels={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',produtos:'Produtos',cupons:'Cupons',config:'Configurações','taxa-entrega':'Taxa de entrega'};
-  const status={recebido:'Novo',em_preparo:'Em preparo',em_producao:'Em produção',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
+  const status={recebido:'Liberado',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Em produção',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
   const payLabel={pix:'Pix',dinheiro:'Dinheiro',cartao:'Cartão'};
 
   window.admin=()=>['administrador','admin'].includes(window.BV_ROLE);
@@ -194,8 +194,10 @@
   };
   window.statusOrder=async(id,s)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
+    const o=(window.orders||[]).find(x=>String(x.id)===String(id));
+    if(o&&o.rawStatus==='aguardando_pagamento'&&s!=='cancelado')return toast('Este pedido só será liberado após a confirmação do pagamento via PIX.');
     const r=await sb.from('orders').update({status:s,updated_at:new Date().toISOString()}).eq('id',id);
-    if(r.error)return toast('Erro ao atualizar status: '+r.error.message);
+    if(r.error)return toast(r.error.message==='PIX_AGUARDANDO_PAGAMENTO'?'PIX ainda não foi pago.':('Erro ao atualizar status: '+r.error.message));
     await window.BV_REFRESH_ORDERS?.();toast('Status atualizado.');
   };
   window.setDashboardDateFilter=value=>{window.BV_DASHBOARD_DATE=value||'';const input=$('dashboardDateFilter');if(input)input.value=window.BV_DASHBOARD_DATE;window.renderDashboard()};
