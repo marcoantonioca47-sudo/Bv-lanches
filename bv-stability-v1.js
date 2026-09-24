@@ -180,12 +180,20 @@
     if(r.error)return toast('Erro ao atualizar status: '+r.error.message);
     await window.BV_REFRESH_ORDERS?.();toast('Status atualizado.');
   };
+  window.setDashboardDateFilter=value=>{window.BV_DASHBOARD_DATE=value||'';window.renderDashboard()};
   window.renderDashboard=()=>{
-    const a=window.orders||[],done=a.filter(o=>o.status==='Entregue'),pending=a.filter(o=>!['Entregue','Cancelado'].includes(o.status)),rev=done.reduce((s,o)=>s+Number(o.total||0),0);
+    const a=window.orders||[],done=a.filter(o=>o.status==='Entregue'),pending=a.filter(o=>!['Entregue','Cancelado'].includes(o.status)),selected=window.BV_DASHBOARD_DATE||'';
+    const delivered=selected?done.filter(o=>{const d=new Date(o.created_at);return d.toISOString().slice(0,10)===selected}):done;
+    const rev=done.reduce((s,o)=>s+Number(o.total||0),0);
     if($('sOrders'))$('sOrders').textContent=done.length;if($('sRevenue'))$('sRevenue').textContent=money(rev);if($('sAvg'))$('sAvg').textContent=money(done.length?rev/done.length:0);if($('sNew'))$('sNew').textContent=pending.length;
-    const chart=$('dashboardChart');if(chart){const ls=['Novo','Em preparo','Em produção','Saiu para entrega','Entregue','Cancelado'],cs=ls.map(x=>a.filter(o=>o.status===x).length),mx=Math.max(1,...cs);chart.innerHTML=ls.map((x,i)=>`<div class="chartBar"><div class="chartTrack"><div class="chartFill" style="height:${Math.max(5,cs[i]/mx*100)}%"></div></div><b>${cs[i]}</b><small>${x}</small></div>`).join('')};
-    const nc=$('notificationCenter'),badge=$('notificationBadge');if(badge)badge.textContent=pending.length;if(nc)nc.innerHTML=pending.slice(0,10).map(o=>`<div class="notificationItem"><b>Pedido #${esc(window.orderLabel(o))}</b><small>${esc(o.customer||'Cliente')} · ${esc(o.status)}</small></div>`).join('')||'<div class="notificationItem">Nenhuma pendência.</div>';
-    const list=$('dashboardOrders');if(list)list.innerHTML=done.slice(0,10).map(o=>`<div class="line dashboardOrderLine"><span><b>#${esc(window.orderLabel(o))} · ${esc(o.customer||'')}</b><small>${esc(o.items||'')}</small></span><strong>${money(o.total)}</strong><button type="button" onclick='showDashboardOrderDetails(${JSON.stringify(o).replace(/'/g,"&#39;")})' style="margin-left:10px;padding:9px 12px;border:1px solid #343a44;border-radius:9px;background:#20242a;color:#fff;font-weight:800;cursor:pointer">Ver mais</button></div>`).join('')||'<p class="muted">Nenhum pedido entregue ainda.</p>';
+    const chart=$('dashboardChart');if(chart){const ls=['Novo','Em preparo','Em produção','Saiu para entrega','Entregue','Cancelado'],cs=ls.map(x=>a.filter(o=>o.status===x).length),mx=Math.max(1,...cs);chart.innerHTML=ls.map((x,i)=>'<div class="chartBar"><div class="chartTrack"><div class="chartFill" style="height:'+Math.max(5,cs[i]/mx*100)+'%"></div></div><b>'+cs[i]+'</b><small>'+x+'</small></div>').join('')};
+    const nc=$('notificationCenter'),badge=$('notificationBadge');if(badge)badge.textContent=pending.length;if(nc)nc.innerHTML=pending.slice(0,10).map(o=>'<div class="notificationItem"><b>Pedido #'+esc(window.orderLabel(o))+'</b><small>'+esc(o.customer||'Cliente')+' · '+esc(o.status)+'</small></div>').join('')||'<div class="notificationItem">Nenhuma pendência.</div>';
+    const list=$('dashboardOrders');
+    if(list){
+      const fmtDate=o=>{const d=new Date(o.created_at);return Number.isNaN(d.getTime())?'Data não disponível':d.toLocaleDateString('pt-BR')+' · '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
+      list.innerHTML=delivered.length?delivered.slice(0,10).map(o=>'<div class="line dashboardOrderLine"><span class="dashboardOrderMain"><b>Pedido #'+esc(window.orderLabel(o))+' · '+esc(o.customer||'Cliente')+'</b><small>'+esc(o.items||'Nenhum item informado')+'</small><small class="dashboardOrderDate">📅 <strong>'+esc(fmtDate(o))+'</strong></small></span><strong class="dashboardOrderValue">'+money(o.total)+'</strong><button type="button" class="dashboardOrderDetailsBtn" onclick="showDashboardOrderDetails(this.__order)" >Ver detalhes</button></div>').join(''):'<div class="emptyState"><span>📋</span><b>Nenhum pedido entregue'+(selected?' nesta data':' ainda')+'</b><small>'+(selected?'Escolha outra data ou clique em Todos.':'Os pedidos entregues aparecerão aqui.')+'</small></div>';
+      list.querySelectorAll('.dashboardOrderDetailsBtn').forEach((btn,i)=>btn.__order=delivered.slice(0,10)[i]);
+    }
   };
   window.showDashboardOrderDetails=o=>{
     if(!o)return;
