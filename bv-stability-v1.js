@@ -7,7 +7,9 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.16';
+  window.BV_STABILITY_VERSION='2026.09.24.17';
+  // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
+  // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
   try{window.cart=Array.isArray(window.cart)?window.cart:(JSON.parse(localStorage.getItem('bv_cart')||'[]')||[])}catch{window.cart=[]}
   try{window.products=Array.isArray(window.products)?window.products:(JSON.parse(localStorage.getItem('bv_products')||'[]')||[])}catch{window.products=[]}
   if(!Array.isArray(window.orders))window.orders=[];
