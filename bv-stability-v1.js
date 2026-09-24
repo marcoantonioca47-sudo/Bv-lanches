@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.24';
+  window.BV_STABILITY_VERSION='2026.09.24.25';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -302,7 +302,21 @@
 };
   window.createAdminUser=async()=>{const n=$('newUserName')?.value.trim(),e=$('newUserEmail')?.value.trim(),p=$('newUserPass')?.value||'',role=$('newUserRole')?.value||'usuario';if(!n||!e||p.length<6)return toast('Preencha nome, e-mail e senha com no mínimo 6 caracteres.');const r=await sb.functions.invoke('admin-user',{body:{action:'create',name:n,email:e,password:p,role}});if(r.error||!r.data?.ok)return toast(r.error?.message||r.data?.error||'Não foi possível cadastrar.');await window.renderUsers();toast('Usuário cadastrado.')};
   window.changeUserRole=async(id,role)=>{const r=await sb.functions.invoke('admin-user',{body:{action:'role',user_id:id,role}});if(r.error||!r.data?.ok)return toast(r.error?.message||r.data?.error||'Não foi possível alterar a permissão.');await window.renderUsers();toast('Permissão atualizada.')};
-  window.deleteUser=async id=>{if(!confirm('Excluir este usuário?'))return;const r=await sb.functions.invoke('admin-user',{body:{action:'delete',user_id:id}});if(r.error||!r.data?.ok)return toast(r.error?.message||r.data?.error||'Não foi possível excluir.');await window.renderUsers();toast('Usuário excluído.')};
+  window.deleteUser=async id=>{
+  if(!id)return toast('Usuário inválido.');
+  const {data:{user}}=await sb.auth.getUser();
+  if(user?.id===id)return toast('Você não pode excluir a própria conta por este painel.');
+  if(!confirm('Excluir este usuário definitivamente?'))return;
+  const btns=document.querySelectorAll('#userPermissions button.userDelete');
+  btns.forEach(b=>b.disabled=true);
+  try{
+    const r=await sb.functions.invoke('admin-user',{body:{action:'delete',user_id:id}});
+    if(r.error||!r.data?.ok)throw new Error(r.error?.message||r.data?.error||'Não foi possível excluir o usuário.');
+    toast('Usuário excluído com sucesso.');
+    await window.renderUsers();
+  }catch(e){console.error('deleteUser',e);toast(e?.message||'Não foi possível excluir o usuário.')}
+  finally{btns.forEach(b=>b.disabled=false)}
+};
 
   window.loadApp=async()=>{
     if(!sb)return;
