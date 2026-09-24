@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.34';
+  window.BV_STABILITY_VERSION='2026.09.24.35';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -282,6 +282,7 @@
   };
   window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')))||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()));b.innerHTML=o?`<div class="trackingCard"><small>PEDIDO</small><h3>#${esc(window.orderLabel(o))}</h3><b>${esc(o.status)}</b><p>${esc(o.items||'')}</p><strong>${money(o.total)}</strong></div>`:'<p class="muted">Nenhum pedido em andamento.</p>'};
   window.trackLastOrder=async()=>{try{await window.BV_REFRESH_ORDERS?.();const o=(window.orders||[])[0];if(!o)return toast('Você ainda não possui pedidos.');localStorage.setItem('bv_track_id',o.id);const input=$('trackId');if(input)input.value=window.orderLabel(o);window.renderTracking(o)}catch{toast('Não foi possível consultar seu último pedido.')}};
+  window.trackSpecificOrder=async id=>{const o=(window.orders||[]).find(x=>String(x.id)===String(id));if(!o)return toast('Pedido não encontrado.');localStorage.setItem('bv_track_id',o.id);const input=$('trackId');if(input)input.value=window.orderLabel(o);window.renderTracking(o)};
   window.trackOrder=async()=>{
     try{
       const sbx=sb||window.BV_SUPABASE;
@@ -291,9 +292,15 @@
 
       const raw=($('trackId')?.value||'').replace(/^#/,'').trim();
       const phone=($('trackPhone')?.value||'').replace(/\\D/g,'');
-      if(!raw)return toast('Informe o número do pedido.');
 
       await window.BV_REFRESH_ORDERS?.();
+      if(!raw){
+        const orders=window.orders||[];
+        const b=$('trackingResult');
+        if(!orders.length)return toast('Você ainda não possui pedidos.');
+        b.innerHTML='<div class="trackingOrdersList"><div class="trackingListHead"><div><small>MEUS PEDIDOS</small><h3>Todos os seus pedidos</h3><p>Selecione um pedido para acompanhar.</p></div><strong>'+orders.length+'</strong></div>'+orders.map(x=>'<button type="button" class="trackingOrderOption" onclick="trackSpecificOrder(\\''+esc(String(x.id)).replace(/'/g,"\\\\'")+\\'\\')"><span><b>#'+esc(window.orderLabel(x))+'</b><small>'+esc(x.status||'')+'</small></span><span><strong>'+money(x.total)+'</strong><small>'+new Date(x.created_at).toLocaleDateString('pt-BR')+'</small></span></button>').join('')+'</div>';
+        return;
+      }
       let o=(window.orders||[]).find(x=>{
         const number=String(x.orderNumber||'');
         const label=window.orderLabel(x);
