@@ -339,3 +339,134 @@ button,input,select,textarea{font-family:inherit!important}
   .adminTop{align-items:flex-start!important}
   .dashboardOrderLine{grid-template-columns:1fr!important}
 }
+
+
+/* HOME — cartões informativos e atalhos clicáveis */
+.homeInfoGrid{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:14px!important;
+  margin-top:22px!important;
+}
+.homeInfoGrid button.homeInfoCard{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  width:100%!important;
+  min-height:132px!important;
+  margin:0!important;
+  padding:18px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:16px!important;
+  text-align:left!important;
+  font:inherit!important;
+  color:#fff!important;
+  background:linear-gradient(145deg,#171a20,#0d0f13)!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  border-radius:18px!important;
+  box-shadow:0 14px 34px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.025)!important;
+  cursor:pointer!important;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease!important;
+}
+.homeInfoGrid button.homeInfoCard:hover,
+.homeInfoGrid button.homeInfoCard:active{
+  transform:translateY(-2px)!important;
+  border-color:rgba(229,9,20,.42)!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.28),0 0 0 1px rgba(229,9,20,.08)!important;
+}
+.homeInfoGrid button.homeInfoCard>span:first-child{
+  width:56px!important;
+  height:56px!important;
+  min-width:56px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,#f20f1b,#a90008)!important;
+  color:#fff!important;
+  box-shadow:0 9px 22px rgba(229,9,20,.22),inset 0 1px 0 rgba(255,255,255,.16)!important;
+  font-size:25px!important;
+}
+.homeInfoGrid button.homeInfoCard>span:last-child{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:5px!important;
+}
+.homeInfoGrid button.homeInfoCard b{
+  display:block!important;
+  color:#fff!important;
+  font-size:17px!important;
+  line-height:1.2!important;
+  font-weight:950!important;
+}
+.homeInfoGrid button.homeInfoCard small{
+  display:block!important;
+  color:#9299a4!important;
+  font-size:12px!important;
+  line-height:1.45!important;
+}
+.homeHighlightGrid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:12px!important;
+  margin-top:16px!important;
+}
+.homeHighlightGrid button{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  width:100%!important;
+  min-height:104px!important;
+  margin:0!important;
+  padding:15px 16px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:flex-start!important;
+  text-align:left!important;
+  font:inherit!important;
+  color:#fff!important;
+  background:linear-gradient(145deg,#191c22,#0e1014)!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  border-radius:14px!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.18)!important;
+  cursor:pointer!important;
+  transition:transform .18s ease,border-color .18s ease,background .18s ease!important;
+}
+.homeHighlightGrid button:hover,.homeHighlightGrid button:active{
+  transform:translateY(-2px)!important;
+  border-color:rgba(229,9,20,.48)!important;
+  background:linear-gradient(145deg,#211418,#101216)!important;
+}
+.homeHighlightGrid button b:first-child{
+  color:var(--bv-red)!important;
+  font-size:11px!important;
+  letter-spacing:1.5px!important;
+  font-weight:950!important;
+  margin-bottom:7px!important;
+}
+.homeHighlightGrid button b:nth-child(2){
+  color:#fff!important;
+  font-size:16px!important;
+  line-height:1.25!important;
+  font-weight:950!important;
+  margin-bottom:5px!important;
+}
+.homeHighlightGrid button small{
+  color:#8f96a0!important;
+  font-size:11px!important;
+  line-height:1.4!important;
+}
+@media(max-width:900px){
+  .homeInfoGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .homeHighlightGrid{grid-template-columns:1fr!important}
+}
+@media(max-width:600px){
+  .homeInfoGrid{grid-template-columns:1fr!important;gap:10px!important;margin-top:16px!important}
+  .homeInfoGrid button.homeInfoCard{min-height:112px!important;padding:15px!important;border-radius:16px!important}
+  .homeInfoGrid button.homeInfoCard>span:first-child{width:52px!important;height:52px!important;min-width:52px!important;border-radius:14px!important;font-size:23px!important}
+  .homeInfoGrid button.homeInfoCard b{font-size:16px!important}
+  .homeInfoGrid button.homeInfoCard small{font-size:11px!important}
+  .homeHighlightGrid{gap:9px!important;margin-top:13px!important}
+  .homeHighlightGrid button{min-height:94px!important;padding:13px 14px!important}
+  .homeHighlightGrid button b:nth-child(2){font-size:15px!important}
+}
