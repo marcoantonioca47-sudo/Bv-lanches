@@ -298,7 +298,10 @@
         const orders=window.orders||[];
         const b=$('trackingResult');
         if(!orders.length)return toast('Você ainda não possui pedidos.');
-        b.innerHTML='<div class="trackingOrdersList"><div class="trackingListHead"><div><small>MEUS PEDIDOS</small><h3>Todos os seus pedidos</h3><p>Selecione um pedido para acompanhar.</p></div><strong>'+orders.length+'</strong></div>'+orders.map(x=>'<button type="button" class="trackingOrderOption" onclick="trackSpecificOrder(\\''+esc(String(x.id)).replace(/'/g,"\\\\'")+\\'\\')"><span><b>#'+esc(window.orderLabel(x))+'</b><small>'+esc(x.status||'')+'</small></span><span><strong>'+money(x.total)+'</strong><small>'+new Date(x.created_at).toLocaleDateString('pt-BR')+'</small></span></button>').join('')+'</div>';
+        b.innerHTML='<div class="trackingOrdersList"><div class="trackingListHead"><div><small>MEUS PEDIDOS</small><h3>Todos os seus pedidos</h3><p>Selecione um pedido para acompanhar.</p></div><strong>'+orders.length+'</strong></div>'+
+          orders.map(x=>'<button type="button" class="trackingOrderOption" data-order-id="'+esc(String(x.id))+'"><span><b>#'+esc(window.orderLabel(x))+'</b><small>'+esc(x.status||'')+'</small></span><span><strong>'+money(x.total)+'</strong><small>'+new Date(x.created_at).toLocaleDateString('pt-BR')+'</small></span></button>').join('')+
+          '</div>';
+        b.querySelectorAll('.trackingOrderOption').forEach(btn=>btn.addEventListener('click',()=>window.trackSpecificOrder(btn.dataset.orderId)));
         return;
       }
       let o=(window.orders||[]).find(x=>{
