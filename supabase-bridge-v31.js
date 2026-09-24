@@ -766,10 +766,16 @@
       // O Supabase é a fonte oficial do cardápio. Não fazemos uma consulta
       // separada de products aqui, evitando o erro "Não foi possível consultar o cardápio".
       // A função create_bv_order valida os produtos e calcula a taxa no servidor.
-      const items=cart.map(x=>({
-        product_id:x.id,
-        quantity:Math.max(1,Number(x.q)||1)
-      }));
+      // O carrinho pode conter IDs antigos (1, 2, 3...) salvos antes da integração.
+      // Convertemos cada item para o UUID real do produto no Supabase, usando o
+      // cardápio sincronizado e, como fallback, o nome do produto.
+      const catalog=Array.isArray(products)?products:[];
+      const items=cart.map(x=>{
+        const p=catalog.find(p=>String(p.id)===String(x.id)) ||
+          catalog.find(p=>String(p.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
+        if(!p?.id)throw new Error('Produto não encontrado no cardápio: '+String(x.name||x.id));
+        return {product_id:String(p.id),quantity:Math.max(1,Number(x.q)||1)};
+      });
 
       const payload={
         p_customer_name:String($('name')?.value||'').trim(),
