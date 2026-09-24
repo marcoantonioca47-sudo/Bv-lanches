@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.10';
+  window.BV_STABILITY_VERSION='2026.09.24.11';
   try{window.cart=Array.isArray(window.cart)?window.cart:(JSON.parse(localStorage.getItem('bv_cart')||'[]')||[])}catch{window.cart=[]}
   try{window.products=Array.isArray(window.products)?window.products:(JSON.parse(localStorage.getItem('bv_products')||'[]')||[])}catch{window.products=[]}
   if(!Array.isArray(window.orders))window.orders=[];
@@ -47,7 +47,7 @@
     if(p==='pedido'){window.renderCart();setTimeout(window.loadProfile,50)}
     if(p==='acompanhar')window.renderTracking();
     if(p==='dashboard')window.renderDashboard();
-    if(p==='pedidos'){window.renderAdmin();window.renderMotoOrders?.()}
+    if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
     if(p==='produtos')window.renderProductsAdmin?.();
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.()}
   };
@@ -181,7 +181,7 @@
     const ids=(r.data||[]).map(x=>x.id);let its=[];if(ids.length){const z=await sb.from('order_items').select('order_id,product_name,quantity').in('order_id',ids);if(!z.error)its=z.data||[]}
     const g={};its.forEach(i=>(g[i.order_id]??=[]).push(i));
     window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,items:(g[o.id]||[]).map(i=>i.quantity+'x '+i.product_name).join(', ')}));
-    if(role==='motoboy') window.renderMotoOrders?.(); else window.renderAdmin();window.renderDashboard();window.renderTracking();
+    if(role==='motoboy'){window.renderMotoOrders?.();return;} window.renderAdmin();window.renderDashboard();window.renderTracking();
   };
   window.renderTracking=o=>{const b=$('trackingResult');if(!b)return;o=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')));b.innerHTML=o?`<div class="trackingCard"><small>PEDIDO</small><h3>#${esc(window.orderLabel(o))}</h3><b>${esc(o.status)}</b><p>${esc(o.items||'')}</p><strong>${money(o.total)}</strong></div>`:'<p class="muted">Nenhum pedido selecionado.</p>'};
   window.trackLastOrder=async()=>{try{const x=JSON.parse(localStorage.getItem('bv_last_order')||'null');if(!x)return toast('Nenhum pedido recente.');localStorage.setItem('bv_track_id',x.id);await window.BV_REFRESH_ORDERS();window.renderTracking()}catch{toast('Não foi possível consultar o último pedido.')}};
