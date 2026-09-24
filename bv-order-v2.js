@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.24.4';
+  window.BV_ORDER_V2 = '2026.09.24.5';
 
   window.finish = async function(){
     const sb = getSB();
@@ -110,7 +110,12 @@
         window.renderTracking(found);
       }
 
-      msg('Pedido #' + String((window.orders || []).find(o=>String(o.id)===String(orderId))?.orderNumber || '').padStart(3,'0') + ' enviado com sucesso!');
+      const created=(window.orders || []).find(o=>String(o.id)===String(orderId));
+      if(payment==='pix'){
+        msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' criado. Aguardando confirmação do PIX.');
+      }else{
+        msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' enviado com sucesso!');
+      }
     } catch(e) {
       console.error('[BV ORDER V2] Falha ao finalizar',e);
       msg('Não foi possível finalizar: ' + String(e?.message || 'erro desconhecido').slice(0,220));
