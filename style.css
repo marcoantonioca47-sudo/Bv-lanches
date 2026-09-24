@@ -236,3 +236,5 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
  .settingsPanel #bairroFees .feeActions{justify-content:stretch}
  .settingsPanel #bairroFees .feeActions button{flex:1;min-width:0}
 }
+
+.homeNotificationBar{display:flex;justify-content:flex-end;margin:0 0 12px}.homeNotificationBar .notifyBtn{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 14px;border:1px solid #343a44;border-radius:11px;background:#111419;color:#fff;font-weight:900;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,.2)}.homeNotificationBar .notifyBtn:hover{background:#e50914;border-color:#e50914}.homeNotificationBar .notifyBtn span{min-width:20px;height:20px;padding:0 5px;display:inline-grid;place-items:center;border-radius:10px;background:#e50914;color:#fff;font-size:10px}.homeNotificationBar .notifyBtn b{font-size:12px}@media(max-width:600px){.homeNotificationBar{justify-content:stretch}.homeNotificationBar .notifyBtn{width:100%;justify-content:center}}
