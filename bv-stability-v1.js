@@ -62,16 +62,22 @@
       const r=await sb.from('orders').select('id,order_number,delivery_fee,created_at').eq('motoboy_id',user.id).eq('status','entregue').order('created_at',{ascending:false});
       if(r.error)throw r.error;
       const rows=r.data||[];
-      const selected=$('motoFeeDate')?.value||'';
-      const filtered=selected?rows.filter(o=>{const d=new Date(o.created_at);return Number.isNaN(d.getTime())?false:(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))===selected}):rows;
+      const filter=window.BV_MOTO_FEE_FILTER||'all';
+      const now=new Date();const startOfDay=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      let start=null;
+      if(filter==='today')start=startOfDay;
+      if(filter==='week'){const day=startOfDay.getDay();start=new Date(startOfDay);start.setDate(start.getDate()-(day===0?6:day-1));}
+      if(filter==='month')start=new Date(now.getFullYear(),now.getMonth(),1);
+      const filtered=start?rows.filter(o=>new Date(o.created_at)>=start):rows;
       const totalFees=filtered.reduce((s,o)=>s+Number(o.delivery_fee||0),0);
       const fmtDate=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'Data não disponível':d.toLocaleDateString('pt-BR')};
-      b.innerHTML='<div class="motoFeeFilter"><label><span>Filtrar por data</span><input id="motoFeeDate" type="date" value="'+esc(selected)+'" onchange="renderMotoFeeOrders()"></label><button type="button" onclick="clearMotoFeeDate()">Todas as datas</button></div>'+
+      b.innerHTML='<div class="motoFeeFilter"><div class="motoFeeQuickFilters"><button type="button" class="'+(filter==='today'?'active':'')+'" onclick="setMotoFeeFilter(\\'today\\')">Hoje</button><button type="button" class="'+(filter==='week'?'active':'')+'" onclick="setMotoFeeFilter(\\'week\\')">Esta semana</button><button type="button" class="'+(filter==='month'?'active':'')+'" onclick="setMotoFeeFilter(\\'month\\')">Este mês</button><button type="button" class="'+(filter==='all'?'active':'')+'" onclick="setMotoFeeFilter(\\'all\\')">Todas</button></div><label><span>Data específica</span><input id="motoFeeDate" type="date" value="" onchange="setMotoFeeSpecificDate(this.value)"></label></div>'+
         '<div class="motoFeeHeader"><div><small>ENTREGAS REALIZADAS</small><strong>'+filtered.length+'</strong></div><div><small>TOTAL A RECEBER</small><strong>'+money(totalFees)+'</strong></div></div>'+
-        (filtered.length?'<div class="motoFeeList">'+filtered.map(o=>'<article class="motoFeeOrder"><div class="motoFeeOrderNumber"><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b><small>DATA</small><b>'+fmtDate(o.created_at)+'</b></div><div class="motoFeeValue"><small>TAXA DE ENTREGA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>Nenhuma entrega nesta data</b><small>Altere a data ou selecione todas as datas.</small></div>');
+        (filtered.length?'<div class="motoFeeList">'+filtered.map(o=>'<article class="motoFeeOrder"><div class="motoFeeOrderNumber"><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b><small>DATA</small><b>'+fmtDate(o.created_at)+'</b></div><div class="motoFeeValue"><small>TAXA DE ENTREGA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>Nenhuma entrega no período</b><small>Escolha outro filtro para consultar suas taxas.</small></div>');
     }catch(e){console.error('Moto fee orders',e);b.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as taxas</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>'}
   };
-  window.clearMotoFeeDate=()=>{const x=$('motoFeeDate');if(x)x.value='';window.renderMotoFeeOrders()};
+  window.setMotoFeeFilter=filter=>{window.BV_MOTO_FEE_FILTER=filter||'all';window.renderMotoFeeOrders()};
+  window.setMotoFeeSpecificDate=value=>{if(!value){window.BV_MOTO_FEE_FILTER='all';return window.renderMotoFeeOrders()};window.BV_MOTO_FEE_FILTER='specific:'+value;const original=window.renderMotoFeeOrders;window.renderMotoFeeOrders=async()=>{window.BV_MOTO_FEE_FILTER='specific:'+value;return original()};window.renderMotoFeeOrders()};
 
   window.setMenuCategory=(c,b)=>{document.querySelectorAll('[data-menu-category]').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_CAT=c;window.renderProducts()};
   window.renderProducts=()=>{
