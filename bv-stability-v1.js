@@ -7,7 +7,8 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.79';
+  window.BV_STABILITY_VERSION='2026.09.24.80';
+  const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -145,6 +146,7 @@
     if(!email||!pass)return $('err').textContent='Informe e-mail e senha.';
     const r=await sb.auth.signInWithPassword({email,password:pass});
     if(r.error)return $('err').textContent=r.error.message;
+    try{localStorage.setItem('bv_first_login_done','1')}catch(e){}
     await window.loadApp();
   };
   window.registerUser=async e=>{
@@ -602,6 +604,7 @@
 
   window.loadApp=async()=>{
     if(!sb)return;
+    if(!firstLoginDone()){ $('login')&&$('login').style.setProperty('display','flex','important'); return; }
     const {data:{user},error}=await sb.auth.getUser();if(error||!user){$('login')&&($('login').style.display='flex');return}
     const p=await sb.from('profiles').select('name,role').eq('id',user.id).maybeSingle();if(p.error||!p.data){toast('Seu perfil não foi encontrado.');return}
     window.BV_ROLE=p.data.role||'usuario';window.BV_USER_NAME=p.data.name||user.email;window.applyAccess();
@@ -618,7 +621,7 @@
   window.addEventListener?.('error',e=>{console.error('BV error',e.error||e.message)});
   document.addEventListener('DOMContentLoaded',async()=>{
     window.applyAccess();window.renderProducts();window.renderCart();
-    if(sb){const s=await sb.auth.getSession();if(s.data.session)await window.loadApp()}
+    if(sb&&firstLoginDone()){const s=await sb.auth.getSession();if(s.data.session)await window.loadApp()}else{$('login')&&$('login').style.setProperty('display','flex','important')}
   });
-  if(sb)sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){window.BV_ROLE='';window.BV_USER_NAME='';window.applyAccess();$('login')&&($('login').style.display='flex')}else if(event==='SIGNED_IN'&&session){setTimeout(()=>window.loadApp(),100)}});
+  if(sb)sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){window.BV_ROLE='';window.BV_USER_NAME='';window.applyAccess();$('login')&&($('login').style.display='flex')}else if(event==='SIGNED_IN'&&session&&firstLoginDone()){setTimeout(()=>window.loadApp(),100)}});
 })();
