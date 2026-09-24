@@ -23,6 +23,8 @@
     return m;
   };
 
+  const firstLoginDone = () => { try { return localStorage.getItem('bv_first_login_done') === '1'; } catch(e) { return false; } }
+
   window.BV_LOGIN = async (email, password) => {
     if (!client) return { error: 'Supabase não carregou. Recarregue a página.' };
     email = String(email || '').trim().toLowerCase();
@@ -44,6 +46,7 @@
 
     window.BV_ROLE = profile.role || 'usuario';
     window.BV_USER_NAME = profile.name || data.user.email || '';
+    try { localStorage.setItem('bv_first_login_done','1'); } catch(e) {}
     window.applyAccess?.();
     $('login')?.style.setProperty('display','none','important');
 
@@ -116,7 +119,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     if (!client) return;
     const { data } = await client.auth.getSession();
-    if (data?.session) {
+    if (data?.session && firstLoginDone()) {
       try {
         const p = await client.from('profiles').select('name,role').eq('id',data.session.user.id).maybeSingle();
         if (p.data) {
