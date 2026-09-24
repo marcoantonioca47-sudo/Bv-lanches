@@ -24,8 +24,8 @@
   window.admin=()=>['administrador','admin'].includes(window.BV_ROLE);
   window.applyAccess=()=>{
     const role=window.BV_ROLE||'usuario';
-    document.querySelectorAll('.adminOnly').forEach(x=>x.style.display=role==='administrador'?'':'none');
-    document.querySelectorAll('.adminHide').forEach(x=>x.style.display=role==='administrador'?'none':'');
+    document.querySelectorAll('.adminOnly').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'':'none');
+    document.querySelectorAll('.adminHide').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'none':'');
     document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=role==='motoboy'?'':'none');
     if(role==='motoboy'){
       document.querySelectorAll('.sideNav [data-page]').forEach(x=>{
@@ -58,12 +58,12 @@
   };
 
   window.renderMotoFeeOrders=async()=>{
-    if(!['motoboy','administrador'].includes(window.BV_ROLE))return;
+    if(!['motoboy','administrador','admin'].includes(window.BV_ROLE))return;
     const b=$('motoFeeOrders');if(!b||!sb)return;
     b.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
     try{
       const {data:{user}}=await sb.auth.getUser();if(!user)return;
-      const isAdmin=window.BV_ROLE==='administrador';
+      const isAdmin=['administrador','admin'].includes(window.BV_ROLE);
       const q=sb.from('orders').select('id,order_number,delivery_fee,created_at,motoboy_id').eq('status','entregue').order('created_at',{ascending:false});
       if(!isAdmin)q.eq('motoboy_id',user.id);
       const r=await q;
