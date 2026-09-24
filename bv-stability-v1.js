@@ -59,13 +59,18 @@
     b.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
     try{
       const {data:{user}}=await sb.auth.getUser();if(!user)return;
-      const r=await sb.from('orders').select('id,order_number,delivery_fee,created_at').eq('motoboy_id',user.id).eq('status','entregue').order('created_at',{ascending:false});
+      const selectedDay=$('motoFeeDate')?.value||'';
+      let q=sb.from('orders').select('id,order_number,delivery_fee,created_at').eq('motoboy_id',user.id).eq('status','entregue');
+      if(selectedDay){const start=new Date(selectedDay+'T00:00:00');const end=new Date(start);end.setDate(end.getDate()+1);q=q.gte('created_at',start.toISOString()).lt('created_at',end.toISOString())}
+      const r=await q.order('created_at',{ascending:false});
       if(r.error)throw r.error;
       const rows=r.data||[];
       const totalFees=rows.reduce((s,o)=>s+Number(o.delivery_fee||0),0);
-      b.innerHTML=rows.length?'<div class="motoFeeHeader"><div><small>ENTREGAS REALIZADAS</small><strong>'+rows.length+'</strong></div><div><small>TOTAL A RECEBER</small><strong>'+money(totalFees)+'</strong></div></div><div class="motoFeeList">'+rows.map(o=>'<article class="motoFeeOrder"><div class="motoFeeOrderNumber"><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b></div><div class="motoFeeValue"><small>TAXA DE ENTREGA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>Nenhuma entrega finalizada</b><small>Quando você marcar um pedido como entregue, ele aparecerá aqui.</small></div>';
+      b.innerHTML='<div class="motoFeeFilter"><div><label for="motoFeeDate">FILTRAR POR DIA</label><input id="motoFeeDate" type="date" value="'+esc(selectedDay)+'" onchange="renderMotoFeeOrders()"></div><button type="button" onclick="clearMotoFeeDate()">Todos os dias</button></div>'+ (rows.length?'<div class="motoFeeHeader"><div><small>ENTREGAS '+(selectedDay?'NO DIA':'REALIZADAS')+'</small><strong>'+rows.length+'</strong></div><div><small>TOTAL '+(selectedDay?'DO DIA':'A RECEBER')+'</small><strong>'+money(totalFees)+'</strong></div></div><div class="motoFeeList">'+rows.map(o=>'<article class="motoFeeOrder"><div class="motoFeeOrderNumber"><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b></div><div class="motoFeeValue"><small>TAXA DE ENTREGA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>'+(selectedDay?'Nenhuma entrega neste dia':'Nenhuma entrega finalizada')+'</b><small>Quando você marcar um pedido como entregue, ele aparecerá aqui.</small></div>';
     }catch(e){console.error('Moto fee orders',e);b.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as taxas</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>'}
   };
+
+  window.clearMotoFeeDate=()=>{const f=$('motoFeeDate');if(f)f.value='';window.renderMotoFeeOrders?.()};
 
   window.setMenuCategory=(c,b)=>{document.querySelectorAll('[data-menu-category]').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_CAT=c;window.renderProducts()};
   window.renderProducts=()=>{
