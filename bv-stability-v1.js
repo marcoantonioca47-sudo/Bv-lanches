@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.12';
+  window.BV_STABILITY_VERSION='2026.09.24.13';
   try{window.cart=Array.isArray(window.cart)?window.cart:(JSON.parse(localStorage.getItem('bv_cart')||'[]')||[])}catch{window.cart=[]}
   try{window.products=Array.isArray(window.products)?window.products:(JSON.parse(localStorage.getItem('bv_products')||'[]')||[])}catch{window.products=[]}
   if(!Array.isArray(window.orders))window.orders=[];
@@ -232,5 +232,4 @@
     if(sb){const s=await sb.auth.getSession();if(s.data.session)await window.loadApp()}
   });
   if(sb)sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){window.BV_ROLE='';window.BV_USER_NAME='';window.applyAccess();$('login')&&($('login').style.display='flex')}else if(event==='SIGNED_IN'&&session){setTimeout(()=>window.loadApp(),100)}});
-  let bvOrderRefreshTimer=null;\nwindow.BV_START_ORDER_REFRESH=()=>{\n  if(bvOrderRefreshTimer)clearInterval(bvOrderRefreshTimer);\n  bvOrderRefreshTimer=setInterval(()=>{\n    if(window.BV_ROLE&&sb&&document.visibilityState!=='hidden'&&document.getElementById('page-pedidos')?.classList.contains('activePage'))window.BV_REFRESH_ORDERS().catch(()=>{});\n  },15000);\n};\nwindow.BV_START_ORDER_REFRESH();
 })();
