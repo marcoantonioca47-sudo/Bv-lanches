@@ -163,6 +163,7 @@
     const b=$('orders');if(!b)return;
     const q=norm($('orderSearch')?.value||''),sf=$('orderStatusFilter')?.value||'',pf=$('orderPaymentFilter')?.value||'',df=$('orderDateFilter')?.value||'',now=Date.now();
     const a=(window.orders||[]).filter(o=>{
+      if(o.rawStatus==='entregue')return false;
       const text=norm([o.customer,o.phone,o.address?.rua,o.address?.bairro,window.orderLabel(o),o.id].join(' '));
       if(q&&!text.includes(q))return false;if(sf&&o.status!==sf)return false;if(pf&&o.payment!==pf)return false;
       if(df){const t=new Date(o.created_at).getTime();if(df==='today'){const d=new Date();d.setHours(0,0,0,0);if(t<d.getTime())return false}else if(now-t>Number(df)*86400000)return false}return true;
