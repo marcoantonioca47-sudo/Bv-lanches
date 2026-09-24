@@ -219,7 +219,7 @@
     const done=all.filter(o=>o.rawStatus==='entregue'||o.status==='Entregue');
     const delivered=done.filter(byDate);
     const pending=filtered.filter(o=>!['Entregue','Cancelado'].includes(o.status));
-    const purchaseTotal=o=>Math.max(0,Number(o.total||0)-Number(o.delivery_fee||0));
+    const purchaseTotal=o=>Math.max(0,Number(o.total||0)-Number(o.deliveryFee||0));
     const rev=delivered.reduce((s,o)=>s+purchaseTotal(o),0);
     if($('sOrders'))$('sOrders').textContent=delivered.length;
     if($('sRevenue'))$('sRevenue').textContent=money(rev);
