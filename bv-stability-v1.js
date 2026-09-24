@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.40';
+  window.BV_STABILITY_VERSION='2026.09.24.41';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -98,7 +98,11 @@
     const b=$('products');if(!b)return;
     const cat=window.BV_CAT||'Lanches';
     const a=(window.products||[]).filter(p=>p.active!==false&&String(p.category||'Lanches')===cat);
-    b.innerHTML=a.length?a.map(p=>`<article class="productCard product"><div class="productImage"><span>🍔</span></div><div class="productInfo"><h3>${esc(p.name)}</h3><p>${esc(p.description||'')}</p><div class="productBottom"><b>${money(p.price)}</b><button type="button" onclick="addToCart('${esc(p.id)}')">+ Adicionar</button></div></div></article>`).join(''):'<div class="panel"><p class="muted">Nenhum produto disponível nesta categoria.</p></div>';
+    b.innerHTML=a.length?a.map(p=>{
+      const fallback=p.category==='Bebidas'?'🥤':'🍔';
+      const media=p.image_url?'<img src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+ '<span style="display:none">'+fallback+'</span>': '<span>'+fallback+'</span>';
+      return '<article class="productCard product"><div class="productImage">'+media+'</div><div class="productInfo"><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||'')+'</p><div class="productBottom"><b>'+money(p.price)+'</b><button type="button" onclick="addToCart(\''+esc(p.id)+'\')">+ Adicionar</button></div></div></article>';
+    }).join(''):'<div class="panel"><p class="muted">Nenhum produto disponível nesta categoria.</p></div>';
   };
   const saveCart=()=>{localStorage.setItem('bv_cart',JSON.stringify(window.cart||[]));const n=(window.cart||[]).reduce((s,x)=>s+(Number(x.q)||0),0);if($('count'))$('count').textContent=n;if($('sideCount'))$('sideCount').textContent=n;window.renderCart()};
   window.addToCart=id=>{const p=(window.products||[]).find(x=>String(x.id)===String(id));if(!p)return toast('Produto não encontrado.');const r=window.cart.find(x=>String(x.id)===String(id));if(r)r.q=(Number(r.q)||0)+1;else window.cart.push({id:p.id,name:p.name,price:Number(p.price)||0,q:1});saveCart();toast('Produto adicionado ao pedido.')};
@@ -263,7 +267,15 @@
   window.deleteBairroFee=async n=>{if(!confirm('Excluir a taxa de '+n+'?'))return;const r=await sb.from('neighborhood_fees').delete().eq('name',n);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.refreshDeliveryFees();toast('Bairro excluído.')};
   window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value||0).replace(',','.')),w=$('waCfg')?.value.trim()||'';if(!Number.isFinite(f)||f<0)return toast('Taxa padrão inválida.');const r=await sb.from('settings').upsert({id:1,fee:f,whatsapp:w},{onConflict:'id'});if(r.error)return toast('Erro ao salvar configurações: '+r.error.message);window.BV_DEFAULT_FEE=f;toast('Configurações salvas.')};
 
-  window.renderProductsAdmin=()=>{const b=$('manage');if(!b)return;b.innerHTML=(window.products||[]).filter(x=>x.active!==false).map(x=>`<article class="productCard product adminProductCard"><div class="productImage"><span>${x.category==='Bebidas'?'🥤':'🍔'}</span></div><div class="productInfo"><small class="eyebrow">${esc(x.category||'Lanches')}</small><h3>${esc(x.name)}</h3><p>${esc(x.description||'')}</p><div class="productBottom"><b>${money(x.price)}</b><button type="button" onclick="removeProduct('${esc(x.id)}')">Excluir produto</button></div></div></article>`).join('')||'<div class="emptyState"><span>📦</span><b>Nenhum produto cadastrado.</b><small>Cadastre um produto para começar seu cardápio.</small></div>'};
+  window.renderProductsAdmin=()=>{
+    const b=$('manage');if(!b)return;
+    const a=(window.products||[]).filter(x=>x.active!==false);
+    b.innerHTML=a.map(x=>{
+      const fallback=x.category==='Bebidas'?'🥤':'🍔';
+      const media=x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
+      return '<article class="productCard adminProductCard"><div class="productImage">'+media+'</div><div class="productInfo"><small class="eyebrow">'+esc(x.category||'Lanches')+'</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p><div class="productBottom"><b>'+money(x.price)+'</b><button type="button" onclick="removeProduct(\''+esc(x.id)+'\')">Excluir produto</button></div></div></article>';
+    }).join('')||'<div class="emptyState"><span>📦</span><b>Nenhum produto cadastrado.</b><small>Cadastre um produto para começar seu cardápio.</small></div>';
+  };
   window.addProduct=async e=>{e.preventDefault();const n=$('productName')?.value.trim(),p=Number($('productPrice')?.value),c=$('productCategory')?.value,d=$('productDesc')?.value.trim();if(!n||!Number.isFinite(p)||p<0||!c)return toast('Preencha nome, valor e categoria.');const r=await sb.from('products').insert({name:n,price:p,category:c,description:d||'',active:true});if(r.error)return toast('Erro ao cadastrar produto: '+r.error.message);e.target.reset();window.closeProductForm();await window.BV_REFRESH_PRODUCTS();toast('Produto cadastrado.')};
   window.removeProduct=async id=>{if(!confirm('Excluir este produto do cardápio?'))return;const r=await sb.from('products').update({active:false}).eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PRODUCTS();toast('Produto removido.')};
   window.BV_REFRESH_PRODUCTS=async()=>{if(!sb)return;const r=await sb.from('products').select('*').order('created_at');if(r.error)return toast('Erro ao carregar cardápio: '+r.error.message);window.products=r.data||[];localStorage.setItem('bv_products',JSON.stringify(window.products));window.renderProducts();window.renderProductsAdmin?.()};
