@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.25';
+  window.BV_STABILITY_VERSION='2026.09.24.26';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -207,8 +207,9 @@
       const title=chart.closest('.analyticsPanel')?.querySelector('.panelTitle small');
       if(title)title.textContent=selected?'Distribuição dos pedidos em '+selected.split('-').reverse().join('/'):'Distribuição dos pedidos por status';
     }
-    const nc=$('notificationCenter'),badge=$('notificationBadge');
+    const nc=$('notificationCenter'),badge=$('notificationBadge'),homeBadge=$('homeNotificationBadge');
     if(badge)badge.textContent=pending.length;
+    if(homeBadge)homeBadge.textContent=pending.length;
     if(nc)nc.innerHTML=pending.slice(0,10).map(o=>'<div class="notificationItem"><b>Pedido #'+esc(window.orderLabel(o))+'</b><small>'+esc(o.customer||'Cliente')+' · '+esc(o.status)+'</small></div>').join('')||'<div class="notificationItem">Nenhuma pendência.</div>';
     const list=$('dashboardOrders');
     if(list){
