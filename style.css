@@ -262,3 +262,27 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
 .trackingCard p{margin:18px 0;color:#b5bbc4;line-height:1.5}
 .trackingCard strong{font-size:21px}
 @media(max-width:850px){.trackingGrid{grid-template-columns:1fr}.trackingLookup{padding:18px}.trackingResult{min-height:220px}}
+
+.trackingOrdersList{width:100%;padding:4px;box-sizing:border-box}
+.trackingListHead{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:4px 4px 18px;border-bottom:1px solid #292e36}
+.trackingListHead small{color:#8d96a2;font-weight:900;letter-spacing:.1em;font-size:10px}
+.trackingListHead h3{margin:5px 0 3px;font-size:20px}
+.trackingListHead p{margin:0;color:#7f8792;font-size:12px}
+.trackingListHead>strong{min-width:38px;height:38px;padding:0 10px;box-sizing:border-box;display:grid;place-items:center;border-radius:12px;background:rgba(229,9,20,.12);border:1px solid rgba(229,9,20,.25);color:#fff;font-size:14px}
+.trackingOrderOption{width:100%;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:10px;padding:15px 16px;text-align:left;border:1px solid #292e36;border-radius:14px;background:linear-gradient(145deg,#171a20,#111419);color:#fff;cursor:pointer;transition:.18s ease;box-sizing:border-box}
+.trackingOrderOption:hover{border-color:rgba(229,9,20,.55);transform:translateY(-1px);background:linear-gradient(145deg,#1b1f26,#13161b)}
+.trackingOrderMain{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.trackingOrderNumber{font-size:17px;font-weight:900;letter-spacing:.01em}
+.trackingOrderStatus{display:inline-flex;max-width:max-content;padding:4px 9px;border-radius:999px;background:rgba(229,9,20,.12);border:1px solid rgba(229,9,20,.22);color:#fff;font-size:10px;font-weight:800}
+.trackingOrderItems{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#858d98;font-size:11px}
+.trackingOrderMeta{min-width:130px;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.trackingOrderMeta strong{font-size:16px}
+.trackingOrderMeta small{color:#8b939e;font-size:10px;white-space:nowrap}
+.trackingOrderMeta em{color:#e50914;font-style:normal;font-size:10px;font-weight:900}
+@media(max-width:600px){
+ .trackingOrderOption{align-items:flex-start;padding:14px;gap:10px}
+ .trackingOrderMeta{min-width:105px}
+ .trackingOrderNumber{font-size:16px}
+ .trackingOrderItems{max-width:170px}
+ .trackingOrderMeta strong{font-size:14px}
+}
