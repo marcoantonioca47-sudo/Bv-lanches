@@ -1,0 +1,12 @@
+/* BV LANCHES — estabilidade visual v1 */
+.notificationCenter.show,.notificationCenter.open{display:block}
+.userCreateBox{margin:0 0 12px;border:1px solid #292e36;border-radius:12px;background:#0e1014;overflow:hidden}
+.userCreateBox .newUserGrid{display:grid;grid-template-columns:1.2fr 1.4fr 1fr 1fr auto;gap:8px;padding:12px}
+.userCreateBox input,.userCreateBox select{width:100%;margin:0;min-width:0}
+.userCreateBox button{height:42px;border:0;border-radius:9px;background:#e50914;color:#fff;font-weight:900;padding:0 14px;white-space:nowrap}
+.userPerm{display:grid!important;grid-template-columns:minmax(0,1fr) 160px auto;align-items:center!important}
+.userPerm button{border:1px solid #343a44;background:#1a1d22;color:#fff;border-radius:8px;padding:9px 11px;cursor:pointer}
+.productImage{display:grid;place-items:center;min-height:120px;border-radius:12px;background:radial-gradient(circle,rgba(229,9,20,.14),transparent 65%),#0b0d10}
+.productImage span{font-size:58px}
+@media(max-width:850px){.userCreateBox .newUserGrid{grid-template-columns:1fr 1fr}.userCreateBox .newUserGrid button{grid-column:1/-1}.userPerm{grid-template-columns:1fr!important;gap:9px!important}.userPerm select,.userPerm button{width:100%}}
+@media(max-width:520px){.userCreateBox .newUserGrid{grid-template-columns:1fr}.userCreateBox .newUserGrid button{grid-column:auto}.productImage{min-height:92px}.productImage span{font-size:42px}}
