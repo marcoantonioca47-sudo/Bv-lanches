@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.27';
+  window.BV_STABILITY_VERSION='2026.09.24.28';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -23,10 +23,21 @@
 
   window.admin=()=>['administrador','admin'].includes(window.BV_ROLE);
   window.applyAccess=()=>{
-    const role=window.BV_ROLE||'usuario';
+    const role=String(window.BV_ROLE||'usuario').trim().toLowerCase();
+    window.BV_ROLE=role;
     document.querySelectorAll('.adminOnly').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'':'none');
     document.querySelectorAll('.adminHide').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'none':'');
     document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=role==='motoboy'?'':'none');
+    // Garante que o atalho da taxa exista no bloco administrativo, mesmo se uma versão antiga do HTML estiver em cache.
+    if(['administrador','admin'].includes(role)){
+      const nav=document.querySelector('.sideNav');
+      if(nav&&!nav.querySelector('[data-page="taxa-entrega"].adminFeeNav')){
+        const btn=document.createElement('button');
+        btn.type='button';btn.className='adminOnly adminFeeNav';btn.dataset.page='taxa-entrega';btn.textContent='💰  Taxa de entrega';
+        btn.onclick=()=>window.openAdmin('taxa-entrega');
+        nav.appendChild(btn);
+      }
+    }
     if(role==='motoboy'){
       document.querySelectorAll('.sideNav [data-page]').forEach(x=>{
         const allowed=x.dataset.role==='motoboyOnly';
