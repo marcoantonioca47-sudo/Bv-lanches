@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.41';
+  window.BV_STABILITY_VERSION='2026.09.24.42';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -17,7 +17,7 @@
   const sb=window.BV_SUPABASE||(window.supabase&&window.BV_SUPABASE_CONFIG?supabase.createClient(window.BV_SUPABASE_CONFIG.url,window.BV_SUPABASE_CONFIG.publishableKey):null);
   if(sb)window.BV_SUPABASE=sb;
 
-  const labels={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',produtos:'Produtos',cupons:'Cupons',config:'Configurações','taxa-entrega':'Taxa de entrega'};
+  const labels={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',produtos:'Produtos',promocoes:'Promoções',cupons:'Cupons',config:'Configurações','taxa-entrega':'Taxa de entrega'};
   const status={recebido:'Liberado',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Em produção',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
   const payLabel={pix:'Pix',dinheiro:'Dinheiro',cartao:'Cartão'};
 
@@ -54,7 +54,7 @@
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
     if(p==='taxa-entrega')window.renderMotoFeeOrders?.()
-    if(p==='produtos')window.renderProductsAdmin?.();
+    if(p==='produtos')window.renderProductsAdmin?.();if(p==='promocoes')window.renderPromotionsAdmin?.();
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.()}
   };
 
@@ -98,10 +98,14 @@
     const b=$('products');if(!b)return;
     const cat=window.BV_CAT||'Lanches';
     const a=(window.products||[]).filter(p=>p.active!==false&&String(p.category||'Lanches')===cat);
+    const now=Date.now();
     b.innerHTML=a.length?a.map(p=>{
       const fallback=p.category==='Bebidas'?'🥤':'🍔';
-      const media=p.image_url?'<img src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+ '<span style="display:none">'+fallback+'</span>': '<span>'+fallback+'</span>';
-      return '<article class="productCard product"><div class="productImage">'+media+'</div><div class="productInfo"><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||'')+'</p><div class="productBottom"><b>'+money(p.price)+'</b><button type="button" onclick="addToCart(\''+esc(p.id)+'\')">+ Adicionar</button></div></div></article>';
+      const promo=(window.promotions||[]).find(x=>String(x.product_id)===String(p.id)&&x.active&&(!x.starts_at||new Date(x.starts_at).getTime()<=now)&&(!x.ends_at||new Date(x.ends_at).getTime()>=now));
+      const price=promo?.promotional_price!=null?Number(promo.promotional_price):Number(p.price)||0;
+      const media=p.image_url?'<img src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
+      const priceHtml=promo?'<div class="promoPrice"><del>'+money(p.price)+'</del><b>'+money(price)+'</b></div>':'<b>'+money(price)+'</b>';
+      return '<article class="productCard product">'+(promo?'<div class="promoBadge">🔥 PROMOÇÃO</div>':'')+'<div class="productImage">'+media+'</div><div class="productInfo"><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||'')+'</p><div class="productBottom">'+priceHtml+'<button type="button" onclick="addToCart(\''+esc(p.id)+'\')">+ Adicionar</button></div></div></article>';
     }).join(''):'<div class="panel"><p class="muted">Nenhum produto disponível nesta categoria.</p></div>';
   };
   const saveCart=()=>{localStorage.setItem('bv_cart',JSON.stringify(window.cart||[]));const n=(window.cart||[]).reduce((s,x)=>s+(Number(x.q)||0),0);if($('count'))$('count').textContent=n;if($('sideCount'))$('sideCount').textContent=n;window.renderCart()};
@@ -267,6 +271,12 @@
   window.deleteBairroFee=async n=>{if(!confirm('Excluir a taxa de '+n+'?'))return;const r=await sb.from('neighborhood_fees').delete().eq('name',n);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.refreshDeliveryFees();toast('Bairro excluído.')};
   window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value||0).replace(',','.')),w=$('waCfg')?.value.trim()||'';if(!Number.isFinite(f)||f<0)return toast('Taxa padrão inválida.');const r=await sb.from('settings').upsert({id:1,fee:f,whatsapp:w},{onConflict:'id'});if(r.error)return toast('Erro ao salvar configurações: '+r.error.message);window.BV_DEFAULT_FEE=f;toast('Configurações salvas.')};
 
+  window.promotions=[];
+  window.BV_REFRESH_PROMOTIONS=async()=>{if(!sb)return;const r=await sb.from('promotions').select('*').order('created_at',{ascending:false});if(r.error)return toast('Erro ao carregar promoções: '+r.error.message);window.promotions=r.data||[];window.renderProducts();window.renderPromotionsAdmin?.()};
+  window.renderPromotionsAdmin=()=>{const b=$('promotionsManage');if(!b)return;const a=window.promotions||[];b.innerHTML=a.length?a.map(x=>{const p=(window.products||[]).find(y=>String(y.id)===String(x.product_id));return '<article class="promotionAdminCard"><div><span class="promoBadge">🔥 PROMOÇÃO</span><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p><small>'+esc(p?.name||'Produto não vinculado')+'</small></div><div class="promoAdminPrice"><del>'+money(x.original_price||p?.price||0)+'</del><b>'+money(x.promotional_price||0)+'</b></div><div class="promoActions"><button type="button" onclick="togglePromotion(\''+esc(x.id)+'\','+(!x.active)+')">'+(x.active?'Desativar':'Ativar')+'</button><button type="button" onclick="removePromotion(\''+esc(x.id)+'\')">Excluir</button></div></article>'}).join(''):'<div class="emptyState"><span>🏷️</span><b>Nenhuma promoção cadastrada.</b><small>Cadastre a primeira oferta abaixo.</small></div>'};
+  window.addPromotion=async e=>{e.preventDefault();const n=$('promoName')?.value.trim(),d=$('promoDesc')?.value.trim(),pid=$('promoProduct')?.value,pp=Number($('promoPrice')?.value),sa=$('promoStart')?.value||null,ea=$('promoEnd')?.value||null;if(!n||!pid||!Number.isFinite(pp)||pp<0)return toast('Preencha nome, produto e preço promocional.');const p=(window.products||[]).find(x=>String(x.id)===String(pid));if(!p)return toast('Produto inválido.');if(pp>=Number(p.price))return toast('O preço promocional deve ser menor que o preço atual.');const r=await sb.from('promotions').insert({name:n,description:d||'',product_id:pid,original_price:Number(p.price),promotional_price:pp,starts_at:sa?new Date(sa).toISOString():null,ends_at:ea?new Date(ea).toISOString():null,active:true});if(r.error)return toast('Erro ao cadastrar promoção: '+r.error.message);e.target.reset();await window.BV_REFRESH_PROMOTIONS();toast('Promoção cadastrada com sucesso.')};
+  window.togglePromotion=async(id,v)=>{const r=await sb.from('promotions').update({active:!!v,updated_at:new Date().toISOString()}).eq('id',id);if(r.error)return toast('Erro: '+r.error.message);await window.BV_REFRESH_PROMOTIONS();toast(v?'Promoção ativada.':'Promoção desativada.')};
+  window.removePromotion=async id=>{if(!confirm('Excluir esta promoção?'))return;const r=await sb.from('promotions').delete().eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PROMOTIONS();toast('Promoção excluída.')};
   window.renderProductsAdmin=()=>{
     const b=$('manage');if(!b)return;
     const a=(window.products||[]).filter(x=>x.active!==false);
@@ -279,6 +289,7 @@
   window.addProduct=async e=>{e.preventDefault();const n=$('productName')?.value.trim(),p=Number($('productPrice')?.value),c=$('productCategory')?.value,d=$('productDesc')?.value.trim();if(!n||!Number.isFinite(p)||p<0||!c)return toast('Preencha nome, valor e categoria.');const r=await sb.from('products').insert({name:n,price:p,category:c,description:d||'',active:true});if(r.error)return toast('Erro ao cadastrar produto: '+r.error.message);e.target.reset();window.closeProductForm();await window.BV_REFRESH_PRODUCTS();toast('Produto cadastrado.')};
   window.removeProduct=async id=>{if(!confirm('Excluir este produto do cardápio?'))return;const r=await sb.from('products').update({active:false}).eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PRODUCTS();toast('Produto removido.')};
   window.BV_REFRESH_PRODUCTS=async()=>{if(!sb)return;const r=await sb.from('products').select('*').order('created_at');if(r.error)return toast('Erro ao carregar cardápio: '+r.error.message);window.products=r.data||[];localStorage.setItem('bv_products',JSON.stringify(window.products));window.renderProducts();window.renderProductsAdmin?.()};
+  window.BV_REFRESH_PROMOTIONS?.();
   window.BV_REFRESH_ORDERS=async()=>{
     if(!sb)return;const {data:{user}}=await sb.auth.getUser();if(!user)return;const pr=await sb.from('profiles').select('role').eq('id',user.id).maybeSingle();const role=pr.data?.role||window.BV_ROLE||'usuario';
     let q=sb.from('orders').select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,pix_payment_id,pix_qr_code,pix_qr_code_base64,pix_expires_at').order('created_at',{ascending:false});
