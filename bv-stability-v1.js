@@ -267,7 +267,66 @@
   };
   window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()))||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')));b.innerHTML=o?`<div class="trackingCard"><small>PEDIDO</small><h3>#${esc(window.orderLabel(o))}</h3><b>${esc(o.status)}</b><p>${esc(o.items||'')}</p><strong>${money(o.total)}</strong></div>`:'<p class="muted">Nenhum pedido em andamento.</p>'};
   window.trackLastOrder=async()=>{try{await window.BV_REFRESH_ORDERS?.();const o=(window.orders||[])[0];if(!o)return toast('Você ainda não possui pedidos.');localStorage.setItem('bv_track_id',o.id);window.renderTracking(o)}catch{toast('Não foi possível consultar seu último pedido.')}};
-  window.trackOrder=async()=>{const v=($('trackId')?.value||'').replace(/^#/,'').trim();let o=(window.orders||[]).find(x=>window.orderLabel(x)===v.padStart(3,'0')||String(x.orderNumber)===v||String(x.id)===v);if(!o&&sb&&/^\d+$/.test(v)){const r=await sb.from('orders').select('id').eq('order_number',Number(v)).maybeSingle();if(r.data){localStorage.setItem('bv_track_id',r.data.id);await window.BV_REFRESH_ORDERS();o=(window.orders||[]).find(x=>x.id===r.data.id)}}if(!o)return toast('Pedido não encontrado.');localStorage.setItem('bv_track_id',o.id);window.renderTracking(o)};
+  window.trackOrder=async()=>{
+    try{
+      const sbx=sb||window.BV_SUPABASE;
+      if(!sbx)return toast('Sistema indisponível. Tente novamente.');
+      const {data:{user},error:authError}=await sbx.auth.getUser();
+      if(authError||!user)return toast('Faça login para consultar seus pedidos.');
+
+      const raw=($('trackId')?.value||'').replace(/^#/,'').trim();
+      const phone=($('trackPhone')?.value||'').replace(/\\D/g,'');
+      if(!raw)return toast('Informe o número do pedido.');
+
+      await window.BV_REFRESH_ORDERS?.();
+      let o=(window.orders||[]).find(x=>{
+        const number=String(x.orderNumber||'');
+        const label=window.orderLabel(x);
+        const id=String(x.id||'');
+        return number===raw || label===raw.padStart(3,'0') || id===raw;
+      });
+
+      if(!o && /^\\d+$/.test(raw)){
+        let q=sbx.from('orders')
+          .select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id')
+          .eq('id',raw);
+        const byId=await q.maybeSingle();
+        if(byId.data)o=byId.data;
+        if(!o){
+          const byNumber=await sbx.from('orders')
+            .select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id')
+            .eq('user_id',user.id)
+            .eq('order_number',Number(raw))
+            .maybeSingle();
+          if(byNumber.data)o=byNumber.data;
+        }
+      }
+
+      if(o && o.user_id && String(o.user_id)!==String(user.id))o=null;
+      if(o && phone){
+        const saved=String(o.phone||'').replace(/\\D/g,'');
+        if(saved && saved!==phone)return toast('O WhatsApp informado não corresponde a este pedido.');
+      }
+      if(!o)return toast('Pedido não encontrado para o cliente logado.');
+
+      if(!o.orderNumber && o.order_number)o.orderNumber=o.order_number;
+      if(!o.rawStatus&&o.status)o.rawStatus=o.status;
+      if(!o.status||!o.items){
+        const its=await sbx.from('order_items').select('product_name,quantity').eq('order_id',o.id);
+        if(!its.error){
+          o.items=(its.data||[]).map(i=>i.quantity+'x '+i.product_name).join(', ');
+        }
+        o.status=status[o.rawStatus||o.status]||o.status;
+        o.total=Number(o.total)||0;
+      }
+      localStorage.setItem('bv_track_id',o.id);
+      window.renderTracking(o);
+    }catch(e){
+      console.error('[BV TRACK] Falha ao consultar pedido',e);
+      toast('Não foi possível consultar o pedido.');
+    }
+  };
+
   window.renderMotoOrders=async()=>{
     if(window.BV_ROLE!=='motoboy')return;
     const b=$('orders');if(!b)return;
