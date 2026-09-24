@@ -28,16 +28,6 @@
     document.querySelectorAll('.adminOnly').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'':'none');
     document.querySelectorAll('.adminHide').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'none':'');
     document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=role==='motoboy'?'':'none');
-    // Garante que o atalho da taxa exista no bloco administrativo, mesmo se uma versão antiga do HTML estiver em cache.
-    if(['administrador','admin'].includes(role)){
-      const nav=document.querySelector('.sideNav');
-      if(nav&&!nav.querySelector('[data-page="taxa-entrega"].adminFeeNav')){
-        const btn=document.createElement('button');
-        btn.type='button';btn.className='adminOnly adminFeeNav';btn.dataset.page='taxa-entrega';btn.textContent='💰  Taxa de entrega';
-        btn.onclick=()=>window.openAdmin('taxa-entrega');
-        nav.appendChild(btn);
-      }
-    }
     if(role==='motoboy'){
       document.querySelectorAll('.sideNav [data-page]').forEach(x=>{
         const allowed=x.dataset.role==='motoboyOnly';
