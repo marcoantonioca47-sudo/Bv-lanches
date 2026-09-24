@@ -104,7 +104,7 @@
       const promo=(window.promotions||[]).find(x=>String(x.product_id)===String(p.id)&&x.active&&(!x.starts_at||new Date(x.starts_at).getTime()<=now)&&(!x.ends_at||new Date(x.ends_at).getTime()>=now));
       const price=promo?.promotional_price!=null?Number(promo.promotional_price):Number(p.price)||0;
       const media=p.image_url?'<img src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
-      const priceHtml=promo?'<div class="promoPrice"><del>'+money(p.price)+'</del><b>'+money(price)+'</b></div>':'<b>'+money(price)+'</b>';
+      const priceHtml='<b>'+money(p.price)+'</b>';
       return '<article class="productCard product">'+(promo?'<div class="promoBadge">🔥 PROMOÇÃO</div>':'')+'<div class="productImage">'+media+'</div><div class="productInfo"><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||'')+'</p><div class="productBottom">'+priceHtml+'<button type="button" onclick="addToCart(\''+esc(p.id)+'\')">+ Adicionar</button></div></div></article>';
     }).join(''):'<div class="panel"><p class="muted">Nenhum produto disponível nesta categoria.</p></div>';
   };
