@@ -1,8 +1,9 @@
-/* BV LANCHES — PWA: instalação, atualização automática e área segura */
+/* BV LANCHES — PWA: atualização automática imediata enquanto o app está aberto */
 (function(){
   let deferredPrompt=null;
   let hadController=!!navigator.serviceWorker?.controller;
   let reloading=false;
+  let updateTimer=null;
 
   function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
   function button(){return document.getElementById('bvInstallAppBtn')}
@@ -49,8 +50,12 @@
         const reg=await navigator.serviceWorker.register('./service-worker.js',{scope:'./'});
         await reg.update();
         hadController=hadController||!!navigator.serviceWorker.controller;
+        if(updateTimer)clearInterval(updateTimer);
+        updateTimer=setInterval(()=>{try{if(document.visibilityState==='visible')reg.update().catch(()=>{})}catch(e){}},15000);
       }catch(e){}
     });
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){navigator.serviceWorker.getRegistration('./').then(reg=>reg&&reg.update()).catch(()=>{})}});
+    window.addEventListener('pageshow',()=>{navigator.serviceWorker.getRegistration('./').then(reg=>reg&&reg.update()).catch(()=>{})});
   }
 
   document.addEventListener('DOMContentLoaded',()=>{show();applySafeArea()},{once:true});
