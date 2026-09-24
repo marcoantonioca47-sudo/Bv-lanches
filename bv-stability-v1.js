@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.20';
+  window.BV_STABILITY_VERSION='2026.09.24.24';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -284,14 +284,14 @@
   window.renderUsers=async()=>{
   const b=$('userPermissions');if(!b||!window.admin())return;
   b.innerHTML='<div class="userLoading">Carregando usuários...</div>';
-  const r=await sb.from('profiles').select('id,name,role').order('name',{ascending:true});
-  if(r.error){b.innerHTML='<div class="userError">Não foi possível carregar os usuários: '+esc(r.error.message)+'</div>';return}
-  const a=r.data||[],q=norm($('userSearch')?.value||'');
-  const filtered=a.filter(x=>norm(x.name||'').includes(q));
+  const r=await window.BV_ADMIN_USERS();
+  if(r.error){b.innerHTML='<div class="userError">Não foi possível carregar os usuários: '+esc(r.error)+'</div>';return}
+  const a=r.users||[],q=norm($('userSearch')?.value||'');
+  const filtered=a.filter(x=>norm(x.name||'').includes(q)||norm(x.email||'').includes(q));
   if($('userCount'))$('userCount').textContent=a.length+' usuários';
   b.innerHTML='<div class="permissionTitle"><div><b>Usuários cadastrados</b><small>Defina a permissão de cada conta abaixo.</small></div><span>PERMISSÕES</span></div>'+
     (filtered.map(x=>`<div class="userPerm">
-      <div class="userIdentity"><span class="userAvatar">${esc((x.name||'U').trim().charAt(0).toUpperCase())}</span><div><b>${esc(x.name||'Usuário')}</b><small>${esc(x.role==='administrador'?'Administrador':x.role==='motoboy'?'Motoboy':'Usuário')}</small></div></div>
+      <div class="userIdentity"><span class="userAvatar">${esc((x.name||x.email||'U').trim().charAt(0).toUpperCase())}</span><div><b>${esc(x.name||'Usuário')}</b><small>${esc(x.email||'')} · ${esc(x.role==='administrador'?'Administrador':x.role==='motoboy'?'Motoboy':'Usuário')}</small></div></div>
       <div class="permissionField"><label>Permissão</label><select onchange="changeUserRole('${esc(x.id)}',this.value)">
         <option value="usuario" ${x.role==='usuario'?'selected':''}>Usuário</option>
         <option value="motoboy" ${x.role==='motoboy'?'selected':''}>Motoboy</option>
