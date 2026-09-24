@@ -762,50 +762,54 @@
       const payment=localStorage.bv_payment||'Pix';
       if(delivery&&(!$('name')?.value||!$('street')?.value||!$('num')?.value||!$('bairro')?.value))return toast('Preencha nome e endereço.');
       if(!delivery&&!$('name')?.value)return toast('Informe seu nome.');
-      const sub=Number(subtotal())||0;
-      let f=0;
-      if(delivery){
-        f=await window.refreshDeliveryFeeForNeighborhood($('bairro').value);
-        f=Number(f)||0;
+
+      // O Supabase é a fonte oficial do cardápio. Não fazemos uma consulta
+      // separada de products aqui, evitando o erro "Não foi possível consultar o cardápio".
+      // A função create_bv_order valida os produtos e calcula a taxa no servidor.
+      const items=cart.map(x=>({
+        product_id:x.id,
+        quantity:Math.max(1,Number(x.q)||1)
+      }));
+
+      const payload={
+        p_customer_name:String($('name')?.value||'').trim(),
+        p_phone:String($('phone')?.value||'').trim(),
+        p_address:delivery
+          ? String($('street')?.value||'').trim()+', '+String($('num')?.value||'').trim()+
+            (String($('comp')?.value||'').trim()?' — '+String($('comp').value).trim():'')
+          : '',
+        p_neighborhood:delivery?String($('bairro')?.value||'').trim():'',
+        p_payment_method:payment==='Pix'?'pix':payment==='Cartão'?'cartao':'dinheiro',
+        p_coupon:String($('coupon')?.value||'').trim().toUpperCase(),
+        p_items:items
+      };
+
+      const {data:orderId,error}=await sb.rpc('create_bv_order',payload);
+      if(error||!orderId){
+        console.error('BV create_bv_order:',error,payload);
+        const msg=String(error?.message||error?.details||error?.hint||'').replace(/\\s+/g,' ').trim();
+        return toast(msg?('Erro ao finalizar: '+msg.slice(0,150)):'Não foi possível finalizar o pedido.');
       }
-      const coupon=String($('coupon')?.value||'').trim().toUpperCase();
-      const disc=coupon==='BV10'?sub*.1:coupon==='PRIMEIRA'?5:0;
-      const total=Math.max(0,sub+f-disc);
-      const pm=payment==='Pix'?'pix':payment==='Cartão'?'cartao':'dinheiro';
-      const {data:remote,error:prError}=await sb.from('products').select('id,name,price').eq('active',true);
-      if(prError)throw prError;
-      const items=cart.map(x=>{
-        const p=remote.find(r=>String(r.id)===String(x.id))||remote.find(r=>String(r.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
-        return {product_id:p?.id||null,product_name:x.name,quantity:Math.max(1,Number(x.q)||1),unit_price:Number(x.price)||Number(p?.price)||0};
+
+      localStorage.bv_last_order=JSON.stringify({id:orderId,phone:payload.p_phone});
+      if(delivery)localStorage.bv_saved_address=JSON.stringify({
+        name:payload.p_customer_name,phone:payload.p_phone,
+        street:$('street').value,num:$('num').value,bairro:$('bairro').value,
+        cep:$('cep').value,comp:$('comp').value
       });
-      const missing=items.find(x=>!x.product_id);
-      if(missing)return toast('O produto '+missing.product_name+' não está disponível.');
-      const address=delivery?String($('street').value).trim()+', '+String($('num').value).trim()+(String($('comp')?.value||'').trim()?' — '+String($('comp').value).trim():''):'';
-      const orderPayload={user_id:u.id,customer_name:String($('name').value).trim(),phone:String($('phone')?.value||'').trim(),address,neighborhood:delivery?String($('bairro').value).trim():'',delivery_fee:f,subtotal:sub,total,payment_method:pm,payment_status:payment==='Pix'?'pendente':'pago',status:'recebido',notes:coupon};
-      const ins=await sb.from('orders').insert(orderPayload).select('id,created_at').single();
-      if(ins.error)throw ins.error;
-      const orderId=ins.data.id;
-      const rows=items.map(x=>({order_id:orderId,product_id:x.product_id,product_name:x.product_name,quantity:x.quantity,unit_price:x.unit_price,total:x.unit_price*x.quantity}));
-      const ir=await sb.from('order_items').insert(rows);
-      if(ir.error){
-        await sb.from('orders').delete().eq('id',orderId);
-        throw ir.error;
-      }
-      localStorage.bv_last_order=JSON.stringify({id:orderId,phone:orderPayload.phone});
-      if(delivery)localStorage.bv_saved_address=JSON.stringify({name:orderPayload.customer_name,phone:orderPayload.phone,street:$('street').value,num:$('num').value,bairro:$('bairro').value,cep:$('cep').value,comp:$('comp').value});
+
       cart=[];localStorage.bv_cart='[]';
       await ordersDB();
       if($('trackId'))$('trackId').value=orderId;
-      if($('trackPhone'))$('trackPhone').value=orderPayload.phone;
+      if($('trackPhone'))$('trackPhone').value=payload.p_phone;
       showPage('acompanhar');
       renderTracking(orders.find(x=>String(x.id)===String(orderId)));
       toast('Pedido finalizado com sucesso!');
     }catch(e){
       console.error('BV finalização geral:',e);
-      toast('Não foi possível finalizar: '+(e.message||'erro no servidor').slice(0,140));
+      toast('Não foi possível finalizar: '+String(e.message||'erro no servidor').slice(0,150));
     }
   };
-
   window.change=window.change||change;
   setTimeout(()=>{try{bvReloadFeesUI()}catch(e){}},500);
 
