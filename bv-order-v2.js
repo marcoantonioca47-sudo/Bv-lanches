@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.24.6';
+  window.BV_ORDER_V2 = '2026.09.24.7';
 
   window.finish = async function(){
     const sb = getSB();
@@ -64,10 +64,13 @@
       const products = Array.isArray(catalog) ? catalog : [];
 
       const items = cart.map(item => {
+        const quantity = Math.max(1, Math.floor(Number(item.q) || 0));
+        if(item.isPromotion && item.promotionId){
+          return { promotion_id: String(item.promotionId), quantity };
+        }
         let p = products.find(x => String(x.id) === String(item.id));
         if(!p) p = products.find(x => norm(x.name) === norm(item.name));
         if(!p) throw new Error('O produto "' + String(item.name || item.id) + '" não está mais disponível.');
-        const quantity = Math.max(1, Math.floor(Number(item.q) || 0));
         return { product_id: String(p.id), quantity };
       });
 
