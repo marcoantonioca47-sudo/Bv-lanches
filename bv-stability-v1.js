@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.19';
+  window.BV_STABILITY_VERSION='2026.09.24.20';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -180,12 +180,12 @@
     if(r.error)return toast('Erro ao atualizar status: '+r.error.message);
     await window.BV_REFRESH_ORDERS?.();toast('Status atualizado.');
   };
-  window.setDashboardDateFilter=value=>{window.BV_DASHBOARD_DATE=value||'';window.renderDashboard()};
   window.setDashboardDateFilter=value=>{window.BV_DASHBOARD_DATE=value||'';const input=$('dashboardDateFilter');if(input)input.value=window.BV_DASHBOARD_DATE;window.renderDashboard()};
   window.renderDashboard=()=>{
     const all=window.orders||[];
     const selected=window.BV_DASHBOARD_DATE||'';
-    const byDate=o=>{if(!selected)return true;const d=new Date(o.created_at);return !Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===selected};
+    const localDateKey=o=>{const d=new Date(o?.created_at);if(Number.isNaN(d.getTime()))return '';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+    const byDate=o=>!selected||localDateKey(o)===selected;
     const filtered=all.filter(byDate);
     const done=all.filter(o=>o.rawStatus==='entregue'||o.status==='Entregue');
     const delivered=done.filter(byDate);
@@ -197,10 +197,15 @@
     if($('sNew'))$('sNew').textContent=pending.length;
     const chart=$('dashboardChart');
     if(chart){
-      const ls=['Novo','Em preparo','Em produção','Saiu para entrega','Entregue','Cancelado'];
-      const cs=ls.map(x=>filtered.filter(o=>o.status===x).length);
+      const statusMap=[
+        ['recebido','Novo'],['em_preparo','Em preparo'],['em_producao','Em produção'],
+        ['saiu_entrega','Saiu para entrega'],['entregue','Entregue'],['cancelado','Cancelado']
+      ];
+      const cs=statusMap.map(([raw])=>filtered.filter(o=>String(o.rawStatus||'')===raw).length);
       const mx=Math.max(1,...cs);
-      chart.innerHTML=ls.map((x,i)=>'<div class="chartBar"><div class="chartTrack"><div class="chartFill" style="height:'+Math.max(5,cs[i]/mx*100)+'%"></div></div><b>'+cs[i]+'</b><small>'+x+'</small></div>').join('');
+      chart.innerHTML=statusMap.map(([raw,label],i)=>'<div class="chartBar"><div class="chartTrack"><div class="chartFill" style="height:'+Math.max(5,cs[i]/mx*100)+'%"></div></div><b>'+cs[i]+'</b><small>'+label+'</small></div>').join('');
+      const title=chart.closest('.analyticsPanel')?.querySelector('.panelTitle small');
+      if(title)title.textContent=selected?'Distribuição dos pedidos em '+selected.split('-').reverse().join('/'):'Distribuição dos pedidos por status';
     }
     const nc=$('notificationCenter'),badge=$('notificationBadge');
     if(badge)badge.textContent=pending.length;
