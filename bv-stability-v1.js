@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.18';
+  window.BV_STABILITY_VERSION='2026.09.24.19';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -181,18 +181,35 @@
     await window.BV_REFRESH_ORDERS?.();toast('Status atualizado.');
   };
   window.setDashboardDateFilter=value=>{window.BV_DASHBOARD_DATE=value||'';window.renderDashboard()};
+  window.setDashboardDateFilter=value=>{window.BV_DASHBOARD_DATE=value||'';const input=$('dashboardDateFilter');if(input)input.value=window.BV_DASHBOARD_DATE;window.renderDashboard()};
   window.renderDashboard=()=>{
-    const a=window.orders||[],done=a.filter(o=>o.status==='Entregue'),pending=a.filter(o=>!['Entregue','Cancelado'].includes(o.status)),selected=window.BV_DASHBOARD_DATE||'';
-    const delivered=selected?done.filter(o=>{const d=new Date(o.created_at);return d.toISOString().slice(0,10)===selected}):done;
-    const rev=done.reduce((s,o)=>s+Number(o.total||0),0);
-    if($('sOrders'))$('sOrders').textContent=done.length;if($('sRevenue'))$('sRevenue').textContent=money(rev);if($('sAvg'))$('sAvg').textContent=money(done.length?rev/done.length:0);if($('sNew'))$('sNew').textContent=pending.length;
-    const chart=$('dashboardChart');if(chart){const ls=['Novo','Em preparo','Em produção','Saiu para entrega','Entregue','Cancelado'],cs=ls.map(x=>a.filter(o=>o.status===x).length),mx=Math.max(1,...cs);chart.innerHTML=ls.map((x,i)=>'<div class="chartBar"><div class="chartTrack"><div class="chartFill" style="height:'+Math.max(5,cs[i]/mx*100)+'%"></div></div><b>'+cs[i]+'</b><small>'+x+'</small></div>').join('')};
-    const nc=$('notificationCenter'),badge=$('notificationBadge');if(badge)badge.textContent=pending.length;if(nc)nc.innerHTML=pending.slice(0,10).map(o=>'<div class="notificationItem"><b>Pedido #'+esc(window.orderLabel(o))+'</b><small>'+esc(o.customer||'Cliente')+' · '+esc(o.status)+'</small></div>').join('')||'<div class="notificationItem">Nenhuma pendência.</div>';
+    const all=window.orders||[];
+    const selected=window.BV_DASHBOARD_DATE||'';
+    const byDate=o=>{if(!selected)return true;const d=new Date(o.created_at);return !Number.isNaN(d.getTime())&&d.toLocaleDateString('en-CA')===selected};
+    const filtered=all.filter(byDate);
+    const done=all.filter(o=>o.rawStatus==='entregue'||o.status==='Entregue');
+    const delivered=done.filter(byDate);
+    const pending=filtered.filter(o=>!['Entregue','Cancelado'].includes(o.status));
+    const rev=delivered.reduce((s,o)=>s+Number(o.total||0),0);
+    if($('sOrders'))$('sOrders').textContent=delivered.length;
+    if($('sRevenue'))$('sRevenue').textContent=money(rev);
+    if($('sAvg'))$('sAvg').textContent=money(delivered.length?rev/delivered.length:0);
+    if($('sNew'))$('sNew').textContent=pending.length;
+    const chart=$('dashboardChart');
+    if(chart){
+      const ls=['Novo','Em preparo','Em produção','Saiu para entrega','Entregue','Cancelado'];
+      const cs=ls.map(x=>filtered.filter(o=>o.status===x).length);
+      const mx=Math.max(1,...cs);
+      chart.innerHTML=ls.map((x,i)=>'<div class="chartBar"><div class="chartTrack"><div class="chartFill" style="height:'+Math.max(5,cs[i]/mx*100)+'%"></div></div><b>'+cs[i]+'</b><small>'+x+'</small></div>').join('');
+    }
+    const nc=$('notificationCenter'),badge=$('notificationBadge');
+    if(badge)badge.textContent=pending.length;
+    if(nc)nc.innerHTML=pending.slice(0,10).map(o=>'<div class="notificationItem"><b>Pedido #'+esc(window.orderLabel(o))+'</b><small>'+esc(o.customer||'Cliente')+' · '+esc(o.status)+'</small></div>').join('')||'<div class="notificationItem">Nenhuma pendência.</div>';
     const list=$('dashboardOrders');
     if(list){
       const fmtDate=o=>{const d=new Date(o.created_at);return Number.isNaN(d.getTime())?'Data não disponível':d.toLocaleDateString('pt-BR')+' · '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
-      list.innerHTML=delivered.length?delivered.slice(0,10).map(o=>'<div class="line dashboardOrderLine"><span class="dashboardOrderMain"><b>Pedido #'+esc(window.orderLabel(o))+' · '+esc(o.customer||'Cliente')+'</b><small>'+esc(o.items||'Nenhum item informado')+'</small><small class="dashboardOrderDate">📅 <strong>'+esc(fmtDate(o))+'</strong></small></span><strong class="dashboardOrderValue">'+money(o.total)+'</strong><button type="button" class="dashboardOrderDetailsBtn" onclick="showDashboardOrderDetails(this.__order)" >Ver detalhes</button></div>').join(''):'<div class="emptyState"><span>📋</span><b>Nenhum pedido entregue'+(selected?' nesta data':' ainda')+'</b><small>'+(selected?'Escolha outra data ou clique em Todos.':'Os pedidos entregues aparecerão aqui.')+'</small></div>';
-      list.querySelectorAll('.dashboardOrderDetailsBtn').forEach((btn,i)=>btn.__order=delivered.slice(0,10)[i]);
+      list.innerHTML=delivered.length?delivered.slice(0,20).map(o=>'<div class="line dashboardOrderLine"><span class="dashboardOrderMain"><b>Pedido #'+esc(window.orderLabel(o))+' · '+esc(o.customer||'Cliente')+'</b><small>'+esc(o.items||'Nenhum item informado')+'</small><small class="dashboardOrderDate">📅 <strong>'+esc(fmtDate(o))+'</strong></small></span><strong class="dashboardOrderValue">'+money(o.total)+'</strong><button type="button" class="dashboardOrderDetailsBtn" onclick="showDashboardOrderDetails(this.__order)">Ver detalhes</button></div>').join(''):'<div class="emptyState"><span>📋</span><b>Nenhum pedido entregue'+(selected?' nesta data':' ainda')+'</b><small>'+(selected?'Escolha outra data ou clique em Todos.':'Os pedidos entregues aparecerão aqui.')+'</small></div>';
+      list.querySelectorAll('.dashboardOrderDetailsBtn').forEach((btn,i)=>btn.__order=delivered.slice(0,20)[i]);
     }
   };
   window.showDashboardOrderDetails=o=>{
