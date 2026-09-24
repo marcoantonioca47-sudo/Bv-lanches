@@ -46,7 +46,10 @@
 
     window.BV_ROLE = profile.role || 'usuario';
     window.BV_USER_NAME = profile.name || data.user.email || '';
-    try { localStorage.setItem('bv_first_login_done','1'); } catch(e) {}
+    try {
+      localStorage.setItem('bv_first_login_done','1');
+      localStorage.setItem('bv_profile_cache',JSON.stringify({name:window.BV_USER_NAME,role:window.BV_ROLE,userId:data.user.id}));
+    } catch(e) {}
     window.applyAccess?.();
     $('login')?.style.setProperty('display','none','important');
 
