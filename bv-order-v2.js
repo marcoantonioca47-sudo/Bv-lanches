@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.24.5';
+  window.BV_ORDER_V2 = '2026.09.24.6';
 
   window.finish = async function(){
     const sb = getSB();
@@ -99,6 +99,13 @@
       localStorage.setItem('bv_track_id', orderId);
       localStorage.setItem('bv_cart','[]');
       window.cart = [];
+
+      if(payment==='pix' && typeof sb.functions?.invoke==='function'){
+        const pix = await sb.functions.invoke('criar-pix',{body:{order_id:orderId}});
+        if(pix.error) throw new Error(pix.error.message || 'Não foi possível gerar o PIX.');
+        if(pix.data?.error) throw new Error(pix.data.error);
+        window.BV_LAST_PIX = pix.data || null;
+      }
 
       if(typeof window.BV_REFRESH_ORDERS === 'function'){
         await window.BV_REFRESH_ORDERS();
