@@ -7,3 +7,5 @@
 .bvCartFloat{display:none;position:fixed;right:14px;bottom:18px;z-index:1200;width:58px;height:58px;border:1px solid #ff3b45;border-radius:18px;background:linear-gradient(145deg,#ff2530,#a90008);color:#fff;font-size:22px;box-shadow:0 14px 35px rgba(229,9,20,.35);cursor:pointer}.bvCartFloat span{position:absolute;right:-5px;top:-5px;min-width:20px;height:20px;padding:0 4px;display:grid;place-items:center;border-radius:99px;background:#fff;color:#b90008;border:2px solid #a90008;font-size:10px;font-weight:950}
 #page-pedido .whats:disabled{opacity:.65;cursor:wait;filter:grayscale(.2)}
 @media(max-width:600px){.bvMenuTools{position:sticky;top:66px;z-index:10;padding:5px 0;background:rgba(11,11,13,.92);backdrop-filter:blur(10px)}.bvCartFloat{display:block}.bvStatusBar{top:8px;max-width:calc(100vw - 24px);white-space:nowrap}.bvMenuSearch{font-size:16px}.bvMenuClear{display:none}}
+
+.bvCartFloatIcon{display:block;width:28px;height:28px;margin:auto;color:#fff;pointer-events:none}
