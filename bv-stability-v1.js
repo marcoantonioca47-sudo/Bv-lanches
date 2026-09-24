@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.36';
+  window.BV_STABILITY_VERSION='2026.09.24.37';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -114,6 +114,11 @@
   window.mode=(m,b)=>{document.querySelectorAll('#page-pedido .tabs button').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_MODE=m;$('address')&&($('address').style.display=m==='entrega'?'block':'none');window.refreshNeighborhoodFee()};
   window.pay=(p,b)=>{localStorage.setItem('bv_payment',p);document.querySelectorAll('#page-pedido .pay button').forEach(x=>x.classList.remove('active'));b?.classList.add('active');$('troco')?.classList.toggle('hide',p!=='Dinheiro')};
 
+  let bvFeeTimer=null;
+  window.refreshNeighborhoodFeeSoon=()=>{
+    clearTimeout(bvFeeTimer);
+    bvFeeTimer=setTimeout(()=>window.refreshNeighborhoodFee?.(),60);
+  };
   window.refreshNeighborhoodFee=async()=>{
     const f=$('fee');if(!f)return;
     if(window.BV_MODE==='retirada'){f.dataset.value='0';f.textContent=money(0);window.renderCart();return}
@@ -149,7 +154,12 @@
     if(!sb)return;const {data:{user}}=await sb.auth.getUser();if(!user)return;
     const r=await sb.from('profiles').select('name,phone,street,number,neighborhood,cep,complement').eq('id',user.id).maybeSingle();const d=r.data;if(!d)return;
     [['name',d.name],['phone',d.phone],['street',d.street],['num',d.number],['bairro',d.neighborhood],['cep',d.cep],['comp',d.complement]].forEach(([id,v])=>{if($(id)&&v!=null)$(id).value=v||''});
+    window.refreshNeighborhoodFeeSoon();
   };
+  ['bairro','street','num','cep'].forEach(id=>{
+    const el=$(id); if(!el)return;
+    ['input','change','paste','blur'].forEach(ev=>el.addEventListener(ev,()=>window.refreshNeighborhoodFeeSoon()));
+  });
   const saveProfile=async()=>{if(!sb)return;const {data:{user}}=await sb.auth.getUser();if(!user)return;await sb.from('profiles').update({name:$('name')?.value.trim()||'',phone:$('phone')?.value.trim()||'',street:$('street')?.value.trim()||'',number:$('num')?.value.trim()||'',neighborhood:$('bairro')?.value.trim()||'',cep:$('cep')?.value.trim()||'',complement:$('comp')?.value.trim()||''}).eq('id',user.id)};
 
   window.finish=async()=>{
