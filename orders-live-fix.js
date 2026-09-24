@@ -29,7 +29,7 @@
       const isMoto=me.role==='motoboy';
 
       let q=sb.from('orders')
-        .select('id,user_id,customer_name,phone,address,neighborhood,delivery_fee,delivery_fee_collected,total,payment_method,payment_status,status,created_at,motoboy_id')
+        .select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,delivery_fee_collected,total,payment_method,payment_status,status,created_at,motoboy_id')
         .order('created_at',{ascending:false});
 
       if(!isAdmin && isMoto){
@@ -73,6 +73,7 @@
 
         return {
           id:o.id,
+          orderNumber:o.order_number,
           created_at:o.created_at,
           customer:o.customer_name,
           phone:o.phone,
