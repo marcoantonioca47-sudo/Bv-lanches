@@ -1,6 +1,6 @@
-/* BV LANCHES — ícones com estilo padrão salvo (3D Red) */
+/* BV LANCHES — ícones com estilo padrão salvo (Vermelho Outline) */
 (function(){
-  const DEFAULT_STYLE='7';
+  const DEFAULT_STYLE='6';
   function applyDefault(){
     document.documentElement.dataset.bvIconStyle=DEFAULT_STYLE;
     try{localStorage.setItem('bv_icon_style',DEFAULT_STYLE)}catch(e){}
