@@ -95,7 +95,7 @@
 
   window.setMenuCategory=(cat,b)=>{window.BV_MENU_CATEGORY=cat;document.querySelectorAll('#page-cardapio .menuCategoryTabs button').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_CAT=cat;window.renderProducts()};
   window.renderProducts=()=>{const b=$('products');if(!b)return;if(window.BV_MENU_CATEGORY==='Promocoes'){const now=Date.now(),active=(window.promotions||[]).filter(x=>x.active&&(!x.starts_at||new Date(x.starts_at).getTime()<=now)&&(!x.ends_at||new Date(x.ends_at).getTime()>=now)),ps=window.products||[];b.innerHTML=active.length?active.map(x=>{const items=window.promotionItems?.[x.id]||[],legacy=x.product_id?[{product_id:x.product_id,quantity:1}]:[],list=(items.length?items:legacy).map(i=>{const p=ps.find(y=>String(y.id)===String(i.product_id));return (i.quantity||1)+'x '+(p?.name||'Produto')}).join(' • ');return '<article class="productCard promotionCatalogCard"><div class="productImage"><span>🏷️</span></div><div class="promoCatalogBody"><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'Oferta especial do BV Lanches')+'</p><div class="promotionCatalogItems">'+esc(list)+'</div><div class="promotionCatalogPrice"><del>'+money(x.original_price||0)+'</del><strong>'+money(x.promotional_price||0)+'</strong></div><button type="button" class="promoCatalogButton">Oferta ativa</button></div></article>'}).join(''):'<div class="emptyState"><span>🏷️</span><b>Nenhuma promoção ativa.</b><small>As promoções aparecerão aqui enquanto estiverem ativas.</small></div>';return;} 
-    const b=$('products');if(!b)return;
+    b.innerHTML='';
     const cat=window.BV_CAT||'Lanches';
     const a=(window.products||[]).filter(p=>p.active!==false&&String(p.category||'Lanches')===cat);
     const now=Date.now();
