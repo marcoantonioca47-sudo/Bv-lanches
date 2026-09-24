@@ -250,6 +250,7 @@
   };
   window.showDashboardOrderDetails=o=>{
     if(!o)return;
+    const purchaseTotal=o=>Math.max(0,(Number(o?.total)||0)-(Number(o?.deliveryFee ?? o?.delivery_fee)||0));
     let m=$('dashboardOrderDetails');
     if(!m){m=document.createElement('div');m.id='dashboardOrderDetails';m.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px)';document.body.appendChild(m)}
     const d=new Date(o.created_at);const date=Number.isNaN(d.getTime())?'Data não disponível':d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
