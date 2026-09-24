@@ -238,3 +238,27 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
 }
 
 .homeNotificationBar{display:flex;justify-content:flex-end;margin:0 0 12px}.homeNotificationBar .notifyBtn{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 14px;border:1px solid #343a44;border-radius:11px;background:#111419;color:#fff;font-weight:900;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,.2)}.homeNotificationBar .notifyBtn:hover{background:#e50914;border-color:#e50914}.homeNotificationBar .notifyBtn span{min-width:20px;height:20px;padding:0 5px;display:inline-grid;place-items:center;border-radius:10px;background:#e50914;color:#fff;font-size:10px}.homeNotificationBar .notifyBtn b{font-size:12px}@media(max-width:600px){.homeNotificationBar{justify-content:stretch}.homeNotificationBar .notifyBtn{width:100%;justify-content:center}}
+
+
+/* ACOMPANHAR PEDIDO — visual renovado */
+.trackingLookup{padding:22px;background:linear-gradient(145deg,#12151a,#0f1115);border:1px solid #292e36}
+.trackingLookupHead{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.trackingLookupHead h3{margin:0 0 3px;font-size:19px}
+.trackingIcon{width:46px;height:46px;display:grid;place-items:center;border-radius:13px;background:rgba(229,9,20,.12);border:1px solid rgba(229,9,20,.28);font-size:23px}
+.trackingLookup label{display:block;margin:12px 0 0;color:#cdd1d7;font-size:12px;font-weight:800}
+.trackingLookup input{width:100%;box-sizing:border-box;margin-top:7px}
+.optionalLabel{font-weight:500;color:#777f8a;margin-left:4px}
+.trackingLookup .trackBtn,.trackingLookup .trackLast{display:block;margin-top:12px}
+.trackingHint{margin-top:16px;padding:10px 12px;border-radius:10px;background:#171a20;border:1px solid #272c34;color:#858d98;font-size:11px;line-height:1.4}
+.trackingResult{min-height:260px;display:flex;align-items:center;justify-content:center}
+.trackingEmpty{text-align:center;padding:30px;max-width:360px}
+.trackingEmpty>span{width:58px;height:58px;margin:0 auto 12px;display:grid;place-items:center;border-radius:16px;background:#181b21;border:1px solid #2b3038;font-size:27px}
+.trackingEmpty h3{margin:0 0 7px;font-size:18px}
+.trackingEmpty p{margin:0;color:#7f8792;line-height:1.5;font-size:13px}
+.trackingCard{width:100%;box-sizing:border-box;padding:22px;border-radius:15px;background:linear-gradient(145deg,#15191f,#101217);border:1px solid #303640;box-shadow:0 14px 35px rgba(0,0,0,.18)}
+.trackingCard small{color:#8d96a2;font-weight:800;letter-spacing:.08em}
+.trackingCard h3{font-size:25px;margin:7px 0 10px}
+.trackingCard>b{display:inline-block;padding:7px 12px;border-radius:999px;background:rgba(229,9,20,.12);border:1px solid rgba(229,9,20,.25);color:#fff;font-size:12px}
+.trackingCard p{margin:18px 0;color:#b5bbc4;line-height:1.5}
+.trackingCard strong{font-size:21px}
+@media(max-width:850px){.trackingGrid{grid-template-columns:1fr}.trackingLookup{padding:18px}.trackingResult{min-height:220px}}
