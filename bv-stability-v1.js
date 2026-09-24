@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.8';
+  window.BV_STABILITY_VERSION='2026.09.24.9';
   try{window.cart=Array.isArray(window.cart)?window.cart:(JSON.parse(localStorage.getItem('bv_cart')||'[]')||[])}catch{window.cart=[]}
   try{window.products=Array.isArray(window.products)?window.products:(JSON.parse(localStorage.getItem('bv_products')||'[]')||[])}catch{window.products=[]}
   if(!Array.isArray(window.orders))window.orders=[];
@@ -186,7 +186,25 @@
   window.renderTracking=o=>{const b=$('trackingResult');if(!b)return;o=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')));b.innerHTML=o?`<div class="trackingCard"><small>PEDIDO</small><h3>#${esc(window.orderLabel(o))}</h3><b>${esc(o.status)}</b><p>${esc(o.items||'')}</p><strong>${money(o.total)}</strong></div>`:'<p class="muted">Nenhum pedido selecionado.</p>'};
   window.trackLastOrder=async()=>{try{const x=JSON.parse(localStorage.getItem('bv_last_order')||'null');if(!x)return toast('Nenhum pedido recente.');localStorage.setItem('bv_track_id',x.id);await window.BV_REFRESH_ORDERS();window.renderTracking()}catch{toast('Não foi possível consultar o último pedido.')}};
   window.trackOrder=async()=>{const v=($('trackId')?.value||'').replace(/^#/,'').trim();let o=(window.orders||[]).find(x=>window.orderLabel(x)===v.padStart(3,'0')||String(x.orderNumber)===v||String(x.id)===v);if(!o&&sb&&/^\d+$/.test(v)){const r=await sb.from('orders').select('id').eq('order_number',Number(v)).maybeSingle();if(r.data){localStorage.setItem('bv_track_id',r.data.id);await window.BV_REFRESH_ORDERS();o=(window.orders||[]).find(x=>x.id===r.data.id)}}if(!o)return toast('Pedido não encontrado.');localStorage.setItem('bv_track_id',o.id);window.renderTracking(o)};
-  window.renderMotoOrders=()=>{if(window.BV_ROLE!=='motoboy')return;const b=$('orders');if(!b)return;const filters=$('adminOrderFilters');if(filters)filters.style.display='none';const deliveryPanel=$('motoDeliveryPanel');if(deliveryPanel)deliveryPanel.style.display='none';const available=(window.orders||[]).filter(o=>o.rawStatus==='em_producao');b.innerHTML=available.map(o=>`<article class="orderCard motoOrder"><div class="orderHead"><div><small>PEDIDO</small><b>#${esc(window.orderLabel(o))}</b></div><span class="statusBadge">${esc(o.status)}</span></div><div class="orderBody"><b>${esc(o.customer)}</b><p>${esc(o.items||'')}</p><small>${esc(o.address?.rua||'')}${o.address?.bairro?' · '+esc(o.address.bairro):''} · ${esc(o.phone||'')}</small></div><div class="motoFeeCard"><span>Taxa de entrega</span><strong>${money(o.deliveryFee)}</strong></div><button class="motoFinishBtn" onclick="motoFinish('${esc(o.id)}')">✓ Marcar como entregue</button></article>`).join('')||'<div class="emptyState"><span>🏍️</span><b>Nenhum pedido em produção</b><small>Os pedidos aparecem aqui quando o administrador marcar "Em produção".</small></div>'};
+  window.renderMotoOrders=async()=>{
+    if(window.BV_ROLE!=='motoboy')return;
+    const b=$('orders');if(!b)return;
+    const filters=$('adminOrderFilters');if(filters)filters.style.display='none';
+    const deliveryPanel=$('motoDeliveryPanel');if(deliveryPanel)deliveryPanel.style.display='none';
+    if(!sb)return;
+    b.innerHTML='<div class="emptyState"><span>⏳</span><b>Buscando pedidos...</b><small>Atualizando pedidos em produção.</small></div>';
+    try{
+      const {data:{user}}=await sb.auth.getUser();if(!user)return;
+      const r=await sb.from('orders').select('id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id').eq('status','em_producao').or('motoboy_id.is.null,motoboy_id.eq.'+user.id).order('created_at',{ascending:false});
+      if(r.error)throw r.error;
+      const ids=(r.data||[]).map(x=>x.id);let its=[];
+      if(ids.length){const z=await sb.from('order_items').select('order_id,product_name,quantity').in('order_id',ids);if(z.error)throw z.error;its=z.data||[]}
+      const g={};its.forEach(i=>(g[i.order_id]??=[]).push(i));
+      const available=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,created_at:o.created_at,items:(g[o.id]||[]).map(i=>i.quantity+'x '+i.product_name).join(', ')}));
+      window.orders=available;
+      b.innerHTML=available.map(o=>`<article class="orderCard motoOrder"><div class="orderHead"><div><small>PEDIDO</small><b>#${esc(window.orderLabel(o))}</b></div><span class="statusBadge">${esc(o.status)}</span></div><div class="orderBody"><b>${esc(o.customer)}</b><p>${esc(o.items||'')}</p><small>${esc(o.address?.rua||'')}${o.address?.bairro?' · '+esc(o.address.bairro):''} · ${esc(o.phone||'')}</small></div><div class="motoFeeCard"><span>Taxa de entrega</span><strong>${money(o.deliveryFee)}</strong></div><button class="motoFinishBtn" onclick="motoFinish('${esc(o.id)}')">✓ Marcar como entregue</button></article>`).join('')||'<div class="emptyState"><span>🏍️</span><b>Nenhum pedido em produção</b><small>Os pedidos aparecem aqui quando o administrador marcar "Em produção".</small></div>';
+    }catch(e){console.error('Moto orders',e);b.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar os pedidos</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoOrders()">Tentar novamente</button></div>'}
+  };
   window.motoFinish=async id=>{if(!sb)return;const r=await sb.rpc('motoboy_update_delivery',{p_order_id:id,p_fee_collected:true,p_mark_delivered:true});if(r.error)return toast('Erro: '+r.error.message);await window.BV_REFRESH_ORDERS();toast('Entrega finalizada.')};
 
   window.BV_ADMIN_USERS=async()=>{if(!sb)return{error:'Banco indisponível.'};const r=await sb.functions.invoke('admin-user',{body:{action:'list'}});return r.error||!r.data?.ok?{error:r.error?.message||r.data?.error||'Não foi possível carregar usuários.'}:{users:r.data.users||[]}};
