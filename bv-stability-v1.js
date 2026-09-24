@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.44';
+  window.BV_STABILITY_VERSION='2026.09.24.45';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -284,7 +284,171 @@
     track.innerHTML=active.map(x=>{const items=window.promotionItems?.[x.id]||[],legacy=x.product_id?[{product_id:x.product_id,quantity:1}]:[];const list=(items.length?items:legacy).map(it=>{const p=ps.find(y=>String(y.id)===String(it.product_id));return (it.quantity||1)+'x '+(p?.name||'Produto')}).join(' • ');return '<article class="homePromoSlide"'+(x.image_url?' style="background-image:linear-gradient(90deg,rgba(8,8,10,.96) 0%,rgba(8,8,10,.72) 45%,rgba(8,8,10,.18) 100%),url(\''+esc(x.image_url)+'\');background-size:cover;background-position:center;"':'')+'><div class="homePromoCopy"><small class="homePromoKicker">🔥 OFERTA ESPECIAL</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'Aproveite enquanto durar!')+'</p><div class="homePromoItems">'+esc(list)+'</div></div><div class="homePromoPrice"><del>'+money(x.original_price||0)+'</del><strong>'+money(x.promotional_price||0)+'</strong><button type="button" onclick="showPage(\'cardapio\')">Ver oferta →</button></div></article>'}).join('');
     dots.innerHTML=active.map((_,i)=>'<i class="'+(i===0?'active':'')+'"></i>').join('');box.classList.add('show');let index=0;clearInterval(window.BV_PROMO_TIMER);track.style.transform='translateX(0)';if(active.length>1)window.BV_PROMO_TIMER=setInterval(()=>{index=(index+1)%active.length;track.style.transform='translateX(-'+index*100+'%)';dots.querySelectorAll('i').forEach((d,i)=>d.classList.toggle('active',i===index))},5000);
   };
-  window.generatePromotionImage=async promotionId=>{try{const promo=(window.promotions||[]).find(x=>String(x.id)===String(promotionId));if(!promo)throw new Error('Promoção não encontrada.');if(window.BV_REFRESH_PROMOTIONS)await window.BV_REFRESH_PROMOTIONS();const items=window.promotionItems?.[promo.id]||[];const ps=window.products||[];const rows=items.length?items:(promo.product_id?[{product_id:promo.product_id,quantity:1}]:[]);const aiItems=rows.map(i=>{const p=ps.find(x=>String(x.id)===String(i.product_id));return{name:p?.name||'Produto',quantity:Math.max(1,Number(i.quantity)||1)}}).filter(x=>x.name);if(!aiItems.length)throw new Error('A promoção não possui produtos válidos.');toast('🤖 A IA está criando uma nova arte da promoção...');const {data,error}=await sb.functions.invoke('generate-promotion-image',{body:{promotion_id:promo.id,name:promo.name,description:promo.description||'',promotional_price:Number(promo.promotional_price)||0,items:aiItems}});if(error)throw new Error(error.message||'Erro ao chamar a IA.');if(data?.error)throw new Error(data.error);if(!data?.image_url)throw new Error('A IA não retornou a imagem.');promo.image_url=data.image_url;window.renderHomePromoBanner?.();window.renderPromotionsAdmin?.();toast('✅ Nova imagem criada totalmente por IA.');return true}catch(e){console.error('[BV AI IMAGE]',e);toast('❌ '+(e?.message||'Não foi possível gerar a imagem com IA.'));return false}};
+  window.generatePromotionImage=async promotionId=>{
+    try{
+      const promo=(window.promotions||[]).find(x=>String(x.id)===String(promotionId));
+      if(!promo)throw new Error('Promoção não encontrada.');
+      if(window.BV_REFRESH_PROMOTIONS)await window.BV_REFRESH_PROMOTIONS();
+
+      const items=window.promotionItems?.[promo.id]||[];
+      const ps=window.products||[];
+      const rows=items.length?items:(promo.product_id?[{product_id:promo.product_id,quantity:1}]:[]);
+      const base=rows.map(i=>({
+        p:ps.find(x=>String(x.id)===String(i.product_id)),
+        q:Math.max(1,Number(i.quantity)||1)
+      })).filter(x=>x.p);
+
+      if(!base.length)throw new Error('A promoção não possui produtos válidos.');
+
+      toast('🖼️ Criando banner grátis com todos os itens juntos...');
+
+      const loadImg=url=>new Promise(resolve=>{
+        if(!url)return resolve(null);
+        const im=new Image();
+        im.crossOrigin='anonymous';
+        im.onload=()=>resolve(im);
+        im.onerror=()=>resolve(null);
+        im.src=url;
+      });
+
+      const units=[];
+      base.forEach(x=>{
+        for(let i=0;i<x.q;i++)units.push(x.p);
+      });
+
+      const c=document.createElement('canvas');
+      c.width=1200;
+      c.height=800;
+      const ctx=c.getContext('2d');
+
+      // Fundo premium, sem API e sem custo.
+      const bg=ctx.createLinearGradient(0,0,1200,800);
+      bg.addColorStop(0,'#120003');
+      bg.addColorStop(.48,'#4b0509');
+      bg.addColorStop(1,'#08090b');
+      ctx.fillStyle=bg;
+      ctx.fillRect(0,0,c.width,c.height);
+
+      // Brilhos decorativos.
+      const glow=ctx.createRadialGradient(600,470,30,600,470,520);
+      glow.addColorStop(0,'rgba(255,210,0,.22)');
+      glow.addColorStop(.55,'rgba(229,9,20,.10)');
+      glow.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=glow;
+      ctx.fillRect(0,0,c.width,c.height);
+
+      // Cabeçalho.
+      ctx.textAlign='center';
+      ctx.fillStyle='#ffd400';
+      ctx.font='900 28px Arial';
+      ctx.fillText('BV LANCHES',600,45);
+
+      ctx.fillStyle='#fff';
+      ctx.font='900 48px Arial';
+      ctx.fillText('PROMOÇÃO IMPERDÍVEL',600,100);
+
+      ctx.fillStyle='#ffdf00';
+      ctx.font='900 27px Arial';
+      ctx.fillText(String(promo.name||'OFERTA ESPECIAL').slice(0,42),600,138);
+
+      // Carrega as fotos reais dos produtos.
+      const imgs=await Promise.all(units.map(p=>loadImg(p.image_url)));
+
+      // Área única do combo: todos os produtos ficam juntos, sem cards separados.
+      const area={x:70,y:165,w:1060,h:410};
+      ctx.save();
+      ctx.fillStyle='rgba(0,0,0,.28)';
+      ctx.beginPath();
+      ctx.roundRect(area.x,area.y,area.w,area.h,34);
+      ctx.fill();
+      ctx.restore();
+
+      // Mesa/prato visual para dar sensação de um único combo.
+      const plate=ctx.createRadialGradient(600,455,40,600,455,430);
+      plate.addColorStop(0,'rgba(255,255,255,.16)');
+      plate.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=plate;
+      ctx.beginPath();
+      ctx.ellipse(600,470,470,105,0,0,Math.PI*2);
+      ctx.fill();
+
+      // Limita a 10 fotos para preservar legibilidade; a quantidade exata continua no texto.
+      const visible=units.slice(0,10);
+      const cols=Math.min(5,Math.max(1,visible.length));
+      const rowsN=Math.ceil(visible.length/cols);
+      const cardW=190,cardH=300,gap=14;
+      const totalW=cols*cardW+(cols-1)*gap;
+      const sx=600-totalW/2;
+      const sy=205+(rowsN===1?18:0);
+
+      visible.forEach((p,i)=>{
+        const col=i%cols,row=Math.floor(i/cols);
+        const x=sx+col*(cardW+gap), y=sy+row*145;
+
+        // Fundo discreto, integrado ao combo (não é um card de produto).
+        ctx.save();
+        ctx.shadowColor='rgba(0,0,0,.55)';
+        ctx.shadowBlur=18;
+        ctx.shadowOffsetY=8;
+        ctx.fillStyle='rgba(255,255,255,.08)';
+        ctx.beginPath();
+        ctx.roundRect(x,y,cardW,cardH,26);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(x+8,y+8,cardW-16,cardH-52,20);
+        ctx.clip();
+        const im=imgs[i];
+        if(im){
+          const scale=Math.max((cardW-16)/im.width,(cardH-62)/im.height);
+          const w=im.width*scale,h=im.height*scale;
+          ctx.drawImage(im,x+8+(cardW-16-w)/2,y+8+(cardH-62-h)/2,w,h);
+        }else{
+          ctx.fillStyle='rgba(255,255,255,.12)';
+          ctx.fillRect(x+8,y+8,cardW-16,cardH-62);
+          ctx.font='58px Arial';
+          ctx.fillStyle='#fff';
+          ctx.fillText(p.category==='Bebidas'?'🥤':'🍔',x+cardW/2,y+145);
+        }
+        ctx.restore();
+
+        ctx.fillStyle='#ffd400';
+        ctx.font='900 18px Arial';
+        ctx.fillText(String(p.name||'Produto').slice(0,20),x+cardW/2,y+cardH-18);
+      });
+
+      // Texto do combo em uma única linha, mostrando quantidades.
+      const comboText=base.map(x=>x.q+'x '+x.p.name).join(' + ');
+      ctx.fillStyle='#fff';
+      ctx.font='900 21px Arial';
+      ctx.fillText(comboText.slice(0,85),600,605);
+
+      // Preço.
+      ctx.fillStyle='#ffd400';
+      ctx.font='900 62px Arial';
+      ctx.fillText(money(Number(promo.promotional_price)||0),600,680);
+
+      ctx.fillStyle='#fff';
+      ctx.font='900 23px Arial';
+      ctx.fillText('PEÇA JÁ O SEU!  •  OFERTA ESPECIAL',600,735);
+
+      const data=c.toDataURL('image/jpeg',.9);
+      const upd=await sb.from('promotions').update({image_url:data}).eq('id',promo.id);
+      if(upd.error)throw upd.error;
+
+      promo.image_url=data;
+      window.renderHomePromoBanner?.();
+      window.renderPromotionsAdmin?.();
+      toast('✅ Banner grátis criado com todos os itens juntos.');
+      return true;
+    }catch(e){
+      console.error('[BV FREE PROMO IMAGE]',e);
+      toast('❌ '+(e?.message||'Não foi possível criar a imagem.'));
+      return false;
+    }
+  };
   window.renderPromotionsAdmin=()=>{const ps=(window.products||[]).filter(x=>x.active!==false);const sel=$('promoProduct');if(sel)sel.innerHTML='<option value="">Selecione o produto</option>'+ps.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' — '+money(p.price)+'</option>').join('');const b=$('promotionsManage');if(!b)return;const a=window.promotions||[];const itemBox=$('promoItems');if(itemBox&&!itemBox.children.length)window.addPromoItemRow?.();b.innerHTML=a.length?a.map(x=>{const items=window.promotionItems?.[x.id]||[];const legacy=x.product_id?[{product_id:x.product_id,quantity:1}]:[];const list=(items.length?items:legacy).map(i=>{const p=ps.find(y=>String(y.id)===String(i.product_id));return (i.quantity||1)+'x '+esc(p?.name||'Produto')}).join(' + ');return '<article class="promotionAdminCard"><div class="promoAdminMain">'+(x.image_url?'<img class="promoAdminThumb" src="'+esc(x.image_url)+'" alt="Imagem da promoção">':'<div class="promoAdminThumb promoAdminThumbEmpty">🤖</div>')+'<div><span class="promoBadge">🔥 PROMOÇÃO</span><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p><small>'+list+'</small></div></div><div class="promoAdminPrice"><del>'+money(x.original_price||0)+'</del><b>'+money(x.promotional_price||0)+'</b></div><div class="promoActions"><button type="button" onclick="window.generatePromotionImage(this.getAttribute(&quot;data-promotion-id&quot;))" data-promotion-id="'+esc(x.id)+'">🤖 '+(x.image_url?'Refazer imagem':'Gerar imagem')+'</button><button type="button" onclick="togglePromotion(\''+esc(x.id)+'\','+(!x.active)+')">'+(x.active?'Desativar':'Ativar')+'</button><button type="button" onclick="removePromotion(\''+esc(x.id)+'\')">Excluir</button></div></article>'}).join(''):'<div class="emptyState"><span>🏷️</span><b>Nenhuma promoção cadastrada.</b><small>Cadastre a primeira oferta abaixo.</small></div>'};
   window.addPromotion=async e=>{e.preventDefault();const n=$('promoName')?.value.trim(),d=$('promoDesc')?.value.trim(),pp=Number($('promoPrice')?.value),sa=$('promoStart')?.value||null,ea=$('promoEnd')?.value||null;const rows=[...document.querySelectorAll('.promoItemRow')].map(r=>({product_id:r.querySelector('.promoItemProduct')?.value,quantity:Math.max(1,Number(r.querySelector('.promoItemQty')?.value)||1)})).filter(x=>x.product_id);if(!n||!rows.length||!Number.isFinite(pp)||pp<0)return toast('Preencha nome, itens e preço promocional.');const products=rows.map(r=>(window.products||[]).find(p=>String(p.id)===String(r.product_id))).filter(Boolean);if(products.length!==rows.length)return toast('Há produto inválido na promoção.');const original=products.reduce((s,p,i)=>s+(Number(p.price)||0)*rows[i].quantity,0);if(pp>=original)return toast('O preço promocional deve ser menor que o valor normal dos itens.');const r=await sb.from('promotions').insert({name:n,description:d||'',product_id:products[0].id,original_price:original,promotional_price:pp,starts_at:sa?new Date(sa).toISOString():null,ends_at:ea?new Date(ea).toISOString():null,active:true}).select('id').single();if(r.error)return toast('Erro ao cadastrar promoção: '+r.error.message);const ins=await sb.from('promotion_items').insert(rows.map(x=>({promotion_id:r.data.id,product_id:x.product_id,quantity:x.quantity})));if(ins.error){await sb.from('promotions').delete().eq('id',r.data.id);return toast('Erro ao salvar os itens da promoção: '+ins.error.message)}e.target.reset();document.getElementById('promoItems')?.replaceChildren();window.addPromoItemRow?.();await window.BV_REFRESH_PROMOTIONS();toast('Promoção cadastrada com '+rows.length+' item(ns).');window.generatePromotionImage(r.data.id);};
   window.addPromoItemRow=()=>{const box=$('promoItems');if(!box)return;const row=document.createElement('div');row.className='promoItemRow';row.innerHTML='<select class="promoItemProduct" required><option value="">Produto</option>'+((window.products||[]).filter(x=>x.active!==false).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' — '+money(p.price)+'</option>').join(''))+'</select><input class="promoItemQty" type="number" min="1" step="1" value="1" required><button type="button" onclick="this.closest(\'.promoItemRow\').remove()">×</button>';box.appendChild(row)};
