@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.28';
+  window.BV_STABILITY_VERSION='2026.09.24.32';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -50,7 +50,7 @@
     if(innerWidth<=850)$('sidebar')?.classList.remove('open');
     if(p==='cardapio')window.renderProducts();
     if(p==='pedido'){window.renderCart();setTimeout(window.loadProfile,50)}
-    if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();}
+    if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();}
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
     if(p==='taxa-entrega')window.renderMotoFeeOrders?.()
@@ -264,6 +264,20 @@
     const g={};its.forEach(i=>(g[i.order_id]??=[]).push(i));
     window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,items:(g[o.id]||[]).map(i=>i.quantity+'x '+i.product_name).join(', ')}));
     if(role==='motoboy'){window.renderMotoOrders?.();return;} window.renderAdmin();window.renderDashboard();window.renderTracking();
+  };
+  window.BV_TRACKING_REALTIME=null;
+  window.setupTrackingRealtime=async()=>{
+    if(!sb||window.BV_TRACKING_REALTIME)return;
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user)return;
+    window.BV_TRACKING_REALTIME=sb.channel('bv-tracking-'+user.id)
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'orders',filter:'user_id=eq.'+user.id},async payload=>{
+        await window.BV_REFRESH_ORDERS?.();
+        if(document.getElementById('page-acompanhar')?.classList.contains('activePage')){
+          window.renderTracking?.();
+        }
+      })
+      .subscribe();
   };
   window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()))||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')));b.innerHTML=o?`<div class="trackingCard"><small>PEDIDO</small><h3>#${esc(window.orderLabel(o))}</h3><b>${esc(o.status)}</b><p>${esc(o.items||'')}</p><strong>${money(o.total)}</strong></div>`:'<p class="muted">Nenhum pedido em andamento.</p>'};
   window.trackLastOrder=async()=>{try{await window.BV_REFRESH_ORDERS?.();const o=(window.orders||[])[0];if(!o)return toast('Você ainda não possui pedidos.');localStorage.setItem('bv_track_id',o.id);window.renderTracking(o)}catch{toast('Não foi possível consultar seu último pedido.')}};
