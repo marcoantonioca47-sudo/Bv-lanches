@@ -281,7 +281,25 @@
   window.motoFinish=async id=>{if(!sb)return;const r=await sb.rpc('motoboy_update_delivery',{p_order_id:id,p_fee_collected:true,p_mark_delivered:true});if(r.error)return toast('Erro: '+r.error.message);await window.BV_REFRESH_ORDERS();window.renderMotoFeeOrders?.();toast('Entrega finalizada.')};
 
   window.BV_ADMIN_USERS=async()=>{if(!sb)return{error:'Banco indisponível.'};const r=await sb.functions.invoke('admin-user',{body:{action:'list'}});return r.error||!r.data?.ok?{error:r.error?.message||r.data?.error||'Não foi possível carregar usuários.'}:{users:r.data.users||[]}};
-  window.renderUsers=async()=>{const b=$('userPermissions');if(!b||!window.admin())return;const r=await window.BV_ADMIN_USERS();if(r.error)return b.innerHTML='<p class="muted">'+esc(r.error)+'</p>';const a=r.users||[],q=norm($('userSearch')?.value||'');if($('userCount'))$('userCount').textContent=a.length+' usuários';b.innerHTML='<div class="userCreateBox"><div class="newUserGrid"><input id="newUserName" placeholder="Nome"><input id="newUserEmail" type="email" placeholder="E-mail"><input id="newUserPass" type="password" placeholder="Senha (mín. 6)"><select id="newUserRole"><option value="usuario">Usuário</option><option value="motoboy">Motoboy</option><option value="administrador">Administrador</option></select><button type="button" onclick="createAdminUser()">＋ Cadastrar</button></div></div>'+a.filter(x=>norm(x.name).includes(q)||norm(x.email).includes(q)).map(x=>`<div class="userPerm"><div><b>${esc(x.name||x.email)}</b><small>${esc(x.email)}</small></div><select onchange="changeUserRole('${esc(x.id)}',this.value)"><option value="usuario" ${x.role==='usuario'?'selected':''}>Usuário</option><option value="motoboy" ${x.role==='motoboy'?'selected':''}>Motoboy</option><option value="administrador" ${x.role==='administrador'?'selected':''}>Administrador</option></select><button type="button" onclick="deleteUser('${esc(x.id)}')">Excluir</button></div>`).join('')||'<p class="muted">Nenhum usuário encontrado.</p>'};
+  window.renderUsers=async()=>{
+  const b=$('userPermissions');if(!b||!window.admin())return;
+  b.innerHTML='<div class="userLoading">Carregando usuários...</div>';
+  const r=await sb.from('profiles').select('id,name,role').order('name',{ascending:true});
+  if(r.error){b.innerHTML='<div class="userError">Não foi possível carregar os usuários: '+esc(r.error.message)+'</div>';return}
+  const a=r.data||[],q=norm($('userSearch')?.value||'');
+  const filtered=a.filter(x=>norm(x.name||'').includes(q));
+  if($('userCount'))$('userCount').textContent=a.length+' usuários';
+  b.innerHTML='<div class="permissionTitle"><div><b>Usuários cadastrados</b><small>Defina a permissão de cada conta abaixo.</small></div><span>PERMISSÕES</span></div>'+
+    (filtered.map(x=>`<div class="userPerm">
+      <div class="userIdentity"><span class="userAvatar">${esc((x.name||'U').trim().charAt(0).toUpperCase())}</span><div><b>${esc(x.name||'Usuário')}</b><small>${esc(x.role==='administrador'?'Administrador':x.role==='motoboy'?'Motoboy':'Usuário')}</small></div></div>
+      <div class="permissionField"><label>Permissão</label><select onchange="changeUserRole('${esc(x.id)}',this.value)">
+        <option value="usuario" ${x.role==='usuario'?'selected':''}>Usuário</option>
+        <option value="motoboy" ${x.role==='motoboy'?'selected':''}>Motoboy</option>
+        <option value="administrador" ${x.role==='administrador'?'selected':''}>Administrador</option>
+      </select></div>
+      <button type="button" class="userDelete" onclick="deleteUser('${esc(x.id)}')">Excluir</button>
+    </div>`).join('')||'<div class="emptyState"><span>👤</span><b>Nenhum usuário encontrado.</b><small>Cadastre um usuário ou altere a busca.</small></div>');
+};
   window.createAdminUser=async()=>{const n=$('newUserName')?.value.trim(),e=$('newUserEmail')?.value.trim(),p=$('newUserPass')?.value||'',role=$('newUserRole')?.value||'usuario';if(!n||!e||p.length<6)return toast('Preencha nome, e-mail e senha com no mínimo 6 caracteres.');const r=await sb.functions.invoke('admin-user',{body:{action:'create',name:n,email:e,password:p,role}});if(r.error||!r.data?.ok)return toast(r.error?.message||r.data?.error||'Não foi possível cadastrar.');await window.renderUsers();toast('Usuário cadastrado.')};
   window.changeUserRole=async(id,role)=>{const r=await sb.functions.invoke('admin-user',{body:{action:'role',user_id:id,role}});if(r.error||!r.data?.ok)return toast(r.error?.message||r.data?.error||'Não foi possível alterar a permissão.');await window.renderUsers();toast('Permissão atualizada.')};
   window.deleteUser=async id=>{if(!confirm('Excluir este usuário?'))return;const r=await sb.functions.invoke('admin-user',{body:{action:'delete',user_id:id}});if(r.error||!r.data?.ok)return toast(r.error?.message||r.data?.error||'Não foi possível excluir.');await window.renderUsers();toast('Usuário excluído.')};
