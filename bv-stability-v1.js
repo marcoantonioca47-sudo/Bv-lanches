@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.15';
+  window.BV_STABILITY_VERSION='2026.09.24.16';
   try{window.cart=Array.isArray(window.cart)?window.cart:(JSON.parse(localStorage.getItem('bv_cart')||'[]')||[])}catch{window.cart=[]}
   try{window.products=Array.isArray(window.products)?window.products:(JSON.parse(localStorage.getItem('bv_products')||'[]')||[])}catch{window.products=[]}
   if(!Array.isArray(window.orders))window.orders=[];
@@ -48,8 +48,23 @@
     if(p==='acompanhar')window.renderTracking();
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
+    if(p==='taxa-entrega')window.renderMotoFeeOrders?.()
     if(p==='produtos')window.renderProductsAdmin?.();
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.()}
+  };
+
+  window.renderMotoFeeOrders=async()=>{
+    if(window.BV_ROLE!=='motoboy')return;
+    const b=$('motoFeeOrders');if(!b||!sb)return;
+    b.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando entregas...</b></div>';
+    try{
+      const {data:{user}}=await sb.auth.getUser();if(!user)return;
+      const r=await sb.from('orders').select('id,order_number,total,delivery_fee,created_at').eq('motoboy_id',user.id).eq('status','entregue').order('created_at',{ascending:false});
+      if(r.error)throw r.error;
+      const rows=r.data||[];
+      const totalFees=rows.reduce((s,o)=>s+Number(o.delivery_fee||0),0);
+      b.innerHTML=rows.length?'<div class="motoFeeSummary"><div><small>ENTREGAS</small><strong>'+rows.length+'</strong></div><div><small>TOTAL DAS TAXAS</small><strong>'+money(totalFees)+'</strong></div></div><div class="motoFeeList">'+rows.map(o=>'<article class="motoFeeOrder"><div><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b></div><div><small>VALOR DO PEDIDO</small><strong>'+money(o.total)+'</strong></div><div><small>TAXA DE ENTREGA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>Nenhuma entrega finalizada</b><small>Quando você marcar um pedido como entregue, ele aparecerá aqui.</small></div>';
+    }catch(e){console.error('Moto fee orders',e);b.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as entregas</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>'}
   };
 
   window.setMenuCategory=(c,b)=>{document.querySelectorAll('[data-menu-category]').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_CAT=c;window.renderProducts()};
@@ -205,7 +220,7 @@
       b.innerHTML=available.map(o=>`<article class="orderCard motoOrder"><div class="orderHead"><div><small>PEDIDO</small><b>#${esc(window.orderLabel(o))}</b></div><span class="statusBadge">${esc(o.status)}</span></div><div class="orderBody"><b>${esc(o.customer)}</b><p>${esc(o.items||'')}</p><div class="motoContactInfo"><div class="motoContactItem"><span>📍 Endereço</span><strong>${esc(o.address?.rua||'Não informado')}${o.address?.bairro?' · '+esc(o.address.bairro):''}</strong></div><div class="motoContactItem"><span>📱 Celular</span><strong>${esc(o.phone||'Não informado')}</strong></div></div></div><div class="motoFeeCard"><span>Taxa de entrega</span><strong>${money(o.deliveryFee)}</strong></div><button class="motoFinishBtn" onclick="motoFinish('${esc(o.id)}')">✓ Marcar como entregue</button></article>`).join('')||'<div class="emptyState"><span>🏍️</span><b>Nenhum pedido em preparo</b><small>Os pedidos aparecem aqui quando o administrador marcar "Em preparo".</small></div>';
     }catch(e){console.error('Moto orders',e);b.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar os pedidos</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoOrders()">Tentar novamente</button></div>'}
   };
-  window.motoFinish=async id=>{if(!sb)return;const r=await sb.rpc('motoboy_update_delivery',{p_order_id:id,p_fee_collected:true,p_mark_delivered:true});if(r.error)return toast('Erro: '+r.error.message);await window.BV_REFRESH_ORDERS();toast('Entrega finalizada.')};
+  window.motoFinish=async id=>{if(!sb)return;const r=await sb.rpc('motoboy_update_delivery',{p_order_id:id,p_fee_collected:true,p_mark_delivered:true});if(r.error)return toast('Erro: '+r.error.message);await window.BV_REFRESH_ORDERS();window.renderMotoFeeOrders?.();toast('Entrega finalizada.')};
 
   window.BV_ADMIN_USERS=async()=>{if(!sb)return{error:'Banco indisponível.'};const r=await sb.functions.invoke('admin-user',{body:{action:'list'}});return r.error||!r.data?.ok?{error:r.error?.message||r.data?.error||'Não foi possível carregar usuários.'}:{users:r.data.users||[]}};
   window.renderUsers=async()=>{const b=$('userPermissions');if(!b||!window.admin())return;const r=await window.BV_ADMIN_USERS();if(r.error)return b.innerHTML='<p class="muted">'+esc(r.error)+'</p>';const a=r.users||[],q=norm($('userSearch')?.value||'');if($('userCount'))$('userCount').textContent=a.length+' usuários';b.innerHTML='<div class="userCreateBox"><div class="newUserGrid"><input id="newUserName" placeholder="Nome"><input id="newUserEmail" type="email" placeholder="E-mail"><input id="newUserPass" type="password" placeholder="Senha (mín. 6)"><select id="newUserRole"><option value="usuario">Usuário</option><option value="motoboy">Motoboy</option><option value="administrador">Administrador</option></select><button type="button" onclick="createAdminUser()">＋ Cadastrar</button></div></div>'+a.filter(x=>norm(x.name).includes(q)||norm(x.email).includes(q)).map(x=>`<div class="userPerm"><div><b>${esc(x.name||x.email)}</b><small>${esc(x.email)}</small></div><select onchange="changeUserRole('${esc(x.id)}',this.value)"><option value="usuario" ${x.role==='usuario'?'selected':''}>Usuário</option><option value="motoboy" ${x.role==='motoboy'?'selected':''}>Motoboy</option><option value="administrador" ${x.role==='administrador'?'selected':''}>Administrador</option></select><button type="button" onclick="deleteUser('${esc(x.id)}')">Excluir</button></div>`).join('')||'<p class="muted">Nenhum usuário encontrado.</p>'};
