@@ -230,7 +230,7 @@
     const chart=$('dashboardChart');
     if(chart){
       const statusMap=[
-        ['recebido','Novo'],['em_preparo','Em preparo'],['em_producao','Em produção'],
+        ['recebido','Novo'],['em_preparo','Em preparo'],
         ['saiu_entrega','Saiu para entrega'],['entregue','Entregue'],['cancelado','Cancelado']
       ];
       const cs=statusMap.map(([raw])=>filtered.filter(o=>String(o.rawStatus||'')===raw).length);
