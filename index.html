@@ -209,23 +209,39 @@
 #page-inicio .homeFeatureGrid,
 #page-inicio .howWorks,
 #page-inicio .homeFooter{display:none!important}
-#page-inicio #homePromoBanner{display:none;margin:0;width:100%;max-width:none}
+#page-inicio #homePromoBanner{
+  display:none;
+  width:100%;
+  margin:0 0 18px;
+  border-radius:18px;
+  overflow:hidden;
+}
 #page-inicio #homePromoBanner.show{display:block}
-#page-inicio #homePromoBanner .homePromoTrack{width:100%;margin:0}
+#page-inicio #homePromoBanner .homePromoTrack{width:100%}
 #page-inicio #homePromoBanner .homePromoSlide{
-  min-height:clamp(360px,calc(100vh - 95px),760px)!important;
-  width:100%;border-radius:0;overflow:hidden;
-  background-color:#090909!important;background-size:cover!important;background-position:center!important;
-  box-shadow:none;
+  min-height:220px!important;
+  max-height:300px;
+  width:100%;
+  border-radius:18px;
+  overflow:hidden;
+  background-color:#090909!important;
+  background-size:cover!important;
+  background-position:center!important;
 }
 #page-inicio #homePromoBanner .homePromoCopy,
 #page-inicio #homePromoBanner .homePromoPrice,
-#page-inicio #homePromoBanner .homePromoDots{display:none!important}
+#page-inicio #homePromoBanner .homePromoDots{
+  display:flex!important;
+}
+#page-inicio #homePromoBanner .homePromoCopy{flex-direction:column}
 #page-inicio #homePromoBanner .homePromoSlide:after{display:none!important}
 @media(max-width:700px){
+  #page-inicio #homePromoBanner{margin-bottom:14px}
   #page-inicio #homePromoBanner .homePromoSlide{
-    min-height:calc(100svh - 64px)!important;
-    border-radius:0;background-position:center!important;
+    min-height:190px!important;
+    max-height:240px;
+    border-radius:14px;
+    background-position:center!important;
   }
 }
 </style></head><body>
