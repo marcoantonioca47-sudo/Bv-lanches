@@ -1,5 +1,5 @@
-/* BV LANCHES — Ícones realistas
-   Substitui emojis decorativos por SVGs sólidos, sem alterar eventos/funções.
+/* BV LANCHES — Ícones realistas 3D
+   SVGs com volume, luz e profundidade; sem alterar eventos/funções.
 */
 (function(){
   const ICONS={
