@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.37';
+  window.BV_STABILITY_VERSION='2026.09.24.38';
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
   // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
@@ -309,7 +309,12 @@
         const b=$('trackingResult');
         if(!orders.length)return toast('Você ainda não possui pedidos.');
         b.innerHTML='<div class="trackingOrdersList"><div class="trackingListHead"><div><small>MEUS PEDIDOS</small><h3>Todos os seus pedidos</h3><p>Selecione um pedido para acompanhar.</p></div><strong>'+orders.length+'</strong></div>'+
-          orders.map(x=>'<button type="button" class="trackingOrderOption" data-order-id="'+esc(String(x.id))+'"><span><b>#'+esc(window.orderLabel(x))+'</b><small>'+esc(x.status||'')+'</small></span><span><strong>'+money(x.total)+'</strong><small>'+new Date(x.created_at).toLocaleDateString('pt-BR')+'</small></span></button>').join('')+
+          orders.map(x=>{
+          const d=new Date(x.created_at);
+          const date=Number.isNaN(d.getTime())?'Data não disponível':d.toLocaleDateString('pt-BR');
+          const time=Number.isNaN(d.getTime())?'':d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+          return '<button type="button" class="trackingOrderOption" data-order-id="'+esc(String(x.id))+'"><span class="trackingOrderMain"><span class="trackingOrderNumber">#'+esc(window.orderLabel(x))+'</span><span class="trackingOrderStatus">'+esc(x.status||'')+'</span><span class="trackingOrderItems">'+esc(x.items||'Itens do pedido')+'</span></span><span class="trackingOrderMeta"><strong>'+money(x.total)+'</strong><small>'+date+(time?' · '+time:'')+'</small><em>Ver pedido ›</em></span></button>'
+        }).join('')+
           '</div>';
         b.querySelectorAll('.trackingOrderOption').forEach(btn=>btn.addEventListener('click',()=>window.trackSpecificOrder(btn.dataset.orderId)));
         return;
