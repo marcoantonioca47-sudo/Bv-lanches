@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.25.149';
+  window.BV_ORDER_V2 = '2026.09.25.150';
 
   window.finish = async function(){
     const sb = getSB();
@@ -119,17 +119,44 @@
       localStorage.setItem('bv_cart','[]');
       window.cart = [];
 
-      if(payment==='pix' && typeof sb.functions?.invoke==='function'){
-        // O pedido já foi criado. Se a geração do PIX falhar, não transforme
-        // isso em "falha ao finalizar": o pedido continua existente e pode ser
-        // consultado pelo cliente/admin sem risco de criar duplicata ao tentar de novo.
-        const pix = await sb.functions.invoke('criar-pix',{body:{order_id:orderId}});
-        if(pix.error || pix.data?.error){
-          console.warn('[BV ORDER V2] PIX não gerado após criação do pedido',pix.error||pix.data?.error);
-          window.BV_LAST_PIX_ERROR = pix.error?.message || pix.data?.error || 'Não foi possível gerar o PIX.';
+      if(payment==='pix'){
+        let pixData=null, pixError=null;
+        try{
+          if(typeof sb.functions?.invoke==='function'){
+            const pix=await sb.functions.invoke('criar-pix',{body:{order_id:orderId}});
+            if(!pix.error && !pix.data?.error) pixData=pix.data||null;
+            else pixError=pix.error?.message||pix.data?.error||'Falha ao chamar a função PIX.';
+          }
+        }catch(e){pixError=e?.message||'Falha ao chamar a função PIX.'}
+        if(!pixData){
+          try{
+            const {data:sessionData}=await sb.auth.getSession();
+            const token=sessionData?.session?.access_token;
+            const key=window.BV_SUPABASE_CONFIG?.publishableKey;
+            const base=window.BV_SUPABASE_CONFIG?.url;
+            if(!token||!key||!base)throw new Error(pixError||'Sessão do cliente indisponível para gerar o PIX.');
+            const resp=await fetch(base+'/functions/v1/criar-pix',{
+              method:'POST',
+              headers:{'Authorization':'Bearer '+token,'apikey':key,'Content-Type':'application/json'},
+              body:JSON.stringify({order_id:orderId})
+            });
+            const raw=await resp.text();let body={};try{body=raw?JSON.parse(raw):{}}catch{}
+            if(!resp.ok||body.error)throw new Error(body.error||('Erro HTTP '+resp.status+' ao gerar PIX.'));
+            pixData=body;
+          }catch(e){pixError=e?.message||pixError||'Não foi possível gerar o PIX.'}
+        }
+        if(!pixData){
+          console.warn('[BV ORDER V2] PIX não gerado',pixError);
+          window.BV_LAST_PIX_ERROR=pixError||'Não foi possível gerar o PIX.';
         }else{
-          window.BV_LAST_PIX = pix.data || null;
-          window.BV_LAST_PIX_ERROR = '';
+          window.BV_LAST_PIX=pixData;window.BV_LAST_PIX_ERROR='';
+          const current=(window.orders||[]).find(o=>String(o.id)===String(orderId));
+          if(current){
+            current.payment='Pix';current.paymentStatus='pendente';
+            current.pixPaymentId=pixData.mercado_pago_order_id||pixData.pix_payment_id||null;
+            current.pixQrCode=pixData.qr_code||'';current.pixQrCodeBase64=pixData.qr_code_base64||'';
+            current.pixExpiresAt=pixData.expires_at||null;
+          }
         }
       }
 
