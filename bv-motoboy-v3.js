@@ -8,10 +8,10 @@
   const isMoto = () => ['motoboy'].includes(String(window.BV_ROLE || '').toLowerCase());
   const db = () => window.BV_SUPABASE;
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.5';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.6';
 
   function motoAllowedPage(p) {
-    return p === 'pedidos' || p === 'taxa-entrega';
+    return ['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega'].includes(p);
   }
 
   /* Uma única camada de navegação para o motoboy. */
@@ -26,11 +26,11 @@
   function hideMotoAdminUi() {
     if (!isMoto()) return;
     document.querySelectorAll('.sideNav [data-page]').forEach(el => {
-      const allowed = el.dataset.page === 'pedidos' || el.dataset.page === 'taxa-entrega';
+      const allowed = ['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega'].includes(el.dataset.page);
       const isAdminDuplicate = el.classList.contains('adminOnly') || el.classList.contains('adminDeliveryFeeLink');
       el.style.setProperty('display', allowed && !isAdminDuplicate ? '' : 'none','important');
     });
-    document.querySelectorAll('.navTitle,.sideBottom .adminBtn,.cartTop,.homeNotificationBar').forEach(el => {
+    document.querySelectorAll('.navTitle,.sideBottom .adminBtn,.homeNotificationBar').forEach(el => {
       el.style.setProperty('display','none','important');
     });
   }
@@ -336,7 +336,7 @@
     hideMotoAdminUi();
     if (isMoto()) {
       const active=document.querySelector('.page.activePage')?.id;
-      if (!['page-pedidos','page-taxa-entrega'].includes(active)) {
+      if (!['page-inicio','page-cardapio','page-pedido','page-acompanhar','page-pedidos','page-taxa-entrega'].includes(active)) {
         window.showPage('pedidos',true);
       } else if (active==='page-pedidos') {
         window.renderMotoOrders();
