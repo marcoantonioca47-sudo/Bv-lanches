@@ -40,8 +40,8 @@
     const inRoute = status === 'saiu_entrega';
     const label = inRoute ? 'Saiu para entrega' : status === 'em_producao' ? 'Em produção' : 'Em preparo';
     const action = inRoute
-      ? '<button type="button" class="motoActionBtn motoDeliver" data-action="entregar" data-order="'+esc(o.id)+'">✅ Confirmar entrega</button>'
-      : '<button type="button" class="motoActionBtn motoCollect" data-action="coletar" data-order="'+esc(o.id)+'">📦 Coletar pedido</button>';
+      ? '<button type="button" class="motoActionBtn motoDeliver" data-action="entregar" data-order="'+esc(o.id)+'" onclick="event.preventDefault();event.stopPropagation();window.motoAction(\''+esc(o.id)+'\',\'entregar\');">✅ Confirmar entrega</button>'
+      : '<button type="button" class="motoActionBtn motoCollect" data-action="coletar" data-order="'+esc(o.id)+'" onclick="event.preventDefault();event.stopPropagation();window.motoAction(\''+esc(o.id)+'\',\'coletar\');">📦 Coletar pedido</button>';
     const itemsText = items.length
       ? items.map(i => esc(i.quantity)+'x '+esc(i.product_name)).join(', ')
       : 'Itens do pedido';
@@ -262,8 +262,6 @@
   };
 
   function bindActions() {
-    // O fluxo principal usa onclick inline para não depender da ordem dos observers.
-    // Mantemos este bind apenas como fallback para botões antigos.
     document.querySelectorAll('.motoActionBtn').forEach(btn=>{
       if (btn.dataset.bound) return;
       btn.dataset.bound='1';
@@ -271,6 +269,19 @@
         if (e.defaultPrevented) return;
         motoAction(btn.dataset.order,btn.dataset.action);
       });
+    });
+  }
+
+  // Fallback global em caso de outro script substituir os listeners do botão.
+  // Usa a fase normal (bubble), nunca capture, para não bloquear o clique.
+  if (!window.BV_MOTO_CLICK_FALLBACK) {
+    window.BV_MOTO_CLICK_FALLBACK = true;
+    document.addEventListener('click', e => {
+      const btn = e.target?.closest?.('.motoActionBtn');
+      if (!btn || e.defaultPrevented) return;
+      if (btn.dataset.processing === '1') return;
+      e.preventDefault();
+      motoAction(btn.dataset.order, btn.dataset.action);
     });
   }
 
