@@ -1,5 +1,5 @@
 /* BV LANCHES — atualização instantânea de status dos pedidos
-   Supabase Realtime + fallback leve. Não substitui as rotinas existentes:
+   Supabase Realtime + fallback de segurança a cada 10 segundos. Não substitui as rotinas existentes:
    apenas força a atualização das telas quando a tabela orders muda.
 */
 (() => {
@@ -63,7 +63,7 @@
     clearInterval(fallbackTimer);
     fallbackTimer = setInterval(() => {
       if (document.visibilityState === 'visible') refreshNow('fallback');
-    }, 3000);
+    }, 10000);
   }
 
   function boot() {
