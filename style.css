@@ -316,3 +316,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
     font-size:13px!important;
   }
 }
+
+/* BV tracking status - v267 */
+.trackingStatusLabel{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 18px;padding:12px 14px;border-radius:12px;background:rgba(229,9,20,.10);border:1px solid rgba(229,9,20,.28)}
+.trackingStatusLabel span{font-size:10px;font-weight:900;letter-spacing:.09em;color:#9aa2ad}.trackingStatusLabel b{display:inline-flex!important;padding:7px 11px!important;border-radius:999px!important;background:#e50914!important;border:1px solid #ff4a52!important;color:#fff!important;font-size:12px!important;font-weight:900!important;white-space:nowrap}@media(max-width:600px){.trackingStatusLabel{align-items:flex-start;flex-direction:column;gap:7px}}
