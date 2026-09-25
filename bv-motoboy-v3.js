@@ -8,7 +8,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.125';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.126';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
 
   const allowed = new Set(['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega']);
@@ -235,6 +235,7 @@
   function boot(){
     applyMenu();
     injectStyle();
+    bindClick();
     if(!isMoto()) return;
     const active=document.querySelector('.page.activePage')?.id||'';
     if(active==='page-pedidos') window.renderMotoOrders();
