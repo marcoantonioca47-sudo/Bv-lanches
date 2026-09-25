@@ -570,7 +570,9 @@
       // Busca em duas etapas para garantir que um pedido coletado continue visível.
       // 1) pedidos em preparo ainda sem motoboy; 2) pedidos já coletados pelo motoboy atual.
       const [availableRes,assignedRes]=await Promise.all([
+        // Todo pedido em "Em preparação" fica disponível para coleta.
         sb.from('orders').select(fields).eq('status','em_preparo').is('motoboy_id',null).order('created_at',{ascending:false}),
+        // Depois de coletado, permanece na tela do motoboy até ser entregue.
         sb.from('orders').select(fields).eq('status','saiu_entrega').eq('motoboy_id',user.id).order('created_at',{ascending:false})
       ]);
       if(availableRes.error)throw availableRes.error;
