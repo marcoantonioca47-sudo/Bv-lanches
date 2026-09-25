@@ -258,14 +258,8 @@
     return oldShow.call(this,page,internal);
   };
 
-  document.addEventListener('click',e=>{
-    const btn=e.target.closest('.motoActionBtn');
-    if (btn) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  },true);
-
+  // Os botões possuem listeners próprios em bindActions().
+  // Não bloquear o evento no capture, pois isso impediria o click de chegar ao botão.
   const style=document.createElement('style');
   style.textContent=
     '.motoSingleCard{margin:0 0 14px;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}'+
