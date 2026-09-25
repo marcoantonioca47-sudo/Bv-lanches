@@ -8,7 +8,7 @@
   const isMoto = () => ['motoboy'].includes(String(window.BV_ROLE || '').toLowerCase());
   const db = () => window.BV_SUPABASE;
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.3';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.4';
 
   function motoAllowedPage(p) {
     return p === 'pedidos' || p === 'taxa-entrega';
@@ -140,7 +140,7 @@
 
       // Atualiza a lista depois da confirmação sem bloquear ações de outros pedidos.
       await window.renderMotoOrders({silent:true});
-      await window.renderMotoFeeOrders();
+      await window.renderMotoFeeOrders({silent:true});
       window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido marcado como entregue.');
     } catch(e) {
       console.error('[BV MOTO ACTION v3]',e);
@@ -156,12 +156,18 @@
   window.motoAction = motoAction;
   window.motoFinish = id => motoAction(id,'entregar');
 
-  window.renderMotoFeeOrders = async function() {
+  window.renderMotoFeeOrders = async function(options) {
     if (!isMoto()) return;
     const box = $('motoFeeOrders');
     if (!box) return;
+    const silent = options === false || options?.silent === true;
+    const hasContent = !!box.querySelector('.motoFeeFilter,.motoFeeHeader,.motoFeeList,.emptyState');
 
-    box.innerHTML = '<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
+    // Atualizações automáticas não apagam a tela atual nem mostram "Carregando taxas".
+    // O carregamento só aparece quando a tela ainda não tem conteúdo.
+    if (!silent && !hasContent) {
+      box.innerHTML = '<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
+    }
 
     try {
       const client = db();
