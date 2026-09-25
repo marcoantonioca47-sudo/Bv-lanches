@@ -37,7 +37,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.277';
+  window.BV_STABILITY_VERSION='2026.09.25.278';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -300,7 +300,7 @@
           (paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':'')+
         '</div>'+
         '<div class="orderFoot"><div><small>TOTAL</small><strong>'+money(o.total)+'</strong></div>'+
-        (isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':String(o.rawStatus||'').toLowerCase()==='em_preparo'?'<button type="button" class="bvStartOrderBtn bvReadyOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_producao\')">✓ PRONTO</button>':'<span class="bvProductionLocked">Status controlado pela produção/entrega</span>')+
+        (isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':String(o.rawStatus||'').toLowerCase()==='em_preparo'?'<div class="bvReadyActions"><button type="button" class="bvStartOrderBtn bvReadyOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_producao\')">✓ PRONTO</button><button type="button" class="bvCancelOrderBtn" onclick="cancelOrder(\''+esc(o.id)+'\')">Cancelar pedido</button></div>':'<span class="bvProductionLocked">Status controlado pela produção/entrega</span>')+
         '</div></article>';
     };
     const section=(title,sub,rows,cls)=>rows.length?
@@ -310,7 +310,7 @@
       (!novos.length&&!andamento.length?'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Novos pedidos aparecerão automaticamente aqui.</small></div>':'');
     if(novos.length)b.scrollIntoView({block:'nearest',behavior:'smooth'});
   };
-  window.statusOrder=async(id,s)=>{
+  window.cancelOrder=async(id)=>{\n    if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');\n    const o=(window.orders||[]).find(x=>String(x.id)===String(id));\n    if(!o)return toast('Pedido não encontrado. Atualize a lista e tente novamente.');\n    if(String(o.rawStatus||'').toLowerCase()!=='em_preparo')return toast('Somente pedidos em preparo podem ser cancelados.');\n    if(!confirm('Cancelar este pedido?'))return;\n    const r=await sb.from('orders').update({status:'cancelado',updated_at:new Date().toISOString()}).eq('id',id).eq('status','em_preparo');\n    if(r.error)return toast('Não foi possível cancelar o pedido: '+r.error.message);\n    window.orders=(window.orders||[]).filter(x=>String(x.id)!==String(id));\n    window.renderAdmin?.();\n    toast('Pedido cancelado.');\n  };\n  window.statusOrder=async(id,s)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
     s=String(s||'').trim().toLowerCase();
     if(!['em_preparo','em_producao'].includes(s))return toast('Status inválido para esta etapa.');
