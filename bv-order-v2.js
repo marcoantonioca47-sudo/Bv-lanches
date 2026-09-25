@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.24.7';
+  window.BV_ORDER_V2 = '2026.09.25.121';
 
   window.finish = async function(){
     const sb = getSB();
