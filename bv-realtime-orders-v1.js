@@ -23,8 +23,11 @@
     lastRefresh = now;
     try {
       await fn();
-      window.renderMotoOrders?.();
-      window.renderMotoFeeOrders?.();
+      window.renderMotoOrders?.({silent:true});
+      // Só atualiza a tela de taxas se ela estiver aberta, e sem apagar o conteúdo atual.
+      if (document.getElementById('page-taxa-entrega')?.classList.contains('activePage')) {
+        window.renderMotoFeeOrders?.({silent:true});
+      }
       window.renderDashboard?.();
       if (typeof window.renderTracking === 'function') {
         const id = localStorage.getItem('bv_track_id');
@@ -81,5 +84,5 @@
     boot();
   }
 
-  window.BV_REALTIME_VERSION = '2026.09.25.1';
+  window.BV_REALTIME_VERSION = '2026.09.25.2';
 })();
