@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.25.122';
+  window.BV_STABILITY_VERSION='2026.09.25.124';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -43,6 +43,8 @@
   window.toggleSidebar=()=>{$('sidebar')?.classList.toggle('open')};
   window.openAdmin=p=>{if(!window.admin())return toast('Acesso restrito ao administrador.');window.showPage(p||'dashboard')};
   window.showPage=(p,internal=false)=>{
+    const role=String(window.BV_ROLE||'').toLowerCase();
+    if(role==='motoboy' && !['pedidos','taxa-entrega'].includes(String(p))) p='pedidos';
     if(!internal)window.BV_HAS_NAVIGATED=true;
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('activePage'));
     $('page-'+p)?.classList.add('activePage');
