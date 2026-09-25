@@ -28,7 +28,7 @@
    window.BV_CLEAN_NAV_HOOKED=true;
    apply();
  }
- window.BV_CLEANUP_VERSION='2026.09.25.120';
+ window.BV_CLEANUP_VERSION='2026.09.25.122';
  document.addEventListener('DOMContentLoaded',()=>{hook();setTimeout(apply,300);setTimeout(apply,1000)});
  window.addEventListener('load',()=>{hook();apply()});
 })();
