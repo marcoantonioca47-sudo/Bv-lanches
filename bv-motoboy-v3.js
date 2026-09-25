@@ -13,18 +13,6 @@
 
   const allowed = new Set(['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega']);
 
-  function protectNavigation() {
-    if (window.BV_MOTO_NAV_READY) return;
-    const original = window.showPage;
-    if (typeof original !== 'function') return;
-    window.BV_MOTO_NAV_READY = true;
-    window.BV_MOTO_BASE_SHOW_PAGE = original;
-    window.showPage = function(page, internal) {
-      if (isMoto() && !allowed.has(String(page))) page = 'pedidos';
-      return window.BV_MOTO_BASE_SHOW_PAGE.call(this,page,internal);
-    };
-  }
-
   function applyMenu() {
     if (!isMoto()) return;
     document.querySelectorAll('.sideNav [data-page]').forEach(el => {
@@ -219,7 +207,6 @@
   }
 
   function boot(){
-    protectNavigation();
     applyMenu();
     injectStyle();
     if(!isMoto()) return;
@@ -240,5 +227,5 @@
   }
 
   // Reaplica após mudanças de perfil/acesso sem criar novos listeners.
-  setTimeout(()=>{protectNavigation();applyMenu();injectStyle();},500);
+  setTimeout(()=>{applyMenu();injectStyle();},500);
 })();
