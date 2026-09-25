@@ -1,4 +1,4 @@
-/* BV LANCHES — acabamento final e experiência v1.2 */
+/* BV LANCHES — acabamento final e experiência v1.3 — otimizado */
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -22,6 +22,7 @@ function patchCart(){
 }
 function patchLogout(){if(window.BV_FINAL_LOGOUT_PATCH)return;const old=window.logout;if(typeof old!=='function')return;window.logout=async function(){try{localStorage.removeItem('bv_first_login_done');localStorage.removeItem('bv_checkout_draft_v1')}catch(e){}return old.apply(this,arguments)};window.BV_FINAL_LOGOUT_PATCH=true}
 function dashboardTools(){const p=$('page-dashboard');if(!p||$('bvDashboardRefresh'))return;const h=p.querySelector('.adminTopActions');if(!h)return;const b=document.createElement('button');b.id='bvDashboardRefresh';b.type='button';b.textContent='↻ Atualizar';b.onclick=async()=>{b.disabled=true;b.textContent='Atualizando...';try{await window.BV_REFRESH_ORDERS?.();window.renderDashboard?.();window.renderAnalytics?.(true)}finally{b.disabled=false;b.textContent='↻ Atualizar'}};h.prepend(b)}
-function boot(){injectStatus();installSearch();cartFloat();restoreDraft();dashboardTools();patchRender();patchCart();patchLogout();setOnline(navigator.onLine);document.querySelectorAll('#page-pedido input,#page-pedido textarea').forEach(e=>e.addEventListener('input',saveDraft));window.addEventListener('online',()=>setOnline(true));window.addEventListener('offline',()=>setOnline(false));setInterval(()=>{patchRender();patchCart();patchLogout();dashboardTools();updateCartFloat()},1200)}
+function patchShowPage(){if(window.BV_FINAL_SHOW_PAGE_PATCH)return;const old=window.showPage;if(typeof old!=='function')return;window.showPage=function(){const r=old.apply(this,arguments);updateCartFloat();return r};window.BV_FINAL_SHOW_PAGE_PATCH=true}
+function boot(){injectStatus();installSearch();cartFloat();restoreDraft();dashboardTools();patchRender();patchCart();patchLogout();patchShowPage();setOnline(navigator.onLine);document.querySelectorAll('#page-pedido input,#page-pedido textarea').forEach(e=>e.addEventListener('input',saveDraft));window.addEventListener('online',()=>setOnline(true));window.addEventListener('offline',()=>setOnline(false));updateCartFloat()}
 document.addEventListener('DOMContentLoaded',boot,{once:true});
 })();
