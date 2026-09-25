@@ -295,7 +295,7 @@
   }
 
   function card(o,items) {
-    const label = o.status === 'saiu_entrega' ? 'Saiu para entrega' : o.status === 'em_producao' ? 'Em produção' : 'Em preparo';
+    const label = o.status === 'saiu_entrega' ? 'Saiu para entrega' : o.status === 'em_producao' ? 'Pronto' : 'Em preparo';
     const list = items.length ? items.map(i => esc(i.quantity)+'x '+esc(i.product_name)).join(', ') : 'Itens do pedido';
     const address = [o.address,o.neighborhood].filter(Boolean).map(esc).join(' · ') || 'Endereço não informado';
     const pm=String(o.payment_method||'').toLowerCase();
