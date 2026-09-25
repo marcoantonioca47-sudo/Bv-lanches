@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.25.140';
+  window.BV_STABILITY_VERSION='2026.09.25.141';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -200,7 +200,7 @@
       if(q&&!text.includes(q))return false;if(sf&&o.status!==sf)return false;if(pf&&o.payment!==pf)return false;
       if(df){const t=new Date(o.created_at).getTime();if(df==='today'){const d=new Date();d.setHours(0,0,0,0);if(t<d.getTime())return false}else if(now-t>Number(df)*86400000)return false}return true;
     });
-    b.innerHTML=a.length?a.map(o=>`<article class="orderCard"><div class="orderHead"><div><small>PEDIDO</small><b>#${esc(window.orderLabel(o))}</b></div><span class="statusBadge">${esc(o.status)}</span></div><div class="orderBody"><b>${esc(o.customer||'Cliente')}</b><p>${esc(o.items||'')}</p><small>${esc(o.phone||'')}${o.address?' · '+esc(o.address.rua||'')+(o.address.bairro?' · '+esc(o.address.bairro):''):''}</small></div><div class="orderFoot"><strong>${money(o.total)}</strong><select onchange="statusOrder('${esc(o.id)}',this.value)"><option value="">Alterar status</option><option value="recebido">Novo</option><option value="em_preparo">Em preparo</option><option value="saiu_entrega">Saiu para entrega</option><option value="entregue">Entregue</option><option value="cancelado">Cancelado</option></select></div></article>`).join(''):'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Altere os filtros ou aguarde novos pedidos.</small></div>';
+    b.innerHTML=a.length?a.map(o=>`<article class="orderCard"><div class="orderHead"><div><small>PEDIDO</small><b>#${esc(window.orderLabel(o))}</b></div><span class="statusBadge">${esc(o.status)}</span></div><div class="orderBody"><b>${esc(o.customer||'Cliente')}</b><p>${esc(o.items||'')}</p><small>${esc(o.phone||'')}${o.address?' · '+esc(o.address.rua||'')+(o.address.bairro?' · '+esc(o.address.bairro):''):''}</small></div><div class="orderFoot"><strong>${money(o.total)}</strong><select onchange="statusOrder('${esc(o.id)}',this.value)"><option value="">Alterar status</option><option value="recebido">Novo</option><option value="em_preparo">Em preparo</option><option value="em_producao">Em produção</option><option value="saiu_entrega">Saiu para entrega</option><option value="entregue">Entregue</option><option value="cancelado">Cancelado</option></select></div></article>`).join(''):'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Altere os filtros ou aguarde novos pedidos.</small></div>';
   };
   window.statusOrder=async(id,s)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
