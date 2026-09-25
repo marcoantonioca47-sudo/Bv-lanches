@@ -8,7 +8,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.126';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.127';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
 
   const allowed = new Set(['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega']);
@@ -45,7 +45,7 @@
     const action = o.status === 'saiu_entrega' ? 'entregar' : 'coletar';
     const text = action === 'coletar' ? '📦 Coletar pedido' : '✅ Confirmar entrega';
     const cls = action === 'coletar' ? 'motoCollect' : 'motoDeliver';
-    return '<button type="button" class="motoActionBtn '+cls+'" data-order-id="'+esc(o.id)+'" data-action="'+action+'">'+text+'</button>';
+    return '<button type="button" class="motoActionBtn '+cls+'" data-order-id="'+esc(o.id)+'" data-action="'+action+'" onclick="event.preventDefault();event.stopPropagation();window.motoAction(this.dataset.orderId,this.dataset.action,this);return false;">'+text+'</button>';
   }
 
   async function getOrders() {
@@ -146,6 +146,7 @@
         p_action:action
       });
       if (rpc.error) throw rpc.error;
+      if (rpc.data !== true) throw new Error('O servidor não confirmou a coleta do pedido.');
 
       await window.renderMotoOrders({silent:true});
       if ($('page-taxa-entrega')?.classList.contains('activePage')) {
