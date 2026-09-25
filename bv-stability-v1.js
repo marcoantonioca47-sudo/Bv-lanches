@@ -49,7 +49,7 @@
   if(sb)window.BV_SUPABASE=sb;
 
   const labels={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',produtos:'Produtos',promocoes:'Promoções',cupons:'Cupons',config:'Configurações','taxa-entrega':'Taxa de entrega'};
-  const status={recebido:'Liberado',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Em produção',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
+  const status={recebido:'Liberado',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Pronto',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
   const payLabel={pix:'Pix',dinheiro:'Dinheiro',cartao:'Cartão'};
 
   window.admin=()=>['administrador','admin'].includes(window.BV_ROLE);
@@ -338,7 +338,7 @@
     const chart=$('dashboardChart');
     if(chart){
       const statusMap=[
-        ['recebido','Novo'],['em_preparo','Em preparo'],['em_producao','Em produção'],
+        ['recebido','Novo'],['em_preparo','Em preparo'],['em_producao','Pronto'],
         ['saiu_entrega','Saiu para entrega'],['entregue','Entregue'],['cancelado','Cancelado']
       ];
       const cs=statusMap.map(([raw])=>filtered.filter(o=>String(o.rawStatus||'')===raw).length);
