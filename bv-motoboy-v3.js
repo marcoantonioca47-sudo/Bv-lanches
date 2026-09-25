@@ -8,7 +8,7 @@
   const isMoto = () => ['motoboy'].includes(String(window.BV_ROLE || '').toLowerCase());
   const db = () => window.BV_SUPABASE;
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.6';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.7';
 
   function motoAllowedPage(p) {
     return ['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega'].includes(p);
@@ -300,6 +300,29 @@
 
   const observer=new MutationObserver(()=>bindActions());
   observer.observe(document.body,{subtree:true,childList:true});
+
+  /* Banner de promoções também fica disponível para o motoboy. */
+  function syncMotoPromoBanner() {
+    if (!isMoto()) return;
+    const targetPage = $('page-pedidos');
+    const source = $('homePromoBanner');
+    if (!targetPage || !source) return;
+    let banner = $('motoPromoBanner');
+    if (!banner) {
+      banner = source.cloneNode(true);
+      banner.id = 'motoPromoBanner';
+      banner.setAttribute('aria-label','Promoções ativas');
+      banner.style.marginBottom = '16px';
+      banner.querySelectorAll('[id]').forEach(el => {
+        el.id = 'moto-' + el.id;
+      });
+      const panel = targetPage.querySelector('.panel:last-of-type');
+      if (panel) panel.parentNode.insertBefore(banner, panel);
+      else targetPage.appendChild(banner);
+    }
+    banner.innerHTML = source.innerHTML;
+    banner.style.display = '';
+  }
 
   function showMoto(page) {
     hideMotoAdminUi();
