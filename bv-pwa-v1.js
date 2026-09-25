@@ -34,9 +34,19 @@
       return;
     }
     if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!isStandalone()){
-      alert('No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início”.');return;
+      window.bvModal?.({
+        type:'info',icon:'＋',kicker:'BV LANCHES',
+        title:'Instale o aplicativo',
+        message:'No iPhone, toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>. Assim você acessa o BV Lanches como aplicativo.',
+        button:'Entendi'
+      }) || alert('No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início”.');return;
     }
-    alert('Abra o menu do navegador e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”.');
+    window.bvModal?.({
+      type:'info',icon:'＋',kicker:'BV LANCHES',
+      title:'Instale o aplicativo',
+      message:'Abra o menu do navegador e escolha <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>.',
+      button:'Entendi'
+    }) || alert('Abra o menu do navegador e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”.');
   };
 
   if('serviceWorker' in navigator){
