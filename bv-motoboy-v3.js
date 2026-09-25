@@ -14,6 +14,30 @@
 
   const allowed = new Set(['pedidos','taxa-entrega']);
 
+  window.openMotoPage = async function(page='pedidos') {
+    const client = db();
+    if (!client) return window.toast?.('Supabase não carregou. Recarregue a página.');
+    try {
+      const { data:{ user }, error:authError } = await client.auth.getUser();
+      if (authError || !user) throw new Error('Sessão expirada. Entre novamente.');
+      const { data:profile, error:profileError } = await client.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
+      if (profileError) throw profileError;
+      if (!profile || String(profile.role||'').trim().toLowerCase() !== 'motoboy') {
+        return window.toast?.('Esta conta não está cadastrada como motoboy.');
+      }
+      window.BV_ROLE='motoboy';
+      window.BV_USER_NAME=profile.name || user.email || '';
+      window.applyAccess?.();
+      applyMotoPageChrome();
+      window.showPage?.(page,true);
+      if (page==='pedidos') await window.renderMotoOrders?.();
+      if (page==='taxa-entrega') await window.renderMotoFeeOrders?.();
+    } catch(e) {
+      console.error('[MOTO OPEN]',e);
+      window.toast?.('Não foi possível abrir a área do motoboy: '+String(e?.message||'erro').slice(0,120));
+    }
+  };
+
   async function syncMotoRole() {
     const client = db();
     if (!client) return false;
