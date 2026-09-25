@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.25.121';
+  window.BV_ORDER_V2 = '2026.09.25.141';
 
   window.finish = async function(){
     const sb = getSB();
@@ -104,10 +104,17 @@
       window.cart = [];
 
       if(payment==='pix' && typeof sb.functions?.invoke==='function'){
+        // O pedido já foi criado. Se a geração do PIX falhar, não transforme
+        // isso em "falha ao finalizar": o pedido continua existente e pode ser
+        // consultado pelo cliente/admin sem risco de criar duplicata ao tentar de novo.
         const pix = await sb.functions.invoke('criar-pix',{body:{order_id:orderId}});
-        if(pix.error) throw new Error(pix.error.message || 'Não foi possível gerar o PIX.');
-        if(pix.data?.error) throw new Error(pix.data.error);
-        window.BV_LAST_PIX = pix.data || null;
+        if(pix.error || pix.data?.error){
+          console.warn('[BV ORDER V2] PIX não gerado após criação do pedido',pix.error||pix.data?.error);
+          window.BV_LAST_PIX_ERROR = pix.error?.message || pix.data?.error || 'Não foi possível gerar o PIX.';
+        }else{
+          window.BV_LAST_PIX = pix.data || null;
+          window.BV_LAST_PIX_ERROR = '';
+        }
       }
 
       if(typeof window.BV_REFRESH_ORDERS === 'function'){
@@ -122,7 +129,10 @@
 
       const created=(window.orders || []).find(o=>String(o.id)===String(orderId));
       if(payment==='pix'){
-        msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' criado. Aguardando confirmação do PIX.');
+        const pixMsg = window.BV_LAST_PIX_ERROR
+          ? ' Pedido criado, mas o PIX não pôde ser gerado agora. Consulte o pedido e tente gerar o PIX novamente.'
+          : ' Aguardando confirmação do PIX.';
+        msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' criado.' + pixMsg);
       }else{
         msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' enviado com sucesso!');
       }
