@@ -8,7 +8,7 @@
   const isMoto = () => ['motoboy'].includes(String(window.BV_ROLE || '').toLowerCase());
   const db = () => window.BV_SUPABASE;
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.7';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.8';
 
   function motoAllowedPage(p) {
     return ['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega'].includes(p);
@@ -327,7 +327,7 @@
   function showMoto(page) {
     hideMotoAdminUi();
     window.showPage(page,true);
-    if (page==='pedidos') window.renderMotoOrders();
+    if (page==='pedidos') { syncMotoPromoBanner(); window.renderMotoOrders(); }
     if (page==='taxa-entrega') window.renderMotoFeeOrders();
   }
 
@@ -359,6 +359,7 @@
     hideMotoAdminUi();
     if (isMoto()) {
       const active=document.querySelector('.page.activePage')?.id;
+      syncMotoPromoBanner();
       if (!['page-inicio','page-cardapio','page-pedido','page-acompanhar','page-pedidos','page-taxa-entrega'].includes(active)) {
         window.showPage('pedidos',true);
       } else if (active==='page-pedidos') {
@@ -370,6 +371,7 @@
   }
 
   document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,150));
+  setInterval(()=>{ if (isMoto()) syncMotoPromoBanner(); },2000);
   const originalLoadApp=window.loadApp;
   if (typeof originalLoadApp==='function') {
     window.loadApp=async function() {
