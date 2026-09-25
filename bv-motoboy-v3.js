@@ -8,11 +8,44 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.140';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.200';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   window.BV_MOTO_DELIVERED = window.BV_MOTO_DELIVERED || new Set();
 
   const allowed = new Set(['pedidos','taxa-entrega']);
+
+  async function syncMotoRole() {
+    const client = db();
+    if (!client) return false;
+    try {
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) return false;
+      const { data: profile } = await client.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
+      if (!profile) return false;
+      window.BV_ROLE = String(profile.role || '').trim().toLowerCase();
+      window.BV_USER_NAME = profile.name || user.email || '';
+      window.applyAccess?.();
+      return window.BV_ROLE === 'motoboy';
+    } catch (e) {
+      console.warn('[MOTO ROLE]', e);
+      return false;
+    }
+  }
+
+  function applyMotoPageChrome() {
+    if (!isMoto()) return;
+    const page = document.getElementById('page-pedidos');
+    if (!page) return;
+    const eyebrow = page.querySelector('.adminTop .eyebrow');
+    const title = page.querySelector('.adminTop h2');
+    const desc = page.querySelector('.adminTop p');
+    if (eyebrow) eyebrow.textContent = 'ÁREA DO MOTOBOY';
+    if (title) title.textContent = 'Pedidos';
+    if (desc) desc.textContent = 'Pedidos disponíveis para coleta e entregas atribuídas a você.';
+    page.classList.remove('adminPage');
+    document.getElementById('motoDeliveryPanel')?.style.setProperty('display','none','important');
+    document.getElementById('adminOrderFilters')?.style.setProperty('display','none','important');
+  }
 
   function applyMenu() {
     if (!isMoto()) return;
@@ -285,7 +318,9 @@
     else if(active==='page-taxa-entrega') window.renderMotoFeeOrders();
   }
 
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,50));
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,80));
+  const roleClient = db();
+  roleClient?.auth?.onAuthStateChange?.(()=>setTimeout(boot,120));
   let cleanTimer=0;
   const scheduleClean=()=>{
     if(!isMoto()) return;
@@ -305,5 +340,5 @@
   }
 
   // Reaplica uma vez após o carregamento do perfil, sem loop permanente.
-  setTimeout(()=>{applyMenu();injectStyle();},150);
+  setTimeout(()=>{applyMenu();injectStyle();if(isMoto())applyMotoPageChrome();},300);
 })();
