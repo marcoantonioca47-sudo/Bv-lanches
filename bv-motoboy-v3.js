@@ -8,7 +8,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.200';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.230';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   window.BV_MOTO_DELIVERED = window.BV_MOTO_DELIVERED || new Set();
 
@@ -27,6 +27,7 @@
       }
       window.BV_ROLE='motoboy';
       window.BV_USER_NAME=profile.name || user.email || '';
+      try{localStorage.setItem('bv_profile_cache',JSON.stringify({name:window.BV_USER_NAME,role:'motoboy',userId:user.id}))}catch(e){}
       window.applyAccess?.();
       applyMotoPageChrome();
       window.showPage?.(page,true);
@@ -56,7 +57,7 @@
     }
   }
 
-  function applyMotoPageChrome() {
+  window.applyMotoPageChrome = function applyMotoPageChrome() {
     if (!isMoto()) return;
     const page = document.getElementById('page-pedidos');
     if (!page) return;
@@ -332,14 +333,18 @@
     document.head.appendChild(s);
   }
 
-  function boot(){
+  async function boot(){
+    // Sempre confirma o papel atual no Supabase antes de montar a área do motoboy.
+    // Isso impede que um perfil antigo/cache de administrador abra a tela administrativa.
+    const moto=await syncMotoRole();
     applyMenu();
     injectStyle();
     bindClick();
-    if(!isMoto()) return;
+    if(!moto) return;
+    window.applyMotoPageChrome?.();
     const active=document.querySelector('.page.activePage')?.id||'';
-    if(active==='page-pedidos') window.renderMotoOrders();
-    else if(active==='page-taxa-entrega') window.renderMotoFeeOrders();
+    if(active==='page-pedidos') await window.renderMotoOrders?.();
+    else if(active==='page-taxa-entrega') await window.renderMotoFeeOrders?.();
   }
 
   document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,80));
