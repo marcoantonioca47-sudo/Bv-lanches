@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.25.150';
+  window.BV_ORDER_V2 = '2026.09.25.160';
 
   window.finish = async function(){
     const sb = getSB();
@@ -172,10 +172,11 @@
 
       const created=(window.orders || []).find(o=>String(o.id)===String(orderId));
       if(payment==='pix'){
-        const pixMsg = window.BV_LAST_PIX_ERROR
-          ? ' Pedido criado, mas o PIX não pôde ser gerado agora. Consulte o pedido e tente gerar o PIX novamente.'
-          : ' Aguardando confirmação do PIX.';
-        msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' criado.' + pixMsg);
+        // Não bloquear a tela com alert(): o QR Code deve aparecer imediatamente
+        // assim que o pedido for finalizado.
+        if(window.BV_LAST_PIX_ERROR){
+          msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' criado, mas o PIX ainda não pôde ser gerado.');
+        }
       }else{
         msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' enviado com sucesso!');
       }
