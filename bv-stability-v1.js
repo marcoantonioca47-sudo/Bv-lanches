@@ -480,7 +480,31 @@
     const ids=(r.data||[]).map(x=>x.id);let its=[];if(ids.length){const z=await sb.from('order_items').select('order_id,product_name,quantity').in('order_id',ids);if(!z.error)its=z.data||[]}
     const g={};its.forEach(i=>(g[i.order_id]??=[]).push(i));
     window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,paymentStatus:o.payment_status||'pendente',status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,pixPaymentId:o.pix_payment_id||null,pixQrCode:o.pix_qr_code||'',pixQrCodeBase64:o.pix_qr_code_base64||'',pixExpiresAt:o.pix_expires_at||null,items:(g[o.id]||[]).map(i=>i.quantity+'x '+i.product_name).join(', ')}));
-    if(role==='motoboy'){window.renderMotoOrders?.();return;} window.renderAdmin();window.renderDashboard();window.renderTracking();
+    if(role==='motoboy'){window.renderMotoOrders?.();return;} window.renderAdmin();window.renderDashboard();window.renderTracking();window.startGlobalPixPolling?.();
+  };
+  window.BV_GLOBAL_PIX_TIMER=null;
+  window.startGlobalPixPolling=()=>{
+    if(window.BV_GLOBAL_PIX_TIMER)return;
+    const tick=async()=>{
+      try{
+        const sbx=sb||window.BV_SUPABASE;
+        if(!sbx)return;
+        const {data:{user}}=await sbx.auth.getUser();
+        if(!user)return;
+        const pending=(window.orders||[]).filter(o=>String(o.payment||'').toLowerCase()==='pix'&&String(o.paymentStatus||'').toLowerCase()!=='pago'&&!['entregue','cancelado'].includes(String(o.rawStatus||'').toLowerCase()));
+        for(const o of pending){
+          const r=await sbx.functions.invoke('pix-status',{body:{order_id:o.id}});
+          if(!r.error&&r.data?.paid){
+            await window.BV_REFRESH_ORDERS?.();
+            if(String(localStorage.getItem('bv_track_id'))===String(o.id))window.renderTracking?.((window.orders||[]).find(x=>String(x.id)===String(o.id)));
+            toast('✅ PIX confirmado! Pagamento recebido.');
+            break;
+          }
+        }
+      }catch(e){console.warn('[BV GLOBAL PIX]',e)}
+      window.BV_GLOBAL_PIX_TIMER=setTimeout(tick,5000);
+    };
+    window.BV_GLOBAL_PIX_TIMER=setTimeout(tick,2000);
   };
   window.BV_TRACKING_REALTIME=null;
   window.setupTrackingRealtime=async()=>{
