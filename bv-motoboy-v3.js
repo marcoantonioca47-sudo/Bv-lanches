@@ -8,7 +8,7 @@
   const isMoto = () => ['motoboy'].includes(String(window.BV_ROLE || '').toLowerCase());
   const db = () => window.BV_SUPABASE;
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.4';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.5';
 
   function motoAllowedPage(p) {
     return p === 'pedidos' || p === 'taxa-entrega';
@@ -184,7 +184,14 @@
 
       if (r.error) throw r.error;
 
-      const rows = r.data || [];
+      // Segurança adicional: a tela de taxas do motoboy deve considerar
+      // somente pedidos que ESTE usuário efetivamente recebeu como entregador.
+      // O filtro é aplicado no banco e novamente no cliente para evitar qualquer
+      // registro de outro motoboy aparecer por engano.
+      const rows = (r.data || []).filter(o =>
+        String(o.motoboy_id || '') === String(user.id) &&
+        String(o.status || '').toLowerCase() === 'entregue'
+      );
       const filter = window.BV_MOTO_FEE_FILTER || 'all';
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(),now.getMonth(),now.getDate());
