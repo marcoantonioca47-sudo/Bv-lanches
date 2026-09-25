@@ -10,11 +10,13 @@
   const isAdmin = () => ['administrador','admin'].includes(String(window.BV_ROLE || '').toLowerCase());
   const client = () => window.BV_SUPABASE || window.sb;
 
-  async function renderAdminFees() {
+  async function renderAdminFees(options) {
+    const silent = options === false || options?.silent === true;
     const box = $('motoFeeOrders');
     if (!box || !isAdmin()) return;
 
-    box.innerHTML = '<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
+    const hasContent = !!box.querySelector('.motoFeeFilter,.motoFeeHeader,.motoFeeList,.emptyState');
+    if (!silent && !hasContent) box.innerHTML = '<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
 
     try {
       const sb = client();
@@ -98,8 +100,8 @@
   }
 
   const previous = window.renderMotoFeeOrders;
-  window.renderMotoFeeOrders = function() {
-    if (isAdmin()) return renderAdminFees();
+  window.renderMotoFeeOrders = function(options) {
+    if (isAdmin()) return renderAdminFees(options);
     return typeof previous === 'function' ? previous() : undefined;
   };
 
