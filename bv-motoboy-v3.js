@@ -10,7 +10,59 @@
 
   window.BV_MOTO_SCREEN_VERSION = '2026.09.25.250';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
-  // Notificação sonora + visual para novos pedidos do motoboy.\n  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.250';\n  window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();\n  window.BV_MOTO_AUDIO_CTX=null;\n  window.BV_MOTO_AUDIO_READY=false;\n  window.BV_MOTO_NOTIFIED=window.BV_MOTO_NOTIFIED||new Set();\n  window.enableMotoNotifications=async()=>{\n    try{\n      if('Notification' in window && Notification.permission==='default') await Notification.requestPermission();\n      const AC=window.AudioContext||window.webkitAudioContext;\n      if(AC){const ac=window.BV_MOTO_AUDIO_CTX||(window.BV_MOTO_AUDIO_CTX=new AC());if(ac.state==='suspended')await ac.resume();window.BV_MOTO_AUDIO_READY=true;}\n      window.toast?.('🔔 Alertas do motoboy ativados.');\n    }catch(e){console.warn('[MOTO NOTIFY]',e)}\n  };\n  function motoBeep(){\n    try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const ac=window.BV_MOTO_AUDIO_CTX||(window.BV_MOTO_AUDIO_CTX=new AC());if(ac.state==='suspended')return;const now=ac.currentTime;[0,0.18,0.36].forEach((t,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=i===1?1046:880;g.gain.setValueAtTime(0.0001,now+t);g.gain.exponentialRampToValueAtTime(0.18,now+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.13);o.connect(g);g.connect(ac.destination);o.start(now+t);o.stop(now+t+0.14)})}catch(e){console.warn('[MOTO BEEP]',e)}}\n  function motoVisualNotify(o){\n    const n=document.createElement('div');n.className='bvMotoIncoming';n.innerHTML='<div class="bvMotoIncomingIcon">🏍️</div><div><b>NOVO PEDIDO!</b><strong>Pedido #'+esc(o.order_number||'')+'</strong><small>'+esc(o.customer_name||'Cliente')+' · '+money(o.total)+'</small></div><button type="button" aria-label="Fechar">×</button>';\n    n.querySelector('button').onclick=()=>n.remove();document.body.appendChild(n);setTimeout(()=>n.remove(),12000);\n    motoBeep();\n    if('Notification' in window && Notification.permission==='granted' && document.hidden){try{new Notification('BV Lanches — novo pedido',{body:'Pedido #'+(o.order_number||'')+' aguardando coleta.',tag:'bv-order-'+o.id})}catch(e){}}\n  }\n  function motoCheckNewOrders(rows){\n    const current=new Set((rows||[]).map(o=>String(o.id)));\n    if(!window.BV_MOTO_INITIALIZED){window.BV_MOTO_LAST_ORDER_IDS=current;window.BV_MOTO_INITIALIZED=true;return;}\n    for(const o of rows||[]){if(!window.BV_MOTO_LAST_ORDER_IDS.has(String(o.id))&&!window.BV_MOTO_NOTIFIED.has(String(o.id))){window.BV_MOTO_NOTIFIED.add(String(o.id));motoVisualNotify(o)}}\n    window.BV_MOTO_LAST_ORDER_IDS=current;\n  }\n  function installMotoNotifyButton(){\n    if(document.getElementById('bvMotoNotifyBtn'))return;\n    const b=document.createElement('button');b.id='bvMotoNotifyBtn';b.type='button';b.className='bvMotoNotifyBtn';b.textContent='🔔 Ativar alertas';b.onclick=window.enableMotoNotifications;document.body.appendChild(b);\n  }\n  function subscribeMotoNewOrders(){\n    if(!isMoto())return;const client=db();if(!client||window.BV_MOTO_ORDER_CHANNEL)return;\n    window.BV_MOTO_ORDER_CHANNEL=client.channel('bv-motoboy-new-orders').on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},payload=>{\n      const o=payload.new||{};if(!o.id)return;\n      if(['em_preparo','em_producao'].includes(String(o.status))){motoVisualNotify(o);window.renderMotoOrders?.({silent:true});}\n    }).subscribe((status,err)=>{if(err)console.warn('[MOTO REALTIME]',err);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){try{client.removeChannel(window.BV_MOTO_ORDER_CHANNEL)}catch(e){}window.BV_MOTO_ORDER_CHANNEL=null;setTimeout(subscribeMotoNewOrders,3000)}});\n    installMotoNotifyButton();\n  }\n
+  // Notificação sonora + visual para novos pedidos do motoboy.
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.250';
+  window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
+  window.BV_MOTO_AUDIO_CTX=null;
+  window.BV_MOTO_AUDIO_READY=false;
+  window.BV_MOTO_NOTIFIED=window.BV_MOTO_NOTIFIED||new Set();
+  window.enableMotoNotifications=async()=>{
+    try{
+      if('Notification' in window && Notification.permission==='default') await Notification.requestPermission();
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(AC){const ac=window.BV_MOTO_AUDIO_CTX||(window.BV_MOTO_AUDIO_CTX=new AC());if(ac.state==='suspended')await ac.resume();window.BV_MOTO_AUDIO_READY=true;}
+      window.toast?.('🔔 Alertas do motoboy ativados.');
+    }catch(e){console.warn('[MOTO NOTIFY]',e)}
+  };
+  function motoBeep(){
+    try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const ac=window.BV_MOTO_AUDIO_CTX||(window.BV_MOTO_AUDIO_CTX=new AC());if(ac.state==='suspended')return;const now=ac.currentTime;[0,0.18,0.36].forEach((t,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=i===1?1046:880;g.gain.setValueAtTime(0.0001,now+t);g.gain.exponentialRampToValueAtTime(0.18,now+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.13);o.connect(g);g.connect(ac.destination);o.start(now+t);o.stop(now+t+0.14)})}catch(e){console.warn('[MOTO BEEP]',e)}}
+  function motoVisualNotify(o){
+    if(!o?.id)return;
+    const notifyId=String(o.id);
+    if(window.BV_MOTO_NOTIFIED.has(notifyId))return;
+    window.BV_MOTO_NOTIFIED.add(notifyId);
+    const n=document.createElement('div');n.className='bvMotoIncoming';n.innerHTML='<div class="bvMotoIncomingIcon">🏍️</div><div><b>NOVO PEDIDO!</b><strong>Pedido #'+esc(o.order_number||'')+'</strong><small>'+esc(o.customer_name||'Cliente')+' · '+money(o.total)+'</small></div><button type="button" aria-label="Fechar">×</button>';
+    n.querySelector('button').onclick=()=>n.remove();document.body.appendChild(n);setTimeout(()=>n.remove(),12000);
+    motoBeep();
+    if('Notification' in window && Notification.permission==='granted' && document.hidden){try{new Notification('BV Lanches — novo pedido',{body:'Pedido #'+(o.order_number||'')+' aguardando coleta.',tag:'bv-order-'+o.id})}catch(e){}}
+  }
+  function motoCheckNewOrders(rows){
+    const current=new Set((rows||[]).map(o=>String(o.id)));
+    if(!window.BV_MOTO_INITIALIZED){window.BV_MOTO_LAST_ORDER_IDS=current;window.BV_MOTO_INITIALIZED=true;return;}
+    for(const o of rows||[]){if(!window.BV_MOTO_LAST_ORDER_IDS.has(String(o.id))&&!window.BV_MOTO_NOTIFIED.has(String(o.id))){window.BV_MOTO_NOTIFIED.add(String(o.id));motoVisualNotify(o)}}
+    window.BV_MOTO_LAST_ORDER_IDS=current;
+  }
+  function installMotoNotifyButton(){
+    if(document.getElementById('bvMotoNotifyBtn'))return;
+    const b=document.createElement('button');b.id='bvMotoNotifyBtn';b.type='button';b.className='bvMotoNotifyBtn';b.textContent='🔔 Ativar alertas';b.onclick=window.enableMotoNotifications;document.body.appendChild(b);
+  }
+  function subscribeMotoNewOrders(){
+    if(!isMoto())return;const client=db();if(!client||window.BV_MOTO_ORDER_CHANNEL)return;
+    window.BV_MOTO_ORDER_CHANNEL=client.channel('bv-motoboy-new-orders').on('postgres_changes',{event:'*',schema:'public',table:'orders'},payload=>{
+      const o=payload.new||{};
+      if(!o.id)return;
+      const status=String(o.status||'').toLowerCase();
+      const oldStatus=String(payload.old?.status||'').toLowerCase();
+      const available=['em_preparo','em_producao'].includes(status);
+      const becameAvailable=available && oldStatus!==status;
+      if((payload.eventType==='INSERT'&&available)|| (payload.eventType==='UPDATE'&&becameAvailable)){
+        motoVisualNotify(o);
+        window.renderMotoOrders?.({silent:true});
+      }
+    }).subscribe((status,err)=>{if(err)console.warn('[MOTO REALTIME]',err);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){try{client.removeChannel(window.BV_MOTO_ORDER_CHANNEL)}catch(e){}window.BV_MOTO_ORDER_CHANNEL=null;setTimeout(subscribeMotoNewOrders,3000)}});
+    installMotoNotifyButton();
+  }
+
   window.BV_MOTO_DELIVERED = window.BV_MOTO_DELIVERED || new Set();
 
   const allowed = new Set(['pedidos','taxa-entrega']);
