@@ -30,13 +30,26 @@
     document.querySelectorAll('.adminHide').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'none':'');
     document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=role==='motoboy'?'':'none');
     if(role==='motoboy'){
+      // O motoboy não possui tela Início/Cardápio/Meu pedido/Acompanhar.
+      // A área dele começa diretamente em Pedidos e só permite Pedidos + Taxa de entrega.
+      const motoAllowed=new Set(['pedidos','taxa-entrega']);
       document.querySelectorAll('.sideNav [data-page]').forEach(x=>{
-        const allowed=x.dataset.role==='motoboyOnly';
-        x.style.display=allowed?'':'none';
+        const page=String(x.dataset.page||'');
+        const adminLink=x.classList.contains('adminOnly')||x.classList.contains('adminDeliveryFeeLink');
+        x.style.setProperty('display',motoAllowed.has(page)&&!adminLink?'':'none','important');
       });
-      document.querySelectorAll('.sideNav .navTitle').forEach(x=>x.style.display='none');
-      document.querySelectorAll('.sideBottom .adminOnly').forEach(x=>x.style.display='none');
+      document.querySelectorAll('.sideNav .navTitle,.sideBottom .adminOnly').forEach(x=>x.style.setProperty('display','none','important'));
       document.querySelector('.cartTop')?.style.setProperty('display','none','important');
+
+      // Esconde as páginas que não pertencem ao motoboy e nunca deixa Início ficar ativa.
+      document.querySelectorAll('.page').forEach(page=>{
+        const id=String(page.id||'');
+        const name=id.replace(/^page-/,'');
+        if(!motoAllowed.has(name)) page.style.setProperty('display','none','important');
+      });
+      const active=document.querySelector('.page.activePage');
+      const activeName=String(active?.id||'').replace(/^page-/,'');
+      if(active && !motoAllowed.has(activeName)) active.classList.remove('activePage');
     }
     if($('loggedUserName'))$('loggedUserName').textContent=window.BV_USER_NAME||'';
   };
@@ -755,7 +768,14 @@
       window.applyMotoPageChrome?.();
     }
 
-    if(!window.BV_HAS_NAVIGATED)window.showPage('inicio',true);
+    if(window.BV_ROLE==='motoboy'){
+      // Motoboy entra diretamente em Pedidos. A tela Início nunca é aberta nesse perfil.
+      window.BV_HAS_NAVIGATED=true;
+      window.showPage('pedidos',true);
+      window.applyMotoPageChrome?.();
+    }else if(!window.BV_HAS_NAVIGATED){
+      window.showPage('inicio',true);
+    }
 
     // Atualização de dados sem bloquear a abertura do aplicativo.
     Promise.all([
