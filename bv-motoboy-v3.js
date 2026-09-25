@@ -8,10 +8,10 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.127';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.128';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
 
-  const allowed = new Set(['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega']);
+  const allowed = new Set(['pedidos','taxa-entrega']);
 
   function applyMenu() {
     if (!isMoto()) return;
@@ -39,6 +39,30 @@
     document.querySelectorAll('.sideNav .adminBtn,.sideNav .navTitle,.sideBottom .adminBtn').forEach(el => {
       el.style.setProperty('display','none','important');
     });
+
+    // Após F5/atualização, esconder imediatamente qualquer recurso que não
+    // pertence ao perfil de motoboy, inclusive elementos recriados por outras rotinas.
+    document.querySelectorAll('.sideNav [data-page]').forEach(el => {
+      const page=String(el.dataset.page||'');
+      if (!allowed.has(page)) el.style.setProperty('display','none','important');
+    });
+    document.querySelectorAll('.cartTop,.floatingCart,.homeNotificationBar,.adminTop .adminBtn,.adminOnly,.adminDeliveryFeeLink,[data-role="adminOnly"]').forEach(el=>{
+      el.style.setProperty('display','none','important');
+    });
+    document.querySelectorAll('.page').forEach(page=>{
+      const id=String(page.id||'');
+      const name=id.replace(/^page-/,'');
+      if (id && name && !allowed.has(name)) {
+        page.style.setProperty('display','none','important');
+      }
+    });
+    document.getElementById('page-pedidos')?.style.setProperty('display','block','important');
+    document.getElementById('page-taxa-entrega')?.style.removeProperty('display');
+  }
+
+  function keepMotoInterfaceClean(){
+    if (!isMoto()) return;
+    applyMenu();
   }
 
   function actionButton(o) {
@@ -243,7 +267,9 @@
     else if(active==='page-taxa-entrega') window.renderMotoFeeOrders();
   }
 
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,200));
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,50));
+  const motoCleanObserver=new MutationObserver(()=>{ if(isMoto()) keepMotoInterfaceClean(); });
+  document.addEventListener('DOMContentLoaded',()=>motoCleanObserver.observe(document.body,{childList:true,subtree:true}));
   const oldLoad=window.loadApp;
   if(typeof oldLoad==='function' && !window.BV_MOTO_LOAD_WRAPPED){
     window.BV_MOTO_LOAD_WRAPPED=true;
@@ -255,5 +281,6 @@
   }
 
   // Reaplica após mudanças de perfil/acesso sem criar novos listeners.
-  setTimeout(()=>{applyMenu();injectStyle();},500);
+  setTimeout(()=>{applyMenu();injectStyle();},150);
+  setInterval(()=>{if(isMoto()) keepMotoInterfaceClean();},1000);
 })();
