@@ -8,7 +8,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.130';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.131';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
 
   const allowed = new Set(['pedidos','taxa-entrega']);
@@ -56,8 +56,13 @@
         page.style.setProperty('display','none','important');
       }
     });
-    document.getElementById('page-pedidos')?.style.setProperty('display','block','important');
-    document.getElementById('page-taxa-entrega')?.style.removeProperty('display');
+    // Exibir somente a página atualmente ativa. Isso evita que Pedidos apareça
+    // por baixo/ao rolar a tela de Taxa de entrega.
+    const activePage = document.querySelector('.page.activePage')?.id || '';
+    const pedidos = document.getElementById('page-pedidos');
+    const taxas = document.getElementById('page-taxa-entrega');
+    if (pedidos) pedidos.style.setProperty('display', activePage === 'page-pedidos' ? 'block' : 'none','important');
+    if (taxas) taxas.style.setProperty('display', activePage === 'page-taxa-entrega' ? 'block' : 'none','important');
   }
 
   function keepMotoInterfaceClean(){
