@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.25.143';
+  window.BV_STABILITY_VERSION='2026.09.25.144';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -204,11 +204,18 @@
   };
   window.statusOrder=async(id,s)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
+    const allowed=['recebido','em_preparo','em_producao','saiu_entrega','entregue','cancelado'];
+    s=String(s||'').trim().toLowerCase();
+    if(!allowed.includes(s))return toast('Status inválido.');
     const o=(window.orders||[]).find(x=>String(x.id)===String(id));
-    if(o&&o.rawStatus==='aguardando_pagamento'&&s!=='cancelado')return toast('Este pedido só será liberado após a confirmação do pagamento via PIX.');
+    if(!o)return toast('Pedido não encontrado. Atualize a lista e tente novamente.');
+    if(o.rawStatus==='aguardando_pagamento'&&s!=='cancelado')return toast('Este pedido só será liberado após a confirmação do pagamento via PIX.');
+    if(o.rawStatus==='entregue'&&s!=='entregue')return toast('Pedido já entregue não pode voltar para outra etapa.');
     const r=await sb.from('orders').update({status:s,updated_at:new Date().toISOString()}).eq('id',id);
     if(r.error)return toast(r.error.message==='PIX_AGUARDANDO_PAGAMENTO'?'PIX ainda não foi pago.':('Erro ao atualizar status: '+r.error.message));
-    await window.BV_REFRESH_ORDERS?.();toast('Status atualizado.');
+    await window.BV_REFRESH_ORDERS?.();
+    window.renderAdmin?.();
+    toast('Status atualizado.');
   };
   window.setDashboardDateFilter=value=>{window.BV_DASHBOARD_DATE=value||'';const input=$('dashboardDateFilter');if(input)input.value=window.BV_DASHBOARD_DATE;window.renderDashboard()};
   window.renderDashboard=()=>{
