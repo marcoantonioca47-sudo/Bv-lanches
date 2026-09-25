@@ -10,7 +10,34 @@
   if(!$('bvDeliveryCardStyle')){
     const st=document.createElement('style');st.id='bvDeliveryCardStyle';st.textContent='.bvDeliveryCard .orderBody{display:grid;gap:10px}.bvOrderCustomer{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.bvOrderCustomer b{font-size:18px}.bvOrderCustomer span{font-size:12px;opacity:.7;text-align:right}.bvOrderItems{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035)}.bvOrderItems small,.bvDeliveryTitle{font-size:10px;font-weight:900;letter-spacing:.12em;opacity:.65}.bvOrderItems p{margin:5px 0 0;line-height:1.45}.bvDeliveryBox{padding:13px 14px;border-radius:14px;background:rgba(229,9,20,.06);border:1px solid rgba(229,9,20,.18)}.bvAddressMain{margin-top:5px;font-weight:850;line-height:1.35}.bvAddressSub{margin-top:3px;font-size:13px;opacity:.75}.orderPaymentBadge{margin-top:0!important}.bvDeliveryCard .orderFoot{display:flex;align-items:end;justify-content:space-between;gap:12px}.bvDeliveryCard .orderFoot>div{display:flex;flex-direction:column;gap:3px}.bvDeliveryCard .orderFoot small{font-size:10px;letter-spacing:.1em;opacity:.65}.bvDeliveryCard .orderFoot strong{font-size:21px}@media(max-width:600px){.bvOrderCustomer{display:block}.bvOrderCustomer span{display:block;text-align:left;margin-top:3px}.bvDeliveryCard .orderFoot{align-items:stretch;flex-direction:column}.bvDeliveryCard .orderFoot select{width:100%}}';document.head.appendChild(st);
   }
-  window.BV_STABILITY_VERSION='2026.09.25.257';
+
+  const prodStyle=document.createElement('style');prodStyle.textContent=`
+    #orders .bvProductionSection{margin:0 0 22px}
+    #orders .bvProductionSectionHead{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
+    #orders .bvProductionSectionHead>div{display:flex;flex-direction:column;gap:4px}
+    #orders .bvProductionSectionHead span{font-size:18px;font-weight:900;letter-spacing:.02em}
+    #orders .bvProductionSectionHead small{font-size:12px;color:#9699a3}
+    #orders .bvProductionSectionHead strong{min-width:42px;height:42px;display:grid;place-items:center;border-radius:13px;font-size:19px;background:#22242b}
+    #orders .bvNewOrdersSection .bvProductionSectionHead{background:linear-gradient(135deg,rgba(229,9,20,.20),rgba(255,92,0,.10));border:2px solid rgba(229,9,20,.72);box-shadow:0 0 0 1px rgba(229,9,20,.08),0 14px 34px rgba(229,9,20,.12)}
+    #orders .bvNewOrdersSection .bvProductionSectionHead span{font-size:22px}
+    #orders .bvNewOrdersSection .bvProductionSectionHead strong{background:#e50914;color:#fff;box-shadow:0 8px 20px rgba(229,9,20,.28)}
+    #orders .bvProductionGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+    #orders .bvNewOrderCard{position:relative;overflow:hidden;border:2px solid rgba(229,9,20,.72)!important;box-shadow:0 14px 34px rgba(229,9,20,.16)}
+    #orders .bvNewOrderRibbon{padding:11px 14px;background:#e50914;color:#fff;font-weight:950;font-size:15px;letter-spacing:.04em}
+    #orders .bvNewOrderCard .orderHead{padding-top:15px}
+    #orders .bvNewStatusBadge{background:#e50914!important;color:#fff!important;font-weight:950!important}
+    #orders .bvStartOrderBtn{width:100%;min-height:54px;border:0;border-radius:15px;background:#e50914;color:#fff;font-size:17px;font-weight:950;letter-spacing:.02em;cursor:pointer;box-shadow:0 10px 24px rgba(229,9,20,.25)}
+    #orders .bvStartOrderBtn:active{transform:scale(.98)}
+    #orders .bvProductionOrderCard{opacity:.88}
+    #orders .bvProductionLocked{font-size:11px;color:#777b86;text-align:right}
+    @media(max-width:650px){
+      #orders .bvProductionGrid{grid-template-columns:1fr}
+      #orders .bvProductionSectionHead span{font-size:17px}
+      #orders .bvNewOrdersSection .bvProductionSectionHead span{font-size:20px}
+      #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
+    }
+  `;document.head.appendChild(prodStyle);
+  window.BV_STABILITY_VERSION='2026.09.25.264';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -236,36 +263,56 @@
   window.renderAdmin=()=>{
     const b=$('orders');if(!b)return;
     const q=norm($('orderSearch')?.value||''),sf=$('orderStatusFilter')?.value||'',pf=$('orderPaymentFilter')?.value||'',df=$('orderDateFilter')?.value||'',now=Date.now();
-    const a=(window.orders||[]).filter(o=>{
+    const filtered=(window.orders||[]).filter(o=>{
       if(o.rawStatus==='entregue')return false;
       const text=norm([o.customer,o.phone,o.address?.rua,o.address?.bairro,window.orderLabel(o),o.id].join(' '));
-      if(q&&!text.includes(q))return false;const rawStatus=String(o.rawStatus||'').toLowerCase();if(sf&&rawStatus!==String(sf).toLowerCase())return false;if(pf&&o.payment!==pf)return false;
-      if(df){const t=new Date(o.created_at).getTime();if(df==='today'){const d=new Date();d.setHours(0,0,0,0);if(t<d.getTime())return false}else if(now-t>Number(df)*86400000)return false}return true;
+      if(q&&!text.includes(q))return false;
+      const rawStatus=String(o.rawStatus||'').toLowerCase();
+      if(sf&&rawStatus!==String(sf).toLowerCase())return false;
+      if(pf&&o.payment!==pf)return false;
+      if(df){
+        const t=new Date(o.created_at).getTime();
+        if(df==='today'){const d=new Date();d.setHours(0,0,0,0);if(t<d.getTime())return false}
+        else if(now-t>Number(df)*86400000)return false
+      }
+      return true;
     });
-    b.innerHTML=a.length?a.map(o=>{
+    const novos=filtered.filter(o=>String(o.rawStatus||'').toLowerCase()==='recebido');
+    const andamento=filtered.filter(o=>String(o.rawStatus||'').toLowerCase()!=='recebido');
+    const card=o=>{
+      const raw=String(o.rawStatus||'').toLowerCase();
+      const isNew=raw==='recebido';
       const pm=String(o.payment||'').toLowerCase();
-      const paymentBadge=pm.includes('dinheiro')?'💵 Dinheiro'+(Number(o.changeFor)>0?' · Troco para '+money(o.changeFor):''):pm.includes('cart')?'💳 Cartão':'';
-      return `<article class="orderCard bvDeliveryCard">
-        <div class="orderHead"><div><small>PEDIDO</small><b>#${esc(window.orderLabel(o))}</b></div><span class="statusBadge">${esc(o.status)}</span></div>
-        <div class="orderBody">
-          <div class="bvOrderCustomer"><b>${esc(o.customer||'Cliente')}</b><span>${esc(o.phone||'Telefone não informado')}</span></div>
-          <div class="bvOrderItems"><small>ITENS</small><p>${esc(o.items||'Itens do pedido')}</p></div>
-          <div class="bvDeliveryBox"><div class="bvDeliveryTitle">📍 ENTREGA</div><div class="bvAddressMain">${esc(o.address?.rua||'Endereço não informado')}</div>${o.address?.bairro?'<div class="bvAddressSub">Bairro: '+esc(o.address.bairro)+'</div>':''}</div>
-          ${paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':''}
-        </div>
-        <div class="orderFoot"><div><small>TOTAL</small><strong>${money(o.total)}</strong></div><select onchange="statusOrder('${esc(o.id)}',this.value)"><option value="">Alterar status</option><option value="recebido">Novo</option><option value="em_preparo">Em preparo</option><option value="em_producao">Em produção</option><option value="saiu_entrega">Saiu para entrega</option><option value="entregue">Entregue</option><option value="cancelado">Cancelado</option></select></div>
-      </article>`
-    }).join(''):'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Altere os filtros ou aguarde novos pedidos.</small></div>';
+      const paymentBadge=pm.includes('dinheiro')?'💵 Dinheiro'+(Number(o.changeFor)>0?' · Troco para '+money(o.changeFor):''):pm.includes('cart')?'💳 Cartão':pm.includes('pix')?'🟦 PIX':'';
+      const statusText=isNew?'NOVO PEDIDO':String(o.status||'Pedido').toUpperCase();
+      const address=[o.address?.rua,o.address?.bairro].filter(Boolean).join(' · ');
+      return '<article class="orderCard bvDeliveryCard '+(isNew?'bvNewOrderCard':'bvProductionOrderCard')+'">'+
+        (isNew?'<div class="bvNewOrderRibbon">🔔 NOVO PEDIDO</div>':'')+
+        '<div class="orderHead"><div><small>PEDIDO</small><b>#'+esc(window.orderLabel(o))+'</b></div><span class="statusBadge '+(isNew?'bvNewStatusBadge':'')+'">'+esc(statusText)+'</span></div>'+
+        '<div class="orderBody">'+
+          '<div class="bvOrderCustomer"><b>'+esc(o.customer||'Cliente')+'</b><span>'+esc(o.phone||'Telefone não informado')+'</span></div>'+
+          '<div class="bvOrderItems"><small>ITENS</small><p>'+esc(o.items||'Itens do pedido')+'</p></div>'+
+          '<div class="bvDeliveryBox"><div class="bvDeliveryTitle">📍 ENTREGA</div><div class="bvAddressMain">'+esc(o.address?.rua||'Endereço não informado')+'</div>'+(o.address?.bairro?'<div class="bvAddressSub">Bairro: '+esc(o.address.bairro)+'</div>':'')+(o.address?.numero?'<div class="bvAddressSub">Nº '+esc(o.address.numero)+'</div>':'')+'</div>'+
+          (paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':'')+
+        '</div>'+
+        '<div class="orderFoot"><div><small>TOTAL</small><strong>'+money(o.total)+'</strong></div>'+
+        (isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':'<span class="bvProductionLocked">Status controlado pela produção/entrega</span>')+
+        '</div></article>';
+    };
+    const section=(title,sub,rows,cls)=>rows.length?
+      '<section class="bvProductionSection '+cls+'"><div class="bvProductionSectionHead"><div><span>'+title+'</span><small>'+sub+'</small></div><strong>'+rows.length+'</strong></div><div class="bvProductionGrid">'+rows.map(card).join('')+'</div></section>':'';
+    b.innerHTML=section('🔔 NOVOS PEDIDOS','Aguardando o administrador iniciar o preparo.',novos,'bvNewOrdersSection')+
+      section('EM PRODUÇÃO / ENTREGA','Os demais status são apenas acompanhados nesta tela.',andamento,'bvProductionSectionMuted')+
+      (!novos.length&&!andamento.length?'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Novos pedidos aparecerão automaticamente aqui.</small></div>':'');
+    if(novos.length)b.scrollIntoView({block:'nearest',behavior:'smooth'});
   };
   window.statusOrder=async(id,s)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
-    const allowed=['recebido','em_preparo','em_producao','saiu_entrega','entregue','cancelado'];
     s=String(s||'').trim().toLowerCase();
-    if(!allowed.includes(s))return toast('Status inválido.');
+    if(s!=='em_preparo')return toast('O administrador só pode iniciar o preparo de um novo pedido.');
     const o=(window.orders||[]).find(x=>String(x.id)===String(id));
     if(!o)return toast('Pedido não encontrado. Atualize a lista e tente novamente.');
-    if(o.rawStatus==='aguardando_pagamento'&&s!=='cancelado')return toast('Este pedido só será liberado após a confirmação do pagamento via PIX.');
-    if(o.rawStatus==='entregue'&&s!=='entregue')return toast('Pedido já entregue não pode voltar para outra etapa.');
+    if(String(o.rawStatus||'').toLowerCase()!=='recebido')return toast('Somente pedidos com status NOVO PEDIDO podem ser alterados pelo administrador.');
     const r=await sb.from('orders').update({status:s,updated_at:new Date().toISOString()}).eq('id',id);
     if(r.error)return toast(r.error.message==='PIX_AGUARDANDO_PAGAMENTO'?'PIX ainda não foi pago.':('Erro ao atualizar status: '+r.error.message));
     await window.BV_REFRESH_ORDERS?.();
