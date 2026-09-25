@@ -110,14 +110,31 @@
     }
   };
 
+  const motoActionsInFlight = new Set();
+
   async function motoAction(id,action) {
     if (!isMoto()) return;
     const client=db();
     if (!client) return;
-    document.querySelectorAll('.motoActionBtn').forEach(b=>b.disabled=true);
+
+    const key = String(id) + ':' + String(action);
+    if (motoActionsInFlight.has(key)) return;
+    motoActionsInFlight.add(key);
+
+    // Bloqueia somente o botão deste pedido. Outros pedidos continuam disponíveis
+    // para coleta/entrega simultânea.
+    const buttons = [...document.querySelectorAll('.motoActionBtn')]
+      .filter(b => String(b.dataset.order) === String(id));
+    buttons.forEach(b => {
+      b.disabled = true;
+      b.dataset.processing = '1';
+    });
+
     try {
       const r=await client.rpc('motoboy_collect_or_deliver',{p_order_id:id,p_action:action});
       if (r.error) throw r.error;
+
+      // Atualiza a lista depois da confirmação sem bloquear ações de outros pedidos.
       await window.renderMotoOrders();
       await window.renderMotoFeeOrders();
       window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido marcado como entregue.');
@@ -125,7 +142,11 @@
       console.error('[BV MOTO ACTION v3]',e);
       window.toast?.('Não foi possível atualizar o pedido: '+String(e?.message||'Erro').slice(0,180));
     } finally {
-      document.querySelectorAll('.motoActionBtn').forEach(b=>b.disabled=false);
+      motoActionsInFlight.delete(key);
+      buttons.forEach(b => {
+        b.disabled = false;
+        delete b.dataset.processing;
+      });
     }
   }
   window.motoAction = motoAction;
