@@ -562,7 +562,28 @@
     const ids=(r.data||[]).map(x=>x.id);let its=[];if(ids.length){const z=await sb.from('order_items').select('order_id,product_name,quantity').in('order_id',ids);if(!z.error)its=z.data||[]}
     const g={};its.forEach(i=>(g[i.order_id]??=[]).push(i));
     window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,changeFor:Number(o.change_for)||null,paymentStatus:o.payment_status||'pendente',status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,pixPaymentId:o.pix_payment_id||null,pixQrCode:o.pix_qr_code||'',pixQrCodeBase64:o.pix_qr_code_base64||'',pixExpiresAt:o.pix_expires_at||null,items:(g[o.id]||[]).map(i=>i.quantity+'x '+i.product_name).join(', ')}));
-    if(role==='motoboy'){window.renderMotoOrders?.();return;} window.renderAdmin();window.renderDashboard();window.renderTracking();window.startGlobalPixPolling?.();
+    if(role==='motoboy'){window.renderMotoOrders?.();return;}
+    window.renderAdmin();
+    window.renderDashboard();
+    // Acompanhar pedido: só redesenha quando os dados realmente mudaram.
+    // Isso evita o efeito de "piscar/oscilando" causado pelo polling/realtime.
+    if(document.getElementById('page-acompanhar')?.classList.contains('activePage')){
+      const trackId=localStorage.getItem('bv_track_id');
+      const found=(window.orders||[]).find(x=>String(x.id)===String(trackId));
+      if(found){
+        const sig=JSON.stringify({
+          id:found.id,status:found.rawStatus,payment:found.payment,paymentStatus:found.paymentStatus,
+          motoboyId:found.motoboyId,changeFor:found.changeFor,total:found.total,
+          pixPaymentId:found.pixPaymentId,pixQrCode:found.pixQrCode,pixQrCodeBase64:found.pixQrCodeBase64,
+          pixExpiresAt:found.pixExpiresAt
+        });
+        if(sig!==window.BV_TRACKING_RENDER_SIG){
+          window.BV_TRACKING_RENDER_SIG=sig;
+          window.renderTracking(found);
+        }
+      }
+    }
+    window.startGlobalPixPolling?.();
   };
   window.BV_GLOBAL_PIX_TIMER=null;
   window.startGlobalPixPolling=()=>{
@@ -589,6 +610,7 @@
     window.BV_GLOBAL_PIX_TIMER=setTimeout(tick,2000);
   };
   window.BV_TRACKING_POLL_TIMER=null;
+window.BV_TRACKING_RENDER_SIG='';
 window.startTrackingStatusPolling=()=>{
   if(window.BV_TRACKING_POLL_TIMER)return;
   const tick=async()=>{
@@ -597,7 +619,18 @@ window.startTrackingStatusPolling=()=>{
       await window.BV_REFRESH_ORDERS?.();
       const id=localStorage.getItem('bv_track_id');
       const found=(window.orders||[]).find(x=>String(x.id)===String(id));
-      if(found)window.renderTracking(found);
+      if(found){
+        const sig=JSON.stringify({
+          id:found.id,status:found.rawStatus,payment:found.payment,paymentStatus:found.paymentStatus,
+          motoboyId:found.motoboyId,changeFor:found.changeFor,total:found.total,
+          pixPaymentId:found.pixPaymentId,pixQrCode:found.pixQrCode,pixQrCodeBase64:found.pixQrCodeBase64,
+          pixExpiresAt:found.pixExpiresAt
+        });
+        if(sig!==window.BV_TRACKING_RENDER_SIG){
+          window.BV_TRACKING_RENDER_SIG=sig;
+          window.renderTracking(found);
+        }
+      }
       if(found&&!['entregue','cancelado'].includes(String(found.rawStatus||'').toLowerCase())) window.BV_TRACKING_POLL_TIMER=setTimeout(tick,3000);
       else window.BV_TRACKING_POLL_TIMER=null;
     }catch(e){console.warn('[BV TRACKING POLL]',e);window.BV_TRACKING_POLL_TIMER=setTimeout(tick,5000);}
