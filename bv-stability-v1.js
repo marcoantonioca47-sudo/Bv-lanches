@@ -132,6 +132,12 @@
     $('troco')?.classList.toggle('hide',label!=='Dinheiro');
   };
   window.initPaymentSelection=()=>{
+    // Estado do pagamento fica sincronizado com o botão visível.
+    // Evita reaproveitar acidentalmente um método antigo do navegador.
+    const current=String(window.BV_PAYMENT||'').toLowerCase();
+    if(current!=='pix'&&current!=='dinheiro'&&current!=='cartão'&&current!=='cartao'){
+      window.BV_PAYMENT='Pix';
+    }
     const buttons=[...document.querySelectorAll('#page-pedido .pay button')];
     if(!buttons.length)return;
     const active=buttons.find(x=>x.classList.contains('active'));
