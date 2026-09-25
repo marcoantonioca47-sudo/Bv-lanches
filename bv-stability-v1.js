@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.83';
+  window.BV_STABILITY_VERSION='2026.09.24.84';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -136,8 +136,22 @@
     if(sb){try{const r=await sb.from('neighborhood_fees').select('name,fee').eq('active',true);if(!r.error){const hit=(r.data||[]).find(x=>norm(x.name)===norm($('bairro')?.value||''));if(hit)v=Number(hit.fee)||0}}catch{}}
     f.dataset.value=String(v);f.textContent=money(v);window.renderCart();
   };
-  window.openProductForm=()=>{$('productFormPanel')?.classList.add('show','open')};
-  window.closeProductForm=()=>{$('productFormPanel')?.classList.remove('show','open')};
+  window.BV_OPEN_PRODUCT_FORM=()=>{
+    const panel=$('productFormPanel');
+    if(!panel)return toast('Formulário de produto não encontrado. Recarregue a página.');
+    panel.classList.add('show','open');
+    panel.style.setProperty('display','block','important');
+    requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+    setTimeout(()=>{$('productName')?.focus({preventScroll:true})},180);
+  };
+  window.openProductForm=window.BV_OPEN_PRODUCT_FORM;
+  window.BV_CLOSE_PRODUCT_FORM=()=>{
+    const panel=$('productFormPanel');
+    if(!panel)return;
+    panel.classList.remove('show','open');
+    panel.style.removeProperty('display');
+  };
+  window.closeProductForm=window.BV_CLOSE_PRODUCT_FORM;
 
   window.login=async()=>{
     $('err')&&($('err').textContent='');
