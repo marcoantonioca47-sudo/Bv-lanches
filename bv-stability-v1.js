@@ -37,7 +37,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.267';
+  window.BV_STABILITY_VERSION='2026.09.25.274';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -296,7 +296,7 @@
           (paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':'')+
         '</div>'+
         '<div class="orderFoot"><div><small>TOTAL</small><strong>'+money(o.total)+'</strong></div>'+
-        (isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':'<span class="bvProductionLocked">Status controlado pela produção/entrega</span>')+
+        (isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':String(o.rawStatus||'').toLowerCase()==='em_preparo'?'<button type="button" class="bvStartOrderBtn bvReadyOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_producao\')">✓ PRONTO</button>':'<span class="bvProductionLocked">Status controlado pela produção/entrega</span>')+
         '</div></article>';
     };
     const section=(title,sub,rows,cls)=>rows.length?
@@ -309,10 +309,12 @@
   window.statusOrder=async(id,s)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
     s=String(s||'').trim().toLowerCase();
-    if(s!=='em_preparo')return toast('O administrador só pode iniciar o preparo de um novo pedido.');
+    if(!['em_preparo','em_producao'].includes(s))return toast('Status inválido para esta etapa.');
     const o=(window.orders||[]).find(x=>String(x.id)===String(id));
     if(!o)return toast('Pedido não encontrado. Atualize a lista e tente novamente.');
-    if(String(o.rawStatus||'').toLowerCase()!=='recebido')return toast('Somente pedidos com status NOVO PEDIDO podem ser alterados pelo administrador.');
+    const current=String(o.rawStatus||'').toLowerCase();
+    if(s==='em_preparo'&&current!=='recebido')return toast('Somente pedidos novos podem ser iniciados.');
+    if(s==='em_producao'&&current!=='em_preparo')return toast('Somente pedidos em preparo podem ser marcados como Pronto.');
     const r=await sb.from('orders').update({status:s,updated_at:new Date().toISOString()}).eq('id',id);
     if(r.error)return toast(r.error.message==='PIX_AGUARDANDO_PAGAMENTO'?'PIX ainda não foi pago.':('Erro ao atualizar status: '+r.error.message));
     await window.BV_REFRESH_ORDERS?.();
