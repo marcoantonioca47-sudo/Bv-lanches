@@ -187,23 +187,6 @@
   });
   const saveProfile=async()=>{if(!sb)return;const {data:{user}}=await sb.auth.getUser();if(!user)return;await sb.from('profiles').update({name:$('name')?.value.trim()||'',phone:$('phone')?.value.trim()||'',street:$('street')?.value.trim()||'',number:$('num')?.value.trim()||'',neighborhood:$('bairro')?.value.trim()||'',cep:$('cep')?.value.trim()||'',complement:$('comp')?.value.trim()||''}).eq('id',user.id)};
 
-  window.finish=async()=>{
-    try{
-      if(!sb)return toast('Banco de dados indisponível.');
-      const {data:{user}}=await sb.auth.getUser();if(!user)return toast('Faça login para finalizar o pedido.');
-      const c=window.cart||[];if(!c.length)return toast('Seu carrinho está vazio.');
-      const delivery=window.BV_MODE!=='retirada'&&$('address')?.style.display!=='none';
-      const name=$('name')?.value.trim(),phone=$('phone')?.value.trim(),bairro=$('bairro')?.value.trim(),street=$('street')?.value.trim(),num=$('num')?.value.trim();
-      if(!name||!phone)return toast('Preencha nome e WhatsApp.');
-      if(delivery&&(!street||!num||!bairro))return toast('Preencha rua, número e bairro.');
-      const items=c.map(x=>{const p=(window.products||[]).find(y=>String(y.id)===String(x.id));if(!p)throw Error('Produto não encontrado: '+x.name);return{product_id:p.id,quantity:Math.max(1,Number(x.q)||1)}});
-      const payment=localStorage.getItem('bv_payment')==='Dinheiro'?'dinheiro':localStorage.getItem('bv_payment')==='Cartão'?'cartao':'pix';
-      const address=delivery?street+', '+num+(($('comp')?.value||'').trim()?' — '+$('comp').value.trim():''):'';
-      const r=await sb.rpc('create_bv_order',{p_customer_name:name,p_phone:phone,p_address:address,p_neighborhood:delivery?bairro:'',p_payment_method:payment,p_coupon:(($('coupon')?.value)||'').trim().toUpperCase(),p_items:items});
-      if(r.error)throw Error(r.error.message||'Erro ao criar pedido.');if(!r.data)throw Error('O servidor não retornou o número do pedido.');
-      await saveProfile();localStorage.setItem('bv_last_order',JSON.stringify({id:r.data,phone}));localStorage.setItem('bv_track_id',r.data);window.cart=[];localStorage.setItem('bv_cart','[]');await window.BV_REFRESH_ORDERS?.();const o=(window.orders||[]).find(x=>x.id===r.data);window.showPage('acompanhar');window.renderTracking(o);toast('Pedido finalizado com sucesso.');
-    }catch(e){console.error(e);toast('Não foi possível finalizar: '+(e?.message||'erro desconhecido'))}
-  };
 
   window.orderLabel=o=>Number(o?.orderNumber)>0?String(Math.trunc(o.orderNumber)).padStart(3,'0'):String(o?.id||'').slice(-5);
   window.renderAdmin=()=>{
