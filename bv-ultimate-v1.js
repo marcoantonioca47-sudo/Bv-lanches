@@ -1,4 +1,4 @@
-/* BV LANCHES — acabamento final e experiência v1 */
+/* BV LANCHES — acabamento final e experiência v1.2 */
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -14,9 +14,14 @@ function filterMenu(){const q=String($('bvMenuSearch')?.value||'').trim().toLowe
 function patchRender(){if(window.BV_FINAL_RENDER_PATCH)return;const old=window.renderProducts;if(typeof old!=='function')return;window.renderProducts=function(){const r=old.apply(this,arguments);setTimeout(filterMenu,0);return r};window.BV_FINAL_RENDER_PATCH=true}
 function cartFloat(){if($('bvCartFloat'))return;const b=document.createElement('button');b.id='bvCartFloat';b.className='bvCartFloat';b.type='button';b.setAttribute('aria-label','Abrir meu pedido');b.innerHTML='<svg class="bvCartFloatIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 1.9-1.4L21 7H6.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20" r="1.5" fill="currentColor"/><circle cx="18" cy="20" r="1.5" fill="currentColor"/></svg><span id="bvCartFloatCount">0</span>';b.onclick=()=>window.showPage?.('pedido');document.body.appendChild(b);updateCartFloat()}
 function updateCartFloat(){const role=String(window.BV_ROLE||'').toLowerCase();const login=$('login');const loginVisible=login&&getComputedStyle(login).display!=='none';const hideCart=loginVisible||['administrador','admin','motoboy'].includes(role);const f=$('bvCartFloat');if(f)f.style.display=hideCart?'none':'';const n=(window.cart||[]).reduce((s,x)=>s+(Number(x.q)||0),0);if($('bvCartFloatCount'))$('bvCartFloatCount').textContent=n}
-function patchCart(){if(window.BV_FINAL_CART_PATCH)return;const old=window.renderCart;if(typeof old!=='function')return;window.renderCart=function(){const r=old.apply(this,arguments);updateCartFloat();return r};window.BV_FINAL_CART_PATCH=true;updateCartFloat()}
+function patchCart(){
+ if(window.BV_FINAL_CART_EVENT)return;
+ document.addEventListener('bv:cart-updated',updateCartFloat);
+ window.BV_FINAL_CART_EVENT=true;
+ updateCartFloat();
+}
 function patchLogout(){if(window.BV_FINAL_LOGOUT_PATCH)return;const old=window.logout;if(typeof old!=='function')return;window.logout=async function(){try{localStorage.removeItem('bv_first_login_done');localStorage.removeItem('bv_checkout_draft_v1')}catch(e){}return old.apply(this,arguments)};window.BV_FINAL_LOGOUT_PATCH=true}
 function dashboardTools(){const p=$('page-dashboard');if(!p||$('bvDashboardRefresh'))return;const h=p.querySelector('.adminTopActions');if(!h)return;const b=document.createElement('button');b.id='bvDashboardRefresh';b.type='button';b.textContent='↻ Atualizar';b.onclick=async()=>{b.disabled=true;b.textContent='Atualizando...';try{await window.BV_REFRESH_ORDERS?.();window.renderDashboard?.();window.renderAnalytics?.(true)}finally{b.disabled=false;b.textContent='↻ Atualizar'}};h.prepend(b)}
-function boot(){injectStatus();installSearch();cartFloat();restoreDraft();dashboardTools();patchRender();patchCart();patchFinish();patchLogout();setOnline(navigator.onLine);document.querySelectorAll('#page-pedido input,#page-pedido textarea').forEach(e=>e.addEventListener('input',saveDraft));window.addEventListener('online',()=>setOnline(true));window.addEventListener('offline',()=>setOnline(false));setInterval(()=>{patchRender();patchCart();patchFinish();patchLogout();dashboardTools();updateCartFloat()},1200)}
+function boot(){injectStatus();installSearch();cartFloat();restoreDraft();dashboardTools();patchRender();patchCart();patchLogout();setOnline(navigator.onLine);document.querySelectorAll('#page-pedido input,#page-pedido textarea').forEach(e=>e.addEventListener('input',saveDraft));window.addEventListener('online',()=>setOnline(true));window.addEventListener('offline',()=>setOnline(false));setInterval(()=>{patchRender();patchCart();patchLogout();dashboardTools();updateCartFloat()},1200)}
 document.addEventListener('DOMContentLoaded',boot,{once:true});
 })();
