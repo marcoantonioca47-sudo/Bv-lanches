@@ -8,10 +8,10 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.257';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.260';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.257';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.260';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -106,9 +106,15 @@
   function motoCheckNewOrders(rows){
     const current=new Set((rows||[]).map(o=>String(o.id)));
     if(!window.BV_MOTO_INITIALIZED){window.BV_MOTO_LAST_ORDER_IDS=current;window.BV_MOTO_INITIALIZED=true;return;}
-    for(const o of rows||[]){if(!window.BV_MOTO_LAST_ORDER_IDS.has(String(o.id))&&!window.BV_MOTO_NOTIFIED.has(String(o.id))){window.BV_MOTO_NOTIFIED.add(String(o.id));motoVisualNotify(o)}}
+    for(const o of rows||[]){
+      if(!window.BV_MOTO_LAST_ORDER_IDS.has(String(o.id))&&!window.BV_MOTO_NOTIFIED.has(String(o.id))){
+        motoVisualNotify(o);
+      }
+    }
     window.BV_MOTO_LAST_ORDER_IDS=current;
   }
+  // Exposto globalmente para impedir erro de escopo em versões/cache antigos do Safari.
+  window.motoCheckNewOrders=motoCheckNewOrders;
   function installMotoNotifyButton(){
     if(document.getElementById('bvMotoNotifyBtn'))return;
     const b=document.createElement('button');b.id='bvMotoNotifyBtn';b.type='button';b.className='bvMotoNotifyBtn';b.textContent='🔔 Ativar alertas';b.onclick=window.enableMotoNotifications;document.body.appendChild(b);
@@ -190,6 +196,10 @@
     page.classList.remove('adminPage');
     document.getElementById('motoDeliveryPanel')?.style.setProperty('display','none','important');
     document.getElementById('adminOrderFilters')?.style.setProperty('display','none','important');
+    // Remove qualquer painel legado de produção que ainda possa existir em cache/HTML antigo.
+    document.querySelectorAll('#page-pedidos [id*="produc" i],#page-pedidos [class*="produc" i]').forEach(el=>{
+      if(el.id!=='orders' && !el.closest('#orders')) el.style.setProperty('display','none','important');
+    });
   }
 
   function applyMenu() {
@@ -317,7 +327,7 @@
 
     try {
       const {rows,items} = await getOrders();
-      motoCheckNewOrders(rows);
+      window.motoCheckNewOrders?.(rows);
       if (!rows.length) {
         box.innerHTML='<div class="motoEmpty"><span>🏍️</span><b>Nenhum pedido disponível</b><small>Pedidos em preparo ou produção aparecerão aqui.</small></div>';
         return;
