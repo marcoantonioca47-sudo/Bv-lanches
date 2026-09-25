@@ -8,8 +8,9 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.131';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.140';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
+  window.BV_MOTO_DELIVERED = window.BV_MOTO_DELIVERED || new Set();
 
   const allowed = new Set(['pedidos','taxa-entrega']);
 
@@ -95,7 +96,7 @@
 
     const map = new Map();
     results.flatMap(x => x.data || []).forEach(o => map.set(String(o.id),o));
-    const rows = [...map.values()].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+    const rows = [...map.values()].filter(o => !window.BV_MOTO_DELIVERED.has(String(o.id))).sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
 
     const items = {};
     if (rows.length) {
@@ -177,8 +178,9 @@
       if (rpc.error) throw rpc.error;
       if (rpc.data !== true) throw new Error('O servidor não confirmou a coleta do pedido.');
 
-      // Ao confirmar a entrega, retire o pedido imediatamente da lista visível.
+      // Marque como entregue antes de qualquer nova consulta para evitar reaparição.
       if (action === 'entregar') {
+        window.BV_MOTO_DELIVERED.add(String(id));
         const card = button?.closest?.('.motoSingleCard');
         if (card) {
           card.style.opacity = '0';
@@ -187,6 +189,7 @@
           setTimeout(() => card.remove(), 180);
         }
       }
+      await new Promise(resolve => setTimeout(resolve, 350));
       await window.renderMotoOrders({silent:true});
       if ($('page-taxa-entrega')?.classList.contains('activePage')) {
         await window.renderMotoFeeOrders({silent:true});
@@ -283,7 +286,13 @@
   }
 
   document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,50));
-  const motoCleanObserver=new MutationObserver(()=>{ if(isMoto()) keepMotoInterfaceClean(); });
+  let cleanTimer=0;
+  const scheduleClean=()=>{
+    if(!isMoto()) return;
+    clearTimeout(cleanTimer);
+    cleanTimer=setTimeout(keepMotoInterfaceClean,60);
+  };
+  const motoCleanObserver=new MutationObserver(scheduleClean);
   document.addEventListener('DOMContentLoaded',()=>motoCleanObserver.observe(document.body,{childList:true,subtree:true}));
   const oldLoad=window.loadApp;
   if(typeof oldLoad==='function' && !window.BV_MOTO_LOAD_WRAPPED){
@@ -295,7 +304,6 @@
     };
   }
 
-  // Reaplica após mudanças de perfil/acesso sem criar novos listeners.
+  // Reaplica uma vez após o carregamento do perfil, sem loop permanente.
   setTimeout(()=>{applyMenu();injectStyle();},150);
-  setInterval(()=>{if(isMoto()) keepMotoInterfaceClean();},1000);
 })();
