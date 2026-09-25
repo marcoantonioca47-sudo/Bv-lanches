@@ -8,10 +8,10 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.272';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.273';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.272';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.273';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -157,7 +157,7 @@
       window.applyAccess?.();
       applyMotoPageChrome();
       window.showPage?.(page,true);
-      if (page==='pedidos') await window.renderMotoOrders?.();
+      if (page==='pedidos') { await window.renderMotoOrders?.(); setTimeout(()=>window.renderMotoOrders?.({silent:true}),450); }
       if (page==='taxa-entrega') await window.renderMotoFeeOrders?.();
     } catch(e) {
       console.error('[MOTO OPEN]',e);
@@ -277,7 +277,8 @@
 
     const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for';
     const results = await Promise.all([
-      client.from('orders').select(fields).in('status',['em_preparo','em_producao']).order('created_at',{ascending:false}),
+      client.from('orders').select(fields).eq('status','em_preparo').order('created_at',{ascending:false}),
+      client.from('orders').select(fields).eq('status','em_producao').order('created_at',{ascending:false}),
       client.from('orders').select(fields).eq('status','saiu_entrega').eq('motoboy_id',user.id).order('created_at',{ascending:false})
     ]);
     const bad = results.find(x => x.error);
