@@ -8,7 +8,7 @@
   const isMoto = () => ['motoboy'].includes(String(window.BV_ROLE || '').toLowerCase());
   const db = () => window.BV_SUPABASE;
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.9';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.10';
 
   function motoAllowedPage(p) {
     return ['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega'].includes(p);
@@ -132,16 +132,24 @@
     buttons.forEach(b => {
       b.disabled = true;
       b.dataset.processing = '1';
+      b.dataset.originalText = b.textContent;
+      b.textContent = action === 'coletar' ? '⏳ Coletando...' : '⏳ Confirmando...';
     });
 
     try {
       const r=await client.rpc('motoboy_collect_or_deliver',{p_order_id:id,p_action:action});
       if (r.error) throw r.error;
+      if (r.data === false) throw new Error('O servidor não confirmou a alteração do pedido.');
 
-      // Atualiza a lista depois da confirmação sem bloquear ações de outros pedidos.
+      // Atualiza somente depois da confirmação do banco. Outros pedidos continuam
+      // liberados para ação enquanto este pedido é processado.
       await window.renderMotoOrders({silent:true});
-      await window.renderMotoFeeOrders({silent:true});
-      window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido marcado como entregue.');
+      if (document.getElementById('page-taxa-entrega')?.classList.contains('activePage')) {
+        await window.renderMotoFeeOrders({silent:true});
+      }
+      window.toast?.(action==='coletar'
+        ? 'Pedido coletado. Saiu para entrega.'
+        : 'Entrega confirmada. Pedido marcado como entregue.');
     } catch(e) {
       console.error('[BV MOTO ACTION v3]',e);
       window.toast?.('Não foi possível atualizar o pedido: '+String(e?.message||'Erro').slice(0,180));
@@ -149,6 +157,8 @@
       motoActionsInFlight.delete(key);
       buttons.forEach(b => {
         b.disabled = false;
+        if (b.dataset.originalText) b.textContent = b.dataset.originalText;
+        delete b.dataset.originalText;
         delete b.dataset.processing;
       });
     }
@@ -308,12 +318,7 @@
     if (page==='taxa-entrega') window.renderMotoFeeOrders();
   }
 
-  const oldShow=window.showPage;
-  window.showPage=function(page,internal) {
-    if (isMoto() && !motoAllowedPage(page)) page='pedidos';
-    return oldShow.call(this,page,internal);
-  };
-
+  // A navegação já é protegida pelo wrapper único acima.
   // Os botões possuem listeners próprios em bindActions().
   // Não bloquear o evento no capture, pois isso impediria o click de chegar ao botão.
   const style=document.createElement('style');
