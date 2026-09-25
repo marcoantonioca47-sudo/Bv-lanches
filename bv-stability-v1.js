@@ -96,7 +96,7 @@
     if(innerWidth<=850)$('sidebar')?.classList.remove('open');
     if(p==='cardapio'){window.renderProducts();window.BV_REFRESH_PRODUCTS?.();}
     if(p==='pedido'){window.initPaymentSelection?.();window.renderCart();setTimeout(window.loadProfile,50)}
-    if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();}
+    if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();window.startTrackingStatusPolling?.();}
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
     if(p==='taxa-entrega')window.renderMotoFeeOrders?.()
@@ -588,7 +588,23 @@
     };
     window.BV_GLOBAL_PIX_TIMER=setTimeout(tick,2000);
   };
-  window.BV_TRACKING_REALTIME=null;
+  window.BV_TRACKING_POLL_TIMER=null;
+window.startTrackingStatusPolling=()=>{
+  if(window.BV_TRACKING_POLL_TIMER)return;
+  const tick=async()=>{
+    try{
+      if(!document.getElementById('page-acompanhar')?.classList.contains('activePage')){window.BV_TRACKING_POLL_TIMER=null;return;}
+      await window.BV_REFRESH_ORDERS?.();
+      const id=localStorage.getItem('bv_track_id');
+      const found=(window.orders||[]).find(x=>String(x.id)===String(id));
+      if(found)window.renderTracking(found);
+      if(found&&!['entregue','cancelado'].includes(String(found.rawStatus||'').toLowerCase())) window.BV_TRACKING_POLL_TIMER=setTimeout(tick,3000);
+      else window.BV_TRACKING_POLL_TIMER=null;
+    }catch(e){console.warn('[BV TRACKING POLL]',e);window.BV_TRACKING_POLL_TIMER=setTimeout(tick,5000);}
+  };
+  window.BV_TRACKING_POLL_TIMER=setTimeout(tick,1000);
+};
+window.BV_TRACKING_REALTIME=null;
   window.setupTrackingRealtime=async()=>{
     if(!sb||window.BV_TRACKING_REALTIME)return;
     const {data:{user}}=await sb.auth.getUser();
@@ -630,7 +646,7 @@
     };
     window.BV_PIX_STATUS_TIMER=setTimeout(poll,1200);
   };
-  window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')))||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()));if(!o){b.innerHTML='<p class="muted">Nenhum pedido em andamento.</p>';return}window.BV_PIX_CODE=o.pixQrCode||'';const isPix=String(o.payment||'').toLowerCase()==='pix';const paid=String(o.paymentStatus||'').toLowerCase()==='pago';const qr=o.pixQrCodeBase64?'<img src="data:image/png;base64,'+esc(o.pixQrCodeBase64)+'" alt="QR Code PIX" style="width:min(240px,70vw);display:block;margin:14px auto;border-radius:14px;background:#fff;padding:8px;box-sizing:border-box">':'';const pixBox=isPix&&!paid?'<div style="margin-top:16px;padding:16px;border:1px solid rgba(0,200,120,.22);border-radius:16px;background:rgba(0,120,80,.08);text-align:center"><b style="display:block;font-size:15px">PIX — aguardando pagamento</b><small class="muted">Pague pelo QR Code ou use o Pix Copia e Cola.</small>'+qr+(o.pixQrCode?'<button type="button" onclick="copyPixCode()" style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:10px;background:#e50914;color:#fff;font-weight:900;cursor:pointer">📋 Copiar Pix Copia e Cola</button>':'<small style="display:block;margin-top:10px;color:#ffb0b0">QR Code ainda não disponível.</small>')+'</div>':paid?'<div style="margin-top:16px;padding:14px;border-radius:14px;background:rgba(0,160,90,.12);border:1px solid rgba(0,200,120,.25);text-align:center"><b>✅ PIX confirmado</b><small class="muted" style="display:block;margin-top:4px">Pagamento recebido. Pedido liberado para preparo.</small></div>':'';b.innerHTML='<div class="trackingCard"><small>PEDIDO</small><h3>#'+esc(window.orderLabel(o))+'</h3><b>'+esc(o.status)+'</b><p>'+esc(o.items||'')+'</p><strong>'+money(o.total)+'</strong>'+pixBox+'</div>';window.startPixStatusPolling(o)};
+  window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')))||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()));if(!o){b.innerHTML='<p class="muted">Nenhum pedido em andamento.</p>';return}window.BV_PIX_CODE=o.pixQrCode||'';const isPix=String(o.payment||'').toLowerCase()==='pix';const paid=String(o.paymentStatus||'').toLowerCase()==='pago';const qr=o.pixQrCodeBase64?'<img src="data:image/png;base64,'+esc(o.pixQrCodeBase64)+'" alt="QR Code PIX" style="width:min(240px,70vw);display:block;margin:14px auto;border-radius:14px;background:#fff;padding:8px;box-sizing:border-box">':'';const pixBox=isPix&&!paid?'<div style="margin-top:16px;padding:16px;border:1px solid rgba(0,200,120,.22);border-radius:16px;background:rgba(0,120,80,.08);text-align:center"><b style="display:block;font-size:15px">PIX — aguardando pagamento</b><small class="muted">Pague pelo QR Code ou use o Pix Copia e Cola.</small>'+qr+(o.pixQrCode?'<button type="button" onclick="copyPixCode()" style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:10px;background:#e50914;color:#fff;font-weight:900;cursor:pointer">📋 Copiar Pix Copia e Cola</button>':'<small style="display:block;margin-top:10px;color:#ffb0b0">QR Code ainda não disponível.</small>')+'</div>':(isPix&&paid?'<div style="margin-top:16px;padding:14px;border-radius:14px;background:rgba(0,160,90,.12);border:1px solid rgba(0,200,120,.25);text-align:center"><b>✅ PIX confirmado</b><small class="muted" style="display:block;margin-top:4px">Pagamento recebido. Pedido liberado para preparo.</small></div>':'');b.innerHTML='<div class="trackingCard"><small>PEDIDO</small><h3>#'+esc(window.orderLabel(o))+'</h3><b>'+esc(o.status)+'</b><p>'+esc(o.items||'')+'</p><strong>'+money(o.total)+'</strong>'+pixBox+'</div>';window.startPixStatusPolling(o)};
   window.trackLastOrder=async()=>{try{await window.BV_REFRESH_ORDERS?.();const o=(window.orders||[])[0];if(!o)return toast('Você ainda não possui pedidos.');localStorage.setItem('bv_track_id',o.id);const input=$('trackId');if(input)input.value=window.orderLabel(o);window.renderTracking(o)}catch{toast('Não foi possível consultar seu último pedido.')}};
   window.trackSpecificOrder=async id=>{const o=(window.orders||[]).find(x=>String(x.id)===String(id));if(!o)return toast('Pedido não encontrado.');localStorage.setItem('bv_track_id',o.id);const input=$('trackId');if(input)input.value=window.orderLabel(o);window.renderTracking(o)};
   window.trackOrder=async()=>{
