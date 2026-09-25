@@ -235,10 +235,15 @@
   };
 
   function bindActions() {
+    // O fluxo principal usa onclick inline para não depender da ordem dos observers.
+    // Mantemos este bind apenas como fallback para botões antigos.
     document.querySelectorAll('.motoActionBtn').forEach(btn=>{
       if (btn.dataset.bound) return;
       btn.dataset.bound='1';
-      btn.addEventListener('click',()=>motoAction(btn.dataset.order,btn.dataset.action));
+      btn.addEventListener('click',e=>{
+        if (e.defaultPrevented) return;
+        motoAction(btn.dataset.order,btn.dataset.action);
+      });
     });
   }
 
