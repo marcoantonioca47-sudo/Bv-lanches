@@ -1,364 +1,244 @@
-/* BV LANCHES — MOTOBOY v3 — telas únicas e fluxo único */
+/* BV LANCHES — MOTOBOY — implementação limpa */
 (() => {
   'use strict';
 
   const $ = id => document.getElementById(id);
+  const db = () => window.BV_SUPABASE || window.sb;
+  const isMoto = () => String(window.BV_ROLE || '').toLowerCase() === 'motoboy';
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  const isMoto = () => ['motoboy'].includes(String(window.BV_ROLE || '').toLowerCase());
-  const db = () => window.BV_SUPABASE;
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.10';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.11';
+  window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
 
-  function motoAllowedPage(p) {
-    return ['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega'].includes(p);
+  const allowed = new Set(['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega']);
+
+  function protectNavigation() {
+    if (window.BV_MOTO_NAV_READY) return;
+    const original = window.showPage;
+    if (typeof original !== 'function') return;
+    window.BV_MOTO_NAV_READY = true;
+    window.BV_MOTO_BASE_SHOW_PAGE = original;
+    window.showPage = function(page, internal) {
+      if (isMoto() && !allowed.has(String(page))) page = 'pedidos';
+      return window.BV_MOTO_BASE_SHOW_PAGE.call(this,page,internal);
+    };
   }
 
-  /* Uma única camada de navegação para o motoboy. */
-  const baseShowPage = window.showPage;
-  window.showPage = function(page, internal) {
-    if (isMoto() && !motoAllowedPage(page)) page = 'pedidos';
-    return typeof baseShowPage === 'function'
-      ? baseShowPage.call(this,page,internal)
-      : undefined;
-  };
-
-  function hideMotoAdminUi() {
+  function applyMenu() {
     if (!isMoto()) return;
     document.querySelectorAll('.sideNav [data-page]').forEach(el => {
-      const allowed = ['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega'].includes(el.dataset.page);
-      const isAdminDuplicate = el.classList.contains('adminOnly') || el.classList.contains('adminDeliveryFeeLink');
-      el.style.setProperty('display', allowed && !isAdminDuplicate ? '' : 'none','important');
+      const page = el.dataset.page;
+      const admin = el.classList.contains('adminOnly') || el.classList.contains('adminDeliveryFeeLink');
+      el.style.setProperty('display', allowed.has(page) && !admin ? '' : 'none','important');
     });
-    document.querySelectorAll('.navTitle,.sideBottom .adminBtn,.homeNotificationBar').forEach(el => {
+    document.querySelectorAll('.sideNav .adminBtn,.sideNav .navTitle,.sideBottom .adminBtn').forEach(el => {
       el.style.setProperty('display','none','important');
     });
   }
 
-  function orderCard(o,items) {
-    const status = String(o.status);
-    const inRoute = status === 'saiu_entrega';
-    const label = inRoute ? 'Saiu para entrega' : status === 'em_producao' ? 'Em produção' : 'Em preparo';
-    const action = inRoute
-      ? '<button type="button" class="motoActionBtn motoDeliver" data-action="entregar" data-order="'+esc(o.id)+'" onclick="event.preventDefault();event.stopPropagation();window.motoAction(\''+esc(o.id)+'\',\'entregar\');">✅ Confirmar entrega</button>'
-      : '<button type="button" class="motoActionBtn motoCollect" data-action="coletar" data-order="'+esc(o.id)+'" onclick="event.preventDefault();event.stopPropagation();window.motoAction(\''+esc(o.id)+'\',\'coletar\');">📦 Coletar pedido</button>';
-    const itemsText = items.length
-      ? items.map(i => esc(i.quantity)+'x '+esc(i.product_name)).join(', ')
-      : 'Itens do pedido';
-    const address = [o.address,o.neighborhood].filter(Boolean).map(esc).join(' · ') || 'Endereço não informado';
-    return '<article class="motoSingleCard">'+
-      '<div class="motoCardTop"><div><small>PEDIDO</small><strong>#'+esc(o.order_number || String(o.id).slice(0,6))+'</strong></div><span>'+esc(label)+'</span></div>'+
-      '<div class="motoCardBody"><h3>'+esc(o.customer_name || 'Cliente')+'</h3><p>'+itemsText+'</p>'+
-      '<div class="motoInfo"><div><small>📍 Endereço</small><b>'+address+'</b></div><div><small>📱 Celular</small><b>'+esc(o.phone || 'Não informado')+'</b></div></div></div>'+
-      '<div class="motoFee"><span>Taxa de entrega</span><strong>'+money(o.delivery_fee)+'</strong></div>'+
-      action+
-    '</article>';
+  function actionButton(o) {
+    const action = o.status === 'saiu_entrega' ? 'entregar' : 'coletar';
+    const text = action === 'coletar' ? '📦 Coletar pedido' : '✅ Confirmar entrega';
+    const cls = action === 'coletar' ? 'motoCollect' : 'motoDeliver';
+    return '<button type="button" class="motoActionBtn '+cls+'" data-order-id="'+esc(o.id)+'" data-action="'+action+'">'+text+'</button>';
   }
 
-  async function queryMotoOrders() {
+  async function getOrders() {
     const client = db();
     if (!client) throw new Error('Banco de dados indisponível.');
-    const {data:{user},error:uerr} = await client.auth.getUser();
-    if (uerr || !user) throw new Error('Sessão do motoboy não encontrada.');
+    const session = await client.auth.getSession();
+    const user = session?.data?.session?.user;
+    if (!user) throw new Error('Sessão do motoboy não encontrada.');
 
     const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id';
-    const [prep,prod,route] = await Promise.all([
-      // Todos os pedidos em preparo ficam visíveis para todos os motoboys.
-      client.from('orders').select(fields).eq('status','em_preparo')
-        .order('created_at',{ascending:false}),
-      // Todos os pedidos em produção também ficam disponíveis para coleta.
-      client.from('orders').select(fields).eq('status','em_producao')
-        .order('created_at',{ascending:false}),
-      client.from('orders').select(fields).eq('status','saiu_entrega')
-        .eq('motoboy_id',user.id).order('created_at',{ascending:false})
+    const results = await Promise.all([
+      client.from('orders').select(fields).eq('status','em_preparo').order('created_at',{ascending:false}),
+      client.from('orders').select(fields).eq('status','em_producao').order('created_at',{ascending:false}),
+      client.from('orders').select(fields).eq('status','saiu_entrega').eq('motoboy_id',user.id).order('created_at',{ascending:false})
     ]);
-    const err = prep.error || prod.error || route.error;
-    if (err) throw err;
+    const bad = results.find(x => x.error);
+    if (bad) throw bad.error;
 
     const map = new Map();
-    [...(prep.data||[]),...(prod.data||[]),...(route.data||[])].forEach(o => map.set(String(o.id),o));
-    const rows = [...map.values()].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    results.flatMap(x => x.data || []).forEach(o => map.set(String(o.id),o));
+    const rows = [...map.values()].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
 
     const items = {};
     if (rows.length) {
-      const ir = await client.from('order_items').select('order_id,product_name,quantity').in('order_id',rows.map(o=>o.id));
+      const ir = await client.from('order_items').select('order_id,product_name,quantity').in('order_id',rows.map(x=>x.id));
       if (!ir.error) (ir.data||[]).forEach(i => (items[i.order_id] ||= []).push(i));
     }
     return {rows,items};
+  }
+
+  function card(o,items) {
+    const label = o.status === 'saiu_entrega' ? 'Saiu para entrega' : o.status === 'em_producao' ? 'Em produção' : 'Em preparo';
+    const list = items.length ? items.map(i => esc(i.quantity)+'x '+esc(i.product_name)).join(', ') : 'Itens do pedido';
+    const address = [o.address,o.neighborhood].filter(Boolean).map(esc).join(' · ') || 'Endereço não informado';
+    return '<article class="motoSingleCard">'+
+      '<div class="motoCardTop"><div><small>PEDIDO</small><strong>#'+esc(o.order_number || String(o.id).slice(0,6))+'</strong></div><span>'+label+'</span></div>'+
+      '<div class="motoCardBody"><h3>'+esc(o.customer_name || 'Cliente')+'</h3><p>'+list+'</p>'+
+      '<div class="motoInfo"><div><small>📍 Endereço</small><b>'+address+'</b></div><div><small>📱 Celular</small><b>'+esc(o.phone || 'Não informado')+'</b></div></div></div>'+
+      '<div class="motoFee"><span>Taxa de entrega</span><strong>'+money(o.delivery_fee)+'</strong></div>'+
+      actionButton(o)+'</article>';
   }
 
   window.renderMotoOrders = async function(options) {
     if (!isMoto()) return;
     const box = $('orders');
     if (!box) return;
-    const silent = options === false || options?.silent === true;
-    const filters = $('adminOrderFilters');
-    if (filters) filters.style.display='none';
-
-    // Não apaga a lista atual durante atualizações automáticas.
-    // A mensagem de carregamento aparece somente quando a tela ainda está vazia.
-    const hasContent = !!box.querySelector('.motoSingleCard,.motoEmpty');
-    if (!silent && !hasContent) box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
+    const silent = options?.silent === true;
+    const existing = !!box.querySelector('.motoSingleCard,.motoEmpty');
+    if (!silent && !existing) box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
 
     try {
-      const {rows,items} = await queryMotoOrders();
+      const {rows,items} = await getOrders();
       if (!rows.length) {
-        box.innerHTML='<div class="motoEmpty"><span>🏍️</span><b>Nenhum pedido disponível</b><small>Pedidos em preparo ou produção aparecerão aqui. Após coletado, o pedido permanece aqui até a entrega.</small></div>';
+        box.innerHTML='<div class="motoEmpty"><span>🏍️</span><b>Nenhum pedido disponível</b><small>Pedidos em preparo ou produção aparecerão aqui.</small></div>';
         return;
       }
-      box.innerHTML=rows.map(o=>orderCard(o,items[o.id]||[])).join('');
+      box.innerHTML=rows.map(o=>card(o,items[o.id]||[])).join('');
     } catch(e) {
-      console.error('[BV MOTO v3]',e);
-      box.innerHTML='<div class="motoEmpty"><span>⚠️</span><b>Erro ao carregar pedidos</b><small>'+esc(e?.message||'Erro de conexão.')+'</small><button type="button" id="motoRetry">Tentar novamente</button></div>';
-      $('motoRetry')?.addEventListener('click',window.renderMotoOrders);
+      console.error('[MOTO PEDIDOS]',e);
+      box.innerHTML='<div class="motoEmpty"><span>⚠️</span><b>Erro ao carregar pedidos</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" id="motoRetry">Tentar novamente</button></div>';
+      $('motoRetry')?.addEventListener('click',()=>window.renderMotoOrders());
     }
   };
 
-  const motoActionsInFlight = new Set();
-
-  async function motoAction(id,action) {
+  async function doAction(id,action,button) {
     if (!isMoto()) return;
     const client=db();
-    if (!client) return;
+    if (!client) return window.toast?.('Banco de dados indisponível.');
 
-    const key = String(id) + ':' + String(action);
-    if (motoActionsInFlight.has(key)) return;
-    motoActionsInFlight.add(key);
+    const key=String(id)+':'+action;
+    if (window.BV_MOTO_ACTIONS.has(key)) return;
+    window.BV_MOTO_ACTIONS.add(key);
 
-    // Bloqueia somente o botão deste pedido. Outros pedidos continuam disponíveis
-    // para coleta/entrega simultânea.
-    const buttons = [...document.querySelectorAll('.motoActionBtn')]
-      .filter(b => String(b.dataset.order) === String(id));
-    buttons.forEach(b => {
-      b.disabled = true;
-      b.dataset.processing = '1';
-      b.dataset.originalText = b.textContent;
-      b.textContent = action === 'coletar' ? '⏳ Coletando...' : '⏳ Confirmando...';
-    });
+    if (button) {
+      button.disabled=true;
+      button.dataset.busy='1';
+      button.dataset.oldText=button.textContent;
+      button.textContent=action==='coletar'?'⏳ Coletando...':'⏳ Confirmando...';
+    }
 
     try {
-      const r=await client.rpc('motoboy_collect_or_deliver',{p_order_id:id,p_action:action});
-      if (r.error) throw r.error;
-      if (r.data === false) throw new Error('O servidor não confirmou a alteração do pedido.');
+      const session=await client.auth.getSession();
+      const user=session?.data?.session?.user;
+      if (!user) throw new Error('Sessão expirada. Entre novamente.');
 
-      // Atualiza somente depois da confirmação do banco. Outros pedidos continuam
-      // liberados para ação enquanto este pedido é processado.
+      const rpc=await client.rpc('motoboy_collect_or_deliver',{
+        p_order_id:id,
+        p_action:action
+      });
+      if (rpc.error) throw rpc.error;
+
       await window.renderMotoOrders({silent:true});
-      if (document.getElementById('page-taxa-entrega')?.classList.contains('activePage')) {
+      if ($('page-taxa-entrega')?.classList.contains('activePage')) {
         await window.renderMotoFeeOrders({silent:true});
       }
-      window.toast?.(action==='coletar'
-        ? 'Pedido coletado. Saiu para entrega.'
-        : 'Entrega confirmada. Pedido marcado como entregue.');
+      window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido marcado como entregue.');
     } catch(e) {
-      console.error('[BV MOTO ACTION v3]',e);
-      window.toast?.('Não foi possível atualizar o pedido: '+String(e?.message||'Erro').slice(0,180));
+      console.error('[MOTO AÇÃO]',e);
+      window.toast?.('Erro ao atualizar pedido: '+String(e?.message||'Tente novamente.').slice(0,180));
+      if (button) {
+        button.disabled=false;
+        button.removeAttribute('data-busy');
+        if (button.dataset.oldText) button.textContent=button.dataset.oldText;
+      }
     } finally {
-      motoActionsInFlight.delete(key);
-      buttons.forEach(b => {
-        b.disabled = false;
-        if (b.dataset.originalText) b.textContent = b.dataset.originalText;
-        delete b.dataset.originalText;
-        delete b.dataset.processing;
-      });
+      window.BV_MOTO_ACTIONS.delete(key);
     }
   }
-  window.motoAction = motoAction;
-  window.motoFinish = id => motoAction(id,'entregar');
+
+  window.motoAction = doAction;
+  window.motoFinish = id => doAction(id,'entregar');
+
+  function bindClick() {
+    if (window.BV_MOTO_CLICK_READY) return;
+    window.BV_MOTO_CLICK_READY=true;
+    document.addEventListener('click',e=>{
+      const button=e.target?.closest?.('.motoActionBtn');
+      if (!button) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (button.dataset.busy==='1') return;
+      doAction(button.dataset.orderId,button.dataset.action,button);
+    },true);
+  }
 
   window.renderMotoFeeOrders = async function(options) {
     if (!isMoto()) return;
-    const box = $('motoFeeOrders');
+    const box=$('motoFeeOrders');
     if (!box) return;
-    const silent = options === false || options?.silent === true;
-    const hasContent = !!box.querySelector('.motoFeeFilter,.motoFeeHeader,.motoFeeList,.emptyState');
-
-    // Atualizações automáticas não apagam a tela atual nem mostram "Carregando taxas".
-    // O carregamento só aparece quando a tela ainda não tem conteúdo.
-    if (!silent && !hasContent) {
-      box.innerHTML = '<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
-    }
+    const silent=options?.silent===true;
+    const existing=!!box.querySelector('.motoFeeFilter,.motoFeeList,.emptyState');
+    if (!silent && !existing) box.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando taxas...</b></div>';
 
     try {
-      const client = db();
-      if (!client) throw new Error('Banco de dados indisponível.');
+      const client=db();
+      const session=await client.auth.getSession();
+      const user=session?.data?.session?.user;
+      if (!user) throw new Error('Sessão expirada.');
 
-      const {data:{user},error:uerr} = await client.auth.getUser();
-      if (uerr || !user) throw new Error('Sessão do motoboy não encontrada.');
-
-      const r = await client.from('orders')
-        .select('id,order_number,delivery_fee,created_at,motoboy_id')
-        .eq('status','entregue')
-        .eq('motoboy_id',user.id)
-        .order('created_at',{ascending:false});
-
+      const r=await client.from('orders').select('id,order_number,delivery_fee,created_at,motoboy_id,status')
+        .eq('status','entregue').eq('motoboy_id',user.id).order('created_at',{ascending:false});
       if (r.error) throw r.error;
 
-      // Segurança adicional: a tela de taxas do motoboy deve considerar
-      // somente pedidos que ESTE usuário efetivamente recebeu como entregador.
-      // O filtro é aplicado no banco e novamente no cliente para evitar qualquer
-      // registro de outro motoboy aparecer por engano.
-      const rows = (r.data || []).filter(o =>
-        String(o.motoboy_id || '') === String(user.id) &&
-        String(o.status || '').toLowerCase() === 'entregue'
-      );
-      const filter = window.BV_MOTO_FEE_FILTER || 'all';
-      const now = new Date();
-      const startOfDay = new Date(now.getFullYear(),now.getMonth(),now.getDate());
-      let startDate = null, endDate = null, specific = null;
+      const filter=window.BV_MOTO_FEE_FILTER||'all';
+      const now=new Date();
+      let rows=r.data||[];
+      let start=null,end=null;
+      if(filter==='today') start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      if(filter==='week'){start=new Date(now.getFullYear(),now.getMonth(),now.getDate());const d=start.getDay();start.setDate(start.getDate()-(d===0?6:d-1));}
+      if(filter==='month') start=new Date(now.getFullYear(),now.getMonth(),1);
+      if(filter.startsWith('specific:')){const [y,m,d]=filter.slice(9).split('-').map(Number);start=new Date(y,m-1,d);end=new Date(y,m-1,d+1);}
+      rows=rows.filter(o=>!start || (new Date(o.created_at)>=start && (!end || new Date(o.created_at)<end)));
 
-      if (filter === 'today') startDate = startOfDay;
-      if (filter === 'week') {
-        const day = startOfDay.getDay();
-        startDate = new Date(startOfDay);
-        startDate.setDate(startDate.getDate() - (day === 0 ? 6 : day - 1));
-      }
-      if (filter === 'month') startDate = new Date(now.getFullYear(),now.getMonth(),1);
-      if (filter.startsWith('specific:')) specific = filter.slice(9);
-
-      if (specific) {
-        const parts = specific.split('-').map(Number);
-        startDate = new Date(parts[0],parts[1]-1,parts[2]);
-        endDate = new Date(parts[0],parts[1]-1,parts[2]+1);
-      }
-
-      const filtered = specific
-        ? rows.filter(o => {
-            const d = new Date(o.created_at);
-            return d >= startDate && d < endDate;
-          })
-        : startDate
-          ? rows.filter(o => new Date(o.created_at) >= startDate)
-          : rows;
-
-      const totalFees = filtered.reduce((sum,o) => sum + Number(o.delivery_fee || 0),0);
-      const fmtDate = v => {
-        const d = new Date(v);
-        return Number.isNaN(d.getTime()) ? 'Data não disponível' : d.toLocaleDateString('pt-BR');
-      };
-
-      if ($('deliveryFeeEyebrow')) $('deliveryFeeEyebrow').textContent = 'MOTOBOY';
-      if ($('deliveryFeeDescription')) $('deliveryFeeDescription').textContent =
-        'Consulte o total das suas taxas das entregas realizadas.';
-
-      box.innerHTML =
-        '<div class="motoFeeFilter">'+
-          '<div class="motoFeeQuickFilters">'+
-            '<button type="button" class="'+(filter==='today'?'active':'')+'" onclick="setMotoFeeFilter(\'today\')">Hoje</button>'+
-            '<button type="button" class="'+(filter==='week'?'active':'')+'" onclick="setMotoFeeFilter(\'week\')">Esta semana</button>'+
-            '<button type="button" class="'+(filter==='month'?'active':'')+'" onclick="setMotoFeeFilter(\'month\')">Este mês</button>'+
-            '<button type="button" class="'+(filter==='all'?'active':'')+'" onclick="setMotoFeeFilter(\'all\')">Todas</button>'+
-          '</div>'+
-          '<label><span>Data específica</span><input id="motoFeeDate" type="date" value="'+(specific||'')+'" onchange="setMotoFeeSpecificDate(this.value)"></label>'+
-        '</div>'+
-        '<div class="motoFeeHeader">'+
-          '<div><small>ENTREGAS REALIZADAS</small><strong>'+filtered.length+'</strong></div>'+
-          '<div><small>TOTAL A RECEBER</small><strong>'+money(totalFees)+'</strong></div>'+
-        '</div>'+
-        (filtered.length
-          ? '<div class="motoFeeList">'+filtered.map(o =>
-              '<article class="motoFeeOrder">'+
-                '<div class="motoFeeOrderNumber">'+
-                  '<small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b>'+
-                  '<small>DATA</small><b>'+fmtDate(o.created_at)+'</b>'+
-                '</div>'+
-                '<div class="motoFeeValue">'+
-                  '<small>TAXA DE ENTREGA</small><strong>'+money(o.delivery_fee)+'</strong>'+
-                '</div>'+
-              '</article>'
-            ).join('')+'</div>'
-          : '<div class="emptyState"><span>💰</span><b>Nenhuma entrega no período</b><small>Escolha outro filtro para consultar suas taxas.</small></div>');
+      const total=rows.reduce((s,o)=>s+Number(o.delivery_fee||0),0);
+      box.innerHTML='<div class="motoFeeFilter"><div class="motoFeeQuickFilters">'+
+        ['today:Hoje','week:Esta semana','month:Este mês','all:Todas'].map(x=>{const [v,t]=x.split(':');return '<button type="button" class="'+(filter===v?'active':'')+'" onclick="setMotoFeeFilter(\''+v+'\')">'+t+'</button>';}).join('')+
+        '</div><label><span>Data específica</span><input type="date" value="'+(filter.startsWith('specific:')?filter.slice(9):'')+'" onchange="setMotoFeeSpecificDate(this.value)"></label></div>'+
+        '<div class="motoFeeHeader"><div><small>ENTREGAS REALIZADAS</small><strong>'+rows.length+'</strong></div><div><small>TOTAL A RECEBER</small><strong>'+money(total)+'</strong></div></div>'+
+        (rows.length?'<div class="motoFeeList">'+rows.map(o=>'<article class="motoFeeOrder"><div><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b><small>DATA</small><b>'+new Date(o.created_at).toLocaleDateString('pt-BR')+'</b></div><div><small>TAXA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>Nenhuma entrega no período</b></div>');
     } catch(e) {
-      console.error('[BV MOTO FEES v3]',e);
-      box.innerHTML = '<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as taxas</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>';
+      console.error('[MOTO TAXAS]',e);
+      box.innerHTML='<div class="emptyState"><span>⚠️</span><b>Erro ao carregar taxas</b><small>'+esc(e?.message||'Erro de conexão.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>';
     }
   };
 
-  window.setMotoFeeFilter = filter => {
-    window.BV_MOTO_FEE_FILTER = filter || 'all';
-    window.renderMotoFeeOrders();
-  };
+  window.setMotoFeeFilter=filter=>{window.BV_MOTO_FEE_FILTER=filter||'all';window.renderMotoFeeOrders();};
+  window.setMotoFeeSpecificDate=value=>{window.BV_MOTO_FEE_FILTER=value?'specific:'+value:'all';window.renderMotoFeeOrders();};
 
-  window.setMotoFeeSpecificDate = value => {
-    window.BV_MOTO_FEE_FILTER = value ? 'specific:'+value : 'all';
-    window.renderMotoFeeOrders();
-  };
-
-  function bindActions() {
-    document.querySelectorAll('.motoActionBtn').forEach(btn=>{
-      if (btn.dataset.bound) return;
-      btn.dataset.bound='1';
-      btn.addEventListener('click',e=>{
-        if (e.defaultPrevented) return;
-        motoAction(btn.dataset.order,btn.dataset.action);
-      });
-    });
+  function injectStyle(){
+    if($('bvMotoCleanStyle')) return;
+    const s=document.createElement('style');
+    s.id='bvMotoCleanStyle';
+    s.textContent='.motoSingleCard{margin:0 0 14px;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.motoCardTop,.motoFeeHeader{display:flex;align-items:center;justify-content:space-between;gap:12px}.motoCardTop small,.motoInfo small,.motoFeeHeader small{display:block;opacity:.65;font-size:11px}.motoCardTop strong{display:block;font-size:22px}.motoCardTop span{padding:7px 10px;border-radius:10px;background:rgba(229,9,20,.15);font-weight:800;font-size:12px}.motoCardBody h3{margin:16px 0 5px}.motoCardBody p{margin:0 0 14px}.motoInfo{display:grid;gap:10px}.motoInfo b{display:block;margin-top:3px}.motoFee{display:flex;justify-content:space-between;align-items:center;margin:15px 0;padding:12px;border-radius:12px;background:rgba(0,0,0,.16)}.motoFee strong{font-size:18px}.motoActionBtn{width:100%;min-height:48px;border:0;border-radius:12px;color:#fff;font-weight:900;cursor:pointer;pointer-events:auto;touch-action:manipulation}.motoActionBtn:disabled{opacity:.55}.motoCollect{background:linear-gradient(135deg,#e50914,#900007)}.motoDeliver{background:linear-gradient(135deg,#20a65a,#08783b)}.motoLoading,.motoEmpty{padding:35px 18px;text-align:center}.motoEmpty span{display:block;font-size:32px;margin-bottom:8px}.motoEmpty b,.motoEmpty small{display:block}.motoEmpty small{margin:7px 0 14px}.motoFeeFilter{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.03)}.motoFeeQuickFilters{display:flex;gap:8px;flex-wrap:wrap}.motoFeeQuickFilters button{min-height:42px;padding:0 14px;border:1px solid #343a44;border-radius:10px;background:#20242a;color:#fff;font-weight:800}.motoFeeQuickFilters button.active{background:#e50914;border-color:#e50914}.motoFeeFilter label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:800}.motoFeeFilter input{min-height:42px;padding:0 12px;border-radius:10px;border:1px solid #343a44;background:#080a0d;color:#fff}.motoFeeHeader{padding:8px 0 16px}.motoFeeHeader>div{display:flex;flex-direction:column;gap:3px}.motoFeeHeader strong{font-size:22px}.motoFeeOrder{display:flex;justify-content:space-between;gap:15px;padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}.motoFeeOrder small{display:block;opacity:.65;margin-top:3px}.motoFeeOrder b,.motoFeeOrder strong{display:block;margin-bottom:7px}';
+    document.head.appendChild(s);
   }
 
-  // Fallback global em caso de outro script substituir os listeners do botão.
-  // Usa a fase normal (bubble), nunca capture, para não bloquear o clique.
-  if (!window.BV_MOTO_CLICK_FALLBACK) {
-    window.BV_MOTO_CLICK_FALLBACK = true;
-    document.addEventListener('click', e => {
-      const btn = e.target?.closest?.('.motoActionBtn');
-      if (!btn || e.defaultPrevented) return;
-      if (btn.dataset.processing === '1') return;
-      e.preventDefault();
-      motoAction(btn.dataset.order, btn.dataset.action);
-    });
+  function boot(){
+    protectNavigation();
+    applyMenu();
+    injectStyle();
+    if(!isMoto()) return;
+    const active=document.querySelector('.page.activePage')?.id||'';
+    if(active==='page-pedidos') window.renderMotoOrders();
+    else if(active==='page-taxa-entrega') window.renderMotoFeeOrders();
   }
 
-  const observer=new MutationObserver(()=>bindActions());
-  observer.observe(document.body,{subtree:true,childList:true});
-
-  function showMoto(page) {
-    hideMotoAdminUi();
-    window.showPage(page,true);
-    if (page==='pedidos') window.renderMotoOrders();
-    if (page==='taxa-entrega') window.renderMotoFeeOrders();
-  }
-
-  // A navegação já é protegida pelo wrapper único acima.
-  // Os botões possuem listeners próprios em bindActions().
-  // Não bloquear o evento no capture, pois isso impediria o click de chegar ao botão.
-  const style=document.createElement('style');
-  style.textContent=
-    '.motoSingleCard{margin:0 0 14px;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}'+
-    '.motoCardTop,.motoFeeHead,.motoFeeRow{display:flex;align-items:center;justify-content:space-between;gap:12px}'+
-    '.motoCardTop small,.motoFeeHead small,.motoInfo small{display:block;opacity:.65;font-size:11px}'+
-    '.motoCardTop strong{display:block;font-size:22px;margin-top:3px}'+
-    '.motoCardTop span{padding:7px 10px;border-radius:10px;background:rgba(229,9,20,.15);font-weight:800;font-size:12px}'+
-    '.motoCardBody h3{margin:16px 0 5px}.motoCardBody p{margin:0 0 14px;opacity:.85}'+
-    '.motoInfo{display:grid;gap:10px}.motoInfo b{display:block;margin-top:3px}'+
-    '.motoFee{display:flex;justify-content:space-between;align-items:center;margin:15px 0;padding:12px;border-radius:12px;background:rgba(0,0,0,.16)}'+
-    '.motoFee strong{font-size:18px}'+
-    '.motoActionBtn{width:100%;min-height:48px;border:0;border-radius:12px;color:#fff;font-weight:900;cursor:pointer}.motoCollect{background:linear-gradient(135deg,#e50914,#900007)}.motoDeliver{background:linear-gradient(135deg,#20a65a,#08783b)}.motoActionBtn:disabled{opacity:.55}'+
-    '.motoLoading,.motoEmpty{padding:35px 18px;text-align:center}.motoEmpty span{display:block;font-size:32px;margin-bottom:8px}.motoEmpty b,.motoEmpty small{display:block}.motoEmpty small{margin:7px 0 14px;opacity:.7}'+
-    '.motoFeeHead{padding:5px 0 14px}.motoFeeHead h3{margin:4px 0}.motoFeeHead>strong{font-size:22px}.motoFeeCount{margin-bottom:12px;opacity:.7}.motoFeeRow{padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}.motoFeeRow small{display:block;opacity:.65;margin-top:3px}';
-  document.head.appendChild(style);
-
-  function boot() {
-    hideMotoAdminUi();
-    if (isMoto()) {
-      const active=document.querySelector('.page.activePage')?.id;
-      if (!['page-inicio','page-cardapio','page-pedido','page-acompanhar','page-pedidos','page-taxa-entrega'].includes(active)) {
-        window.showPage('pedidos',true);
-      } else if (active==='page-pedidos') {
-        window.renderMotoOrders();
-      } else if (active==='page-taxa-entrega') {
-        window.renderMotoFeeOrders();
-      }
-      if (active==='page-inicio') window.renderHomePromoBanner?.();
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,150));
-  const originalLoadApp=window.loadApp;
-  if (typeof originalLoadApp==='function') {
-    window.loadApp=async function() {
-      const r=await originalLoadApp.apply(this,arguments);
-      setTimeout(boot,100);
-      return r;
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,200));
+  const oldLoad=window.loadApp;
+  if(typeof oldLoad==='function' && !window.BV_MOTO_LOAD_WRAPPED){
+    window.BV_MOTO_LOAD_WRAPPED=true;
+    window.loadApp=async function(){
+      const result=await oldLoad.apply(this,arguments);
+      setTimeout(boot,150);
+      return result;
     };
   }
+
+  // Reaplica após mudanças de perfil/acesso sem criar novos listeners.
+  setTimeout(()=>{protectNavigation();applyMenu();injectStyle();},500);
 })();
