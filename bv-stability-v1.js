@@ -497,8 +497,34 @@
       })
       .subscribe(status=>{console.log('[BV TRACKING] Realtime:',status);});
   };
-  window.copyPixCode=async()=>{const code=String(window.BV_PIX_CODE||'');if(!code)return toast('Código PIX indisponível.');try{await navigator.clipboard.writeText(code);toast('Pix Copia e Cola copiado!')}catch{const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Pix Copia e Cola copiado!')}};
-  window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')))||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()));if(!o){b.innerHTML='<p class="muted">Nenhum pedido em andamento.</p>';return}window.BV_PIX_CODE=o.pixQrCode||'';const isPix=String(o.payment||'').toLowerCase()==='pix';const paid=String(o.paymentStatus||'').toLowerCase()==='pago';const qr=o.pixQrCodeBase64?'<img src="data:image/png;base64,'+esc(o.pixQrCodeBase64)+'" alt="QR Code PIX" style="width:min(240px,70vw);display:block;margin:14px auto;border-radius:14px;background:#fff;padding:8px;box-sizing:border-box">':'';const pixBox=isPix&&!paid?'<div style="margin-top:16px;padding:16px;border:1px solid rgba(0,200,120,.22);border-radius:16px;background:rgba(0,120,80,.08);text-align:center"><b style="display:block;font-size:15px">PIX — aguardando pagamento</b><small class="muted">Pague pelo QR Code ou use o Pix Copia e Cola.</small>'+qr+(o.pixQrCode?'<button type="button" onclick="copyPixCode()" style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:10px;background:#e50914;color:#fff;font-weight:900;cursor:pointer">📋 Copiar Pix Copia e Cola</button>':'<small style="display:block;margin-top:10px;color:#ffb0b0">QR Code ainda não disponível.</small>')+'</div>':paid?'<div style="margin-top:16px;padding:14px;border-radius:14px;background:rgba(0,160,90,.12);border:1px solid rgba(0,200,120,.25);text-align:center"><b>✅ PIX confirmado</b><small class="muted" style="display:block;margin-top:4px">Pagamento recebido. Pedido liberado para preparo.</small></div>':'';b.innerHTML='<div class="trackingCard"><small>PEDIDO</small><h3>#'+esc(window.orderLabel(o))+'</h3><b>'+esc(o.status)+'</b><p>'+esc(o.items||'')+'</p><strong>'+money(o.total)+'</strong>'+pixBox+'</div>'};
+  window.copyPixCode=async()=>{const code=String(window.BV_PIX_CODE||'');if(!code)return toast('Código PIX indisponível.');try{await navigator.clipboard.writeText(code);toast('Pix Copia e Cola copiado!')}catch{const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Pix Copia e Cola copiado!')}};  window.BV_PIX_STATUS_TIMER=null;
+  window.stopPixStatusPolling=()=>{if(window.BV_PIX_STATUS_TIMER){clearTimeout(window.BV_PIX_STATUS_TIMER);window.BV_PIX_STATUS_TIMER=null}};
+  window.startPixStatusPolling=o=>{
+    window.stopPixStatusPolling();
+    const order=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')));
+    if(!order)return;
+    const pending=String(order.payment||'').toLowerCase()==='pix' && String(order.paymentStatus||'').toLowerCase()!=='pago' && !['entregue','cancelado'].includes(String(order.rawStatus||'').toLowerCase());
+    if(!pending)return;
+    const expires=order.pixExpiresAt?new Date(order.pixExpiresAt).getTime():0;
+    const poll=async()=>{
+      try{
+        const sbx=sb||window.BV_SUPABASE;
+        if(!sbx)return;
+        const r=await sbx.functions.invoke('pix-status',{body:{order_id:order.id}});
+        if(!r.error&&r.data?.paid){
+          toast('✅ PIX confirmado! Pagamento recebido.');
+          await window.BV_REFRESH_ORDERS?.();
+          const updated=(window.orders||[]).find(x=>String(x.id)===String(order.id));
+          if(updated)window.renderTracking(updated);
+          return;
+        }
+      }catch(e){console.warn('[BV PIX STATUS]',e)}
+      if(expires && Date.now()>=expires){window.stopPixStatusPolling();return}
+      window.BV_PIX_STATUS_TIMER=setTimeout(poll,4000);
+    };
+    window.BV_PIX_STATUS_TIMER=setTimeout(poll,1200);
+  };
+  window.renderTracking=o=>{const b=$("trackingResult");if(!b)return;o=o||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')))||(window.orders||[]).find(x=>!['entregue','cancelado'].includes(String(x.rawStatus||'').toLowerCase()));if(!o){b.innerHTML='<p class="muted">Nenhum pedido em andamento.</p>';return}window.BV_PIX_CODE=o.pixQrCode||'';const isPix=String(o.payment||'').toLowerCase()==='pix';const paid=String(o.paymentStatus||'').toLowerCase()==='pago';const qr=o.pixQrCodeBase64?'<img src="data:image/png;base64,'+esc(o.pixQrCodeBase64)+'" alt="QR Code PIX" style="width:min(240px,70vw);display:block;margin:14px auto;border-radius:14px;background:#fff;padding:8px;box-sizing:border-box">':'';const pixBox=isPix&&!paid?'<div style="margin-top:16px;padding:16px;border:1px solid rgba(0,200,120,.22);border-radius:16px;background:rgba(0,120,80,.08);text-align:center"><b style="display:block;font-size:15px">PIX — aguardando pagamento</b><small class="muted">Pague pelo QR Code ou use o Pix Copia e Cola.</small>'+qr+(o.pixQrCode?'<button type="button" onclick="copyPixCode()" style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:10px;background:#e50914;color:#fff;font-weight:900;cursor:pointer">📋 Copiar Pix Copia e Cola</button>':'<small style="display:block;margin-top:10px;color:#ffb0b0">QR Code ainda não disponível.</small>')+'</div>':paid?'<div style="margin-top:16px;padding:14px;border-radius:14px;background:rgba(0,160,90,.12);border:1px solid rgba(0,200,120,.25);text-align:center"><b>✅ PIX confirmado</b><small class="muted" style="display:block;margin-top:4px">Pagamento recebido. Pedido liberado para preparo.</small></div>':'';b.innerHTML='<div class="trackingCard"><small>PEDIDO</small><h3>#'+esc(window.orderLabel(o))+'</h3><b>'+esc(o.status)+'</b><p>'+esc(o.items||'')+'</p><strong>'+money(o.total)+'</strong>'+pixBox+'</div>';window.startPixStatusPolling(o)};
   window.trackLastOrder=async()=>{try{await window.BV_REFRESH_ORDERS?.();const o=(window.orders||[])[0];if(!o)return toast('Você ainda não possui pedidos.');localStorage.setItem('bv_track_id',o.id);const input=$('trackId');if(input)input.value=window.orderLabel(o);window.renderTracking(o)}catch{toast('Não foi possível consultar seu último pedido.')}};
   window.trackSpecificOrder=async id=>{const o=(window.orders||[]).find(x=>String(x.id)===String(id));if(!o)return toast('Pedido não encontrado.');localStorage.setItem('bv_track_id',o.id);const input=$('trackId');if(input)input.value=window.orderLabel(o);window.renderTracking(o)};
   window.trackOrder=async()=>{
