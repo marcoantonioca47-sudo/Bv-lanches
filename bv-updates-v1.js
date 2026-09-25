@@ -19,11 +19,25 @@ function timeline(){let p=$('page-acompanhar'),c=p?.querySelector('.trackingCard
 let last='';
 function watch(){let a=window.orders||[],snap=a.map(o=>o.id+'|'+o.rawStatus+'|'+o.paymentStatus).join(';');if(snap===last)return;let old={};try{old=JSON.parse(sessionStorage.getItem('bv_statuses')||'{}')}catch{};if(last)a.forEach(o=>{const role=String(window.BV_ROLE||'').toLowerCase(),isMoto=role==='motoboy',isAdmin=['administrador','admin'].includes(role);if(isMoto){if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='em_preparo')addN('🚚 Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),'Pedido em preparação. Retire no balcão quando estiver pronto.','pickup:'+o.id+':'+o.rawStatus)}else if(isAdmin){if(!old[o.id]){addN('🔔 Novo pedido','Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' recebido.','new:'+o.id);playOrderSound()}else if(old[o.id]!==o.rawStatus){addN('Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),'Status: '+(labels[o.rawStatus]||o.status),'st:'+o.id+':'+o.rawStatus)}if(old[o.id]&&old[o.id]!==o.paymentStatus&&o.paymentStatus==='pago'&&String(o.payment||'').toLowerCase().includes('pix'))addN('Pagamento PIX confirmado','Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),'pay:'+o.id)else{if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega')addN('🛵 Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),'Seu pedido saiu para entrega.','delivery:'+o.id+':'+o.rawStatus)}});let m={};a.forEach(o=>m[o.id]=o.rawStatus);sessionStorage.setItem('bv_statuses',JSON.stringify(m));kpis();kitchen();timeline();
       const trackId=localStorage.getItem('bv_track_id');
-      if(trackId){const tracked=a.find(x=>String(x.id)===String(trackId));if(tracked&&typeof window.renderTracking==='function')window.renderTracking(tracked);}
+      if(trackId&&document.getElementById('page-acompanhar')?.classList.contains('activePage')){
+        const tracked=a.find(x=>String(x.id)===String(trackId));
+        if(tracked&&typeof window.renderTracking==='function'){
+          const sig=JSON.stringify({
+            id:tracked.id,status:tracked.rawStatus,payment:tracked.payment,paymentStatus:tracked.paymentStatus,
+            motoboyId:tracked.motoboyId,changeFor:tracked.changeFor,total:tracked.total,
+            pixPaymentId:tracked.pixPaymentId,pixQrCode:tracked.pixQrCode,pixQrCodeBase64:tracked.pixQrCodeBase64,
+            pixExpiresAt:tracked.pixExpiresAt
+          });
+          if(sig!==window.BV_TRACKING_RENDER_SIG){
+            window.BV_TRACKING_RENDER_SIG=sig;
+            window.renderTracking(tracked);
+          }
+        }
+      }
       last=snap}
 function patch(){if(window.BV_UPDATES_PATCHED||typeof window.BV_REFRESH_ORDERS!=='function')return;let f=window.BV_REFRESH_ORDERS;window.BV_REFRESH_ORDERS=async(...x)=>{let r=await f(...x);setTimeout(watch,20);return r};window.BV_UPDATES_PATCHED=true}
 function boot(){injectCss();notices();patch();watch();kpis();kitchen();timeline()}
-document.addEventListener('DOMContentLoaded',boot,{once:true});setInterval(()=>{patch();watch();kpis();kitchen();timeline()},1500);window.BV_UPDATES_VERSION='2026.09.25.254'
+document.addEventListener('DOMContentLoaded',boot,{once:true});setInterval(()=>{patch();watch();kpis();kitchen();timeline()},1500);window.BV_UPDATES_VERSION='2026.09.25.266'
 })();
 
 /* DASHBOARD PRO — vendas, produtos, pagamentos e faturamento por período */
