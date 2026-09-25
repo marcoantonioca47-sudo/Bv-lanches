@@ -84,10 +84,39 @@
       actionButton(o)+'</article>';
   }
 
+  function syncPromoBanner() {
+    if (!isMoto()) return;
+    const page = $('page-pedidos');
+    const orders = $('orders');
+    if (!page || !orders) return;
+    try { window.renderHomePromoBanner?.(); } catch(e) {}
+    let box = $('motoboyPromoBanner');
+    if (!box) {
+      box = document.createElement('section');
+      box.id = 'motoboyPromoBanner';
+      box.className = 'homePromoBanner motoPromoBanner';
+      box.setAttribute('aria-label','Promoções ativas');
+      orders.parentNode?.insertBefore(box, orders);
+    }
+    const source = $('homePromoBanner');
+    if (source) {
+      const track = source.querySelector('#homePromoTrack');
+      const dots = source.querySelector('#homePromoDots');
+      if (track && track.innerHTML.trim()) {
+        box.innerHTML = '<div class="homePromoTrack">'+track.innerHTML+'</div>' +
+          (dots ? '<div class="homePromoDots">'+dots.innerHTML+'</div>' : '');
+        box.classList.add('show');
+      } else {
+        box.classList.remove('show');
+      }
+    }
+  }
+
   window.renderMotoOrders = async function(options) {
     if (!isMoto()) return;
     const box = $('orders');
     if (!box) return;
+    syncPromoBanner();
     const silent = options?.silent === true;
     const existing = !!box.querySelector('.motoSingleCard,.motoEmpty');
     if (!silent && !existing) box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
@@ -214,7 +243,7 @@
     if($('bvMotoCleanStyle')) return;
     const s=document.createElement('style');
     s.id='bvMotoCleanStyle';
-    s.textContent='.motoSingleCard{margin:0 0 14px;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.motoCardTop,.motoFeeHeader{display:flex;align-items:center;justify-content:space-between;gap:12px}.motoCardTop small,.motoInfo small,.motoFeeHeader small{display:block;opacity:.65;font-size:11px}.motoCardTop strong{display:block;font-size:22px}.motoCardTop span{padding:7px 10px;border-radius:10px;background:rgba(229,9,20,.15);font-weight:800;font-size:12px}.motoCardBody h3{margin:16px 0 5px}.motoCardBody p{margin:0 0 14px}.motoInfo{display:grid;gap:10px}.motoInfo b{display:block;margin-top:3px}.motoFee{display:flex;justify-content:space-between;align-items:center;margin:15px 0;padding:12px;border-radius:12px;background:rgba(0,0,0,.16)}.motoFee strong{font-size:18px}.motoActionBtn{width:100%;min-height:48px;border:0;border-radius:12px;color:#fff;font-weight:900;cursor:pointer;pointer-events:auto;touch-action:manipulation}.motoActionBtn:disabled{opacity:.55}.motoCollect{background:linear-gradient(135deg,#e50914,#900007)}.motoDeliver{background:linear-gradient(135deg,#20a65a,#08783b)}.motoLoading,.motoEmpty{padding:35px 18px;text-align:center}.motoEmpty span{display:block;font-size:32px;margin-bottom:8px}.motoEmpty b,.motoEmpty small{display:block}.motoEmpty small{margin:7px 0 14px}.motoFeeFilter{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.03)}.motoFeeQuickFilters{display:flex;gap:8px;flex-wrap:wrap}.motoFeeQuickFilters button{min-height:42px;padding:0 14px;border:1px solid #343a44;border-radius:10px;background:#20242a;color:#fff;font-weight:800}.motoFeeQuickFilters button.active{background:#e50914;border-color:#e50914}.motoFeeFilter label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:800}.motoFeeFilter input{min-height:42px;padding:0 12px;border-radius:10px;border:1px solid #343a44;background:#080a0d;color:#fff}.motoFeeHeader{padding:8px 0 16px}.motoFeeHeader>div{display:flex;flex-direction:column;gap:3px}.motoFeeHeader strong{font-size:22px}.motoFeeOrder{display:flex;justify-content:space-between;gap:15px;padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}.motoFeeOrder small{display:block;opacity:.65;margin-top:3px}.motoFeeOrder b,.motoFeeOrder strong{display:block;margin-bottom:7px}';
+    s.textContent='.motoSingleCard{margin:0 0 14px;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.motoCardTop,.motoFeeHeader{display:flex;align-items:center;justify-content:space-between;gap:12px}.motoCardTop small,.motoInfo small,.motoFeeHeader small{display:block;opacity:.65;font-size:11px}.motoCardTop strong{display:block;font-size:22px}.motoCardTop span{padding:7px 10px;border-radius:10px;background:rgba(229,9,20,.15);font-weight:800;font-size:12px}.motoCardBody h3{margin:16px 0 5px}.motoCardBody p{margin:0 0 14px}.motoInfo{display:grid;gap:10px}.motoInfo b{display:block;margin-top:3px}.motoFee{display:flex;justify-content:space-between;align-items:center;margin:15px 0;padding:12px;border-radius:12px;background:rgba(0,0,0,.16)}.motoFee strong{font-size:18px}.motoActionBtn{width:100%;min-height:48px;border:0;border-radius:12px;color:#fff;font-weight:900;cursor:pointer;pointer-events:auto;touch-action:manipulation}.motoActionBtn:disabled{opacity:.55}.motoCollect{background:linear-gradient(135deg,#e50914,#900007)}.motoDeliver{background:linear-gradient(135deg,#20a65a,#08783b)}.motoLoading,.motoEmpty{padding:35px 18px;text-align:center}.motoEmpty span{display:block;font-size:32px;margin-bottom:8px}.motoEmpty b,.motoEmpty small{display:block}.motoEmpty small{margin:7px 0 14px}.motoFeeFilter{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.03)}.motoFeeQuickFilters{display:flex;gap:8px;flex-wrap:wrap}.motoFeeQuickFilters button{min-height:42px;padding:0 14px;border:1px solid #343a44;border-radius:10px;background:#20242a;color:#fff;font-weight:800}.motoFeeQuickFilters button.active{background:#e50914;border-color:#e50914}.motoFeeFilter label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:800}.motoFeeFilter input{min-height:42px;padding:0 12px;border-radius:10px;border:1px solid #343a44;background:#080a0d;color:#fff}.motoFeeHeader{padding:8px 0 16px}.motoFeeHeader>div{display:flex;flex-direction:column;gap:3px}.motoFeeHeader strong{font-size:22px}.motoFeeOrder{display:flex;justify-content:space-between;gap:15px;padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}.motoFeeOrder small{display:block;opacity:.65;margin-top:3px}.motoFeeOrder b,.motoFeeOrder strong{display:block;margin-bottom:7px}.motoPromoBanner{display:none;margin:0 0 18px}.motoPromoBanner.show{display:block}.motoPromoBanner .homePromoSlide{cursor:default}.motoPromoBanner .homePromoCopy{min-width:0}.motoPromoBanner .homePromoTrack{width:100%}';
     document.head.appendChild(s);
   }
 
@@ -223,6 +252,7 @@
     applyMenu();
     injectStyle();
     if(!isMoto()) return;
+    syncPromoBanner();
     const active=document.querySelector('.page.activePage')?.id||'';
     if(active==='page-pedidos') window.renderMotoOrders();
     else if(active==='page-taxa-entrega') window.renderMotoFeeOrders();
