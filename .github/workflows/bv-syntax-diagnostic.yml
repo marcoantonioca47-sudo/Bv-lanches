@@ -1,4 +1,4 @@
-name: BV syntax diagnostic
+name: BV loaded JavaScript diagnostic
 on:
   push:
     branches: [main]
@@ -7,10 +7,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check JavaScript syntax
+      - name: Check scripts loaded by index
         run: |
           set -e
-          for f in *.js; do
-            echo "=== $f ==="
-            node --check "$f"
-          done
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const srcs=[...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
+            .map(m=>m[1].split('?')[0])
+            .filter(s=>!/^https?:/i.test(s));
+          for(const src of srcs){
+            console.log('=== '+src+' ===');
+            if(!fs.existsSync(src)) throw new Error('Missing loaded script: '+src);
+            const cp=require('child_process').spawnSync(process.execPath,['--check',src],{encoding:'utf8'});
+            process.stdout.write(cp.stdout||'');
+            process.stderr.write(cp.stderr||'');
+            if(cp.status!==0) process.exit(cp.status||1);
+          }
+          console.log('ALL LOADED JAVASCRIPT: OK');
+          NODE
