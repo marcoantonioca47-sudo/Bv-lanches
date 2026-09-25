@@ -8,21 +8,59 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.250';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.252';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.250';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.252';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
   window.BV_MOTO_NOTIFIED=window.BV_MOTO_NOTIFIED||new Set();
   window.enableMotoNotifications=async()=>{
     try{
-      if('Notification' in window && Notification.permission==='default') await Notification.requestPermission();
+      // O áudio precisa ser desbloqueado durante o clique do usuário.
+      // No iPhone, pedir permissão antes de criar/resumir o AudioContext pode
+      // fazer o navegador perder o gesto do usuário e bloquear o som.
       const AC=window.AudioContext||window.webkitAudioContext;
-      if(AC){const ac=window.BV_MOTO_AUDIO_CTX||(window.BV_MOTO_AUDIO_CTX=new AC());if(ac.state==='suspended')await ac.resume();window.BV_MOTO_AUDIO_READY=true;}
-      window.toast?.('🔔 Alertas do motoboy ativados.');
-    }catch(e){console.warn('[MOTO NOTIFY]',e)}
+      if(AC){
+        const ac=window.BV_MOTO_AUDIO_CTX||(window.BV_MOTO_AUDIO_CTX=new AC());
+        if(ac.state==='suspended')await ac.resume();
+        window.BV_MOTO_AUDIO_READY=(ac.state==='running');
+        // Teste sonoro imediato para confirmar que o botão respondeu.
+        if(window.BV_MOTO_AUDIO_READY)motoBeep();
+      }
+
+      let notificationState='unsupported';
+      if('Notification' in window){
+        if(Notification.permission==='default'){
+          try{ notificationState=await Notification.requestPermission(); }
+          catch(e){ notificationState=Notification.permission||'denied'; }
+        }else{
+          notificationState=Notification.permission;
+        }
+      }
+
+      try{localStorage.setItem('bv_moto_alerts_enabled','1')}catch(e){}
+
+      if(notificationState==='granted'){
+        window.toast?.('🔔 Alertas ativados. O som de teste foi reproduzido.');
+      }else if(notificationState==='denied'){
+        window.toast?.('🔕 Notificações bloqueadas. Ative as notificações do app nos Ajustes do iPhone.');
+      }else if(notificationState==='unsupported'){
+        window.toast?.('🔔 Som ativado. Para notificação na tela, instale o app pela opção “Instalar app”.');
+      }else{
+        window.toast?.('🔔 Alertas sonoros ativados.');
+      }
+
+      const b=document.getElementById('bvMotoNotifyBtn');
+      if(b){
+        b.textContent=notificationState==='granted'?'🔔 Alertas ativos':'🔊 Som ativo';
+        b.dataset.enabled='1';
+      }
+    }catch(e){
+      console.warn('[MOTO NOTIFY]',e);
+      window.toast?.('Não foi possível ativar os alertas: '+String(e?.message||'erro').slice(0,120));
+    }
   };
   function motoBeep(){
     try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const ac=window.BV_MOTO_AUDIO_CTX||(window.BV_MOTO_AUDIO_CTX=new AC());if(ac.state==='suspended')return;const now=ac.currentTime;[0,0.18,0.36].forEach((t,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=i===1?1046:880;g.gain.setValueAtTime(0.0001,now+t);g.gain.exponentialRampToValueAtTime(0.18,now+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.13);o.connect(g);g.connect(ac.destination);o.start(now+t);o.stop(now+t+0.14)})}catch(e){console.warn('[MOTO BEEP]',e)}}
