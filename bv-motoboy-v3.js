@@ -8,10 +8,10 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.260';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.265';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.260';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.265';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -370,18 +370,30 @@
       if (rpc.error) throw rpc.error;
       if (rpc.data !== true) throw new Error('O servidor não confirmou a coleta do pedido.');
 
-      // Marque como entregue antes de qualquer nova consulta para evitar reaparição.
+      // Atualização otimista da interface: evita que um refresh/realtime concorrente
+      // coloque o pedido de volta no estado anterior enquanto o banco termina de propagar.
+      const card = button?.closest?.('.motoSingleCard');
       if (action === 'entregar') {
         window.BV_MOTO_DELIVERED.add(String(id));
-        const card = button?.closest?.('.motoSingleCard');
         if (card) {
           card.style.opacity = '0';
           card.style.transform = 'translateY(-8px)';
           card.style.transition = 'opacity .18s ease, transform .18s ease';
           setTimeout(() => card.remove(), 180);
         }
+      } else if (card) {
+        const badge = card.querySelector('.motoCardTop span');
+        if (badge) badge.textContent = 'Saiu para entrega';
+        button.dataset.action = 'entregar';
+        button.classList.remove('motoCollect');
+        button.classList.add('motoDeliver');
+        button.textContent = '✅ Confirmar entrega';
+        button.disabled = false;
+        button.removeAttribute('data-busy');
       }
-      await new Promise(resolve => setTimeout(resolve, 350));
+
+      // Confirma o estado persistido depois de a alteração ter sido propagada.
+      await new Promise(resolve => setTimeout(resolve, 650));
       await window.renderMotoOrders({silent:true});
       if ($('page-taxa-entrega')?.classList.contains('activePage')) {
         await window.renderMotoFeeOrders({silent:true});
