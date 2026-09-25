@@ -8,7 +8,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.128';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.130';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
 
   const allowed = new Set(['pedidos','taxa-entrega']);
@@ -172,11 +172,21 @@
       if (rpc.error) throw rpc.error;
       if (rpc.data !== true) throw new Error('O servidor não confirmou a coleta do pedido.');
 
+      // Ao confirmar a entrega, retire o pedido imediatamente da lista visível.
+      if (action === 'entregar') {
+        const card = button?.closest?.('.motoSingleCard');
+        if (card) {
+          card.style.opacity = '0';
+          card.style.transform = 'translateY(-8px)';
+          card.style.transition = 'opacity .18s ease, transform .18s ease';
+          setTimeout(() => card.remove(), 180);
+        }
+      }
       await window.renderMotoOrders({silent:true});
       if ($('page-taxa-entrega')?.classList.contains('activePage')) {
         await window.renderMotoFeeOrders({silent:true});
       }
-      window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido marcado como entregue.');
+      window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido removido da tela de pedidos.');
     } catch(e) {
       console.error('[MOTO AÇÃO]',e);
       window.toast?.('Erro ao atualizar pedido: '+String(e?.message||'Tente novamente.').slice(0,180));
