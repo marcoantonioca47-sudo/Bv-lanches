@@ -63,10 +63,12 @@
 
     const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id';
     const [prep,prod,route] = await Promise.all([
+      // Todos os pedidos em preparo ficam visíveis para todos os motoboys.
       client.from('orders').select(fields).eq('status','em_preparo')
-        .or('motoboy_id.is.null,motoboy_id.eq.'+user.id).order('created_at',{ascending:false}),
+        .order('created_at',{ascending:false}),
+      // Todos os pedidos em produção também ficam disponíveis para coleta.
       client.from('orders').select(fields).eq('status','em_producao')
-        .or('motoboy_id.is.null,motoboy_id.eq.'+user.id).order('created_at',{ascending:false}),
+        .order('created_at',{ascending:false}),
       client.from('orders').select(fields).eq('status','saiu_entrega')
         .eq('motoboy_id',user.id).order('created_at',{ascending:false})
     ]);
