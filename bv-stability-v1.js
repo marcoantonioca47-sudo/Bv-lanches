@@ -37,7 +37,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.264';
+  window.BV_STABILITY_VERSION='2026.09.25.266';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -644,11 +644,10 @@ window.BV_TRACKING_REALTIME=null;
     if(!user)return;
     window.BV_TRACKING_REALTIME=sb.channel('bv-tracking-'+user.id)
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'orders',filter:'user_id=eq.'+user.id},async payload=>{
+        // BV_REFRESH_ORDERS já redesenha o acompanhamento somente quando o
+        // pedido realmente mudou. Não chamar renderTracking novamente aqui,
+        // pois isso fazia o card oscilar a cada evento do Realtime.
         await window.BV_REFRESH_ORDERS?.();
-        if(document.getElementById('page-acompanhar')?.classList.contains('activePage')){
-          const updated=(window.orders||[]).find(x=>String(x.id)===String(payload.new?.id));
-          window.renderTracking?.(updated);
-        }
       })
       .subscribe(status=>{console.log('[BV TRACKING] Realtime:',status);});
   };
