@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.25.141';
+  window.BV_STABILITY_VERSION='2026.09.25.142';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -229,7 +229,7 @@
     const chart=$('dashboardChart');
     if(chart){
       const statusMap=[
-        ['recebido','Novo'],['em_preparo','Em preparo'],
+        ['recebido','Novo'],['em_preparo','Em preparo'],['em_producao','Em produção'],
         ['saiu_entrega','Saiu para entrega'],['entregue','Entregue'],['cancelado','Cancelado']
       ];
       const cs=statusMap.map(([raw])=>filtered.filter(o=>String(o.rawStatus||'')===raw).length);
