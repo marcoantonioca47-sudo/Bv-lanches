@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.25.141';
+  window.BV_ORDER_V2 = '2026.09.25.148';
 
   window.finish = async function(){
     const sb = getSB();
@@ -74,8 +74,14 @@
         return { product_id: String(p.id), quantity };
       });
 
-      const paymentRaw = localStorage.getItem('bv_payment') || 'Pix';
-      const payment = paymentRaw === 'Dinheiro' ? 'dinheiro' : paymentRaw === 'Cartão' ? 'cartao' : 'pix';
+      // A seleção visível na tela é a fonte oficial. O localStorage serve apenas como fallback.
+      const activePay = document.querySelector('#page-pedido .pay button.active');
+      const activeText = String(activePay?.textContent || '').toLowerCase();
+      const storedPay = String(localStorage.getItem('bv_payment') || '').toLowerCase();
+      let payment = activeText.includes('dinheiro') ? 'dinheiro' : activeText.includes('cart') ? 'cartao' : activeText.includes('pix') ? 'pix' :
+        (storedPay.includes('dinheiro') ? 'dinheiro' : storedPay.includes('cart') ? 'cartao' : 'pix');
+      const paymentLabel = payment === 'dinheiro' ? 'Dinheiro' : payment === 'cartao' ? 'Cartão' : 'Pix';
+      localStorage.setItem('bv_payment', paymentLabel);
       const address = delivery
         ? street + ', ' + num + (comp ? ' — ' + comp : '')
         : '';
