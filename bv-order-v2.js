@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.25.148';
+  window.BV_ORDER_V2 = '2026.09.25.149';
 
   window.finish = async function(){
     const sb = getSB();
@@ -77,9 +77,19 @@
       // A seleção visível na tela é a fonte oficial. O localStorage serve apenas como fallback.
       const activePay = document.querySelector('#page-pedido .pay button.active');
       const activeText = String(activePay?.textContent || '').toLowerCase();
+      const selectedPay = String(window.BV_PAYMENT || '').toLowerCase();
       const storedPay = String(localStorage.getItem('bv_payment') || '').toLowerCase();
-      let payment = activeText.includes('dinheiro') ? 'dinheiro' : activeText.includes('cart') ? 'cartao' : activeText.includes('pix') ? 'pix' :
-        (storedPay.includes('dinheiro') ? 'dinheiro' : storedPay.includes('cart') ? 'cartao' : 'pix');
+      // A seleção atual da tela tem prioridade absoluta. window.BV_PAYMENT é
+      // atualizado pelo botão e fica como segunda fonte; localStorage só é fallback.
+      let payment =
+        selectedPay.includes('dinheiro') ? 'dinheiro' :
+        selectedPay.includes('cart') ? 'cartao' :
+        selectedPay.includes('pix') ? 'pix' :
+        activeText.includes('dinheiro') ? 'dinheiro' :
+        activeText.includes('cart') ? 'cartao' :
+        activeText.includes('pix') ? 'pix' :
+        storedPay.includes('dinheiro') ? 'dinheiro' :
+        storedPay.includes('cart') ? 'cartao' : 'pix';
       const paymentLabel = payment === 'dinheiro' ? 'Dinheiro' : payment === 'cartao' ? 'Cartão' : 'Pix';
       localStorage.setItem('bv_payment', paymentLabel);
       const address = delivery
