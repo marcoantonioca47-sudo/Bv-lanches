@@ -84,5 +84,5 @@
     boot();
   }
 
-  window.BV_REALTIME_VERSION = '2026.09.25.2';
+  window.BV_REALTIME_VERSION = '2026.09.25.3';
 })();
