@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.25.147';
+  window.BV_STABILITY_VERSION='2026.09.25.148';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -52,7 +52,7 @@
     document.querySelectorAll('.sideNav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
     if(innerWidth<=850)$('sidebar')?.classList.remove('open');
     if(p==='cardapio'){window.renderProducts();window.BV_REFRESH_PRODUCTS?.();}
-    if(p==='pedido'){window.renderCart();setTimeout(window.loadProfile,50)}
+    if(p==='pedido'){window.initPaymentSelection?.();window.renderCart();setTimeout(window.loadProfile,50)}
     if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();}
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
@@ -124,7 +124,27 @@
     const n=c.reduce((s,x)=>s+(Number(x.q)||0),0);if($('count'))$('count').textContent=n;if($('sideCount'))$('sideCount').textContent=n;
   };
   window.mode=(m,b)=>{document.querySelectorAll('#page-pedido .tabs button').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_MODE=m;$('address')&&($('address').style.display=m==='entrega'?'block':'none');window.refreshNeighborhoodFee()};
-  window.pay=(p,b)=>{localStorage.setItem('bv_payment',p);document.querySelectorAll('#page-pedido .pay button').forEach(x=>x.classList.remove('active'));b?.classList.add('active');$('troco')?.classList.toggle('hide',p!=='Dinheiro')};
+  window.pay=(p,b)=>{
+    const label=String(p||'Pix');
+    window.BV_PAYMENT=label;
+    localStorage.setItem('bv_payment',label);
+    document.querySelectorAll('#page-pedido .pay button').forEach(x=>x.classList.toggle('active',x===b));
+    $('troco')?.classList.toggle('hide',label!=='Dinheiro');
+  };
+  window.initPaymentSelection=()=>{
+    const buttons=[...document.querySelectorAll('#page-pedido .pay button')];
+    if(!buttons.length)return;
+    const active=buttons.find(x=>x.classList.contains('active'));
+    if(active){
+      const t=String(active.textContent||'').toLowerCase();
+      const label=t.includes('dinheiro')?'Dinheiro':t.includes('cart')?'Cartão':'Pix';
+      window.BV_PAYMENT=label;
+      localStorage.setItem('bv_payment',label);
+      $('troco')?.classList.toggle('hide',label!=='Dinheiro');
+    }else{
+      window.pay('Pix',buttons[0]);
+    }
+  };
 
   let bvFeeTimer=null;
   window.refreshNeighborhoodFeeSoon=()=>{
