@@ -7,7 +7,10 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.25.242';
+  if(!$('bvDeliveryCardStyle')){
+    const st=document.createElement('style');st.id='bvDeliveryCardStyle';st.textContent='.bvDeliveryCard .orderBody{display:grid;gap:10px}.bvOrderCustomer{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.bvOrderCustomer b{font-size:18px}.bvOrderCustomer span{font-size:12px;opacity:.7;text-align:right}.bvOrderItems{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035)}.bvOrderItems small,.bvDeliveryTitle{font-size:10px;font-weight:900;letter-spacing:.12em;opacity:.65}.bvOrderItems p{margin:5px 0 0;line-height:1.45}.bvDeliveryBox{padding:13px 14px;border-radius:14px;background:rgba(229,9,20,.06);border:1px solid rgba(229,9,20,.18)}.bvAddressMain{margin-top:5px;font-weight:850;line-height:1.35}.bvAddressSub{margin-top:3px;font-size:13px;opacity:.75}.orderPaymentBadge{margin-top:0!important}.bvDeliveryCard .orderFoot{display:flex;align-items:end;justify-content:space-between;gap:12px}.bvDeliveryCard .orderFoot>div{display:flex;flex-direction:column;gap:3px}.bvDeliveryCard .orderFoot small{font-size:10px;letter-spacing:.1em;opacity:.65}.bvDeliveryCard .orderFoot strong{font-size:21px}@media(max-width:600px){.bvOrderCustomer{display:block}.bvOrderCustomer span{display:block;text-align:left;margin-top:3px}.bvDeliveryCard .orderFoot{align-items:stretch;flex-direction:column}.bvDeliveryCard .orderFoot select{width:100%}}';document.head.appendChild(st);
+  }
+  window.BV_STABILITY_VERSION='2026.09.25.257';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -241,8 +244,17 @@
     });
     b.innerHTML=a.length?a.map(o=>{
       const pm=String(o.payment||'').toLowerCase();
-      const paymentBadge=pm.includes('dinheiro')?'💵 Dinheiro':pm.includes('cart')?'💳 Cartão':'';
-      return `<article class="orderCard"><div class="orderHead"><div><small>PEDIDO</small><b>#${esc(window.orderLabel(o))}</b></div><span class="statusBadge">${esc(o.status)}</span></div><div class="orderBody"><b>${esc(o.customer||'Cliente')}</b><p>${esc(o.items||'')}</p><small>${esc(o.phone||'')}${o.address?' · '+esc(o.address.rua||'')+(o.address.bairro?' · '+esc(o.address.bairro):''):''}</small>${paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':''}</div><div class="orderFoot"><strong>${money(o.total)}</strong><select onchange="statusOrder('${esc(o.id)}',this.value)"><option value="">Alterar status</option><option value="recebido">Novo</option><option value="em_preparo">Em preparo</option><option value="em_producao">Em produção</option><option value="saiu_entrega">Saiu para entrega</option><option value="entregue">Entregue</option><option value="cancelado">Cancelado</option></select></div></article>`
+      const paymentBadge=pm.includes('dinheiro')?'💵 Dinheiro'+(Number(o.changeFor)>0?' · Troco para '+money(o.changeFor):''):pm.includes('cart')?'💳 Cartão':'';
+      return `<article class="orderCard bvDeliveryCard">
+        <div class="orderHead"><div><small>PEDIDO</small><b>#${esc(window.orderLabel(o))}</b></div><span class="statusBadge">${esc(o.status)}</span></div>
+        <div class="orderBody">
+          <div class="bvOrderCustomer"><b>${esc(o.customer||'Cliente')}</b><span>${esc(o.phone||'Telefone não informado')}</span></div>
+          <div class="bvOrderItems"><small>ITENS</small><p>${esc(o.items||'Itens do pedido')}</p></div>
+          <div class="bvDeliveryBox"><div class="bvDeliveryTitle">📍 ENTREGA</div><div class="bvAddressMain">${esc(o.address?.rua||'Endereço não informado')}</div>${o.address?.bairro?'<div class="bvAddressSub">Bairro: '+esc(o.address.bairro)+'</div>':''}</div>
+          ${paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':''}
+        </div>
+        <div class="orderFoot"><div><small>TOTAL</small><strong>${money(o.total)}</strong></div><select onchange="statusOrder('${esc(o.id)}',this.value)"><option value="">Alterar status</option><option value="recebido">Novo</option><option value="em_preparo">Em preparo</option><option value="em_producao">Em produção</option><option value="saiu_entrega">Saiu para entrega</option><option value="entregue">Entregue</option><option value="cancelado">Cancelado</option></select></div>
+      </article>`
     }).join(''):'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Altere os filtros ou aguarde novos pedidos.</small></div>';
   };
   window.statusOrder=async(id,s)=>{
@@ -497,12 +509,12 @@
       role=String(pr.data?.role||'usuario').trim().toLowerCase();
       window.BV_ROLE=role;
     }
-    let q=sb.from('orders').select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,pix_payment_id,pix_qr_code,pix_qr_code_base64,pix_expires_at').order('created_at',{ascending:false});
+    let q=sb.from('orders').select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,pix_payment_id,pix_qr_code,pix_qr_code_base64,pix_expires_at').order('created_at',{ascending:false});
     if(role==='motoboy')q=q.or('and(status.in.(em_preparo,em_producao),motoboy_id.is.null),and(status.in.(em_preparo,em_producao),motoboy_id.eq.'+user.id+'),and(status.eq.saiu_entrega,motoboy_id.eq.'+user.id+')');else if(!['administrador','admin'].includes(String(role).toLowerCase()))q=q.eq('user_id',user.id);
     const r=await q;if(r.error)return toast('Erro ao carregar pedidos: '+r.error.message);
     const ids=(r.data||[]).map(x=>x.id);let its=[];if(ids.length){const z=await sb.from('order_items').select('order_id,product_name,quantity').in('order_id',ids);if(!z.error)its=z.data||[]}
     const g={};its.forEach(i=>(g[i.order_id]??=[]).push(i));
-    window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,paymentStatus:o.payment_status||'pendente',status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,pixPaymentId:o.pix_payment_id||null,pixQrCode:o.pix_qr_code||'',pixQrCodeBase64:o.pix_qr_code_base64||'',pixExpiresAt:o.pix_expires_at||null,items:(g[o.id]||[]).map(i=>i.quantity+'x '+i.product_name).join(', ')}));
+    window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,changeFor:Number(o.change_for)||null,paymentStatus:o.payment_status||'pendente',status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,pixPaymentId:o.pix_payment_id||null,pixQrCode:o.pix_qr_code||'',pixQrCodeBase64:o.pix_qr_code_base64||'',pixExpiresAt:o.pix_expires_at||null,items:(g[o.id]||[]).map(i=>i.quantity+'x '+i.product_name).join(', ')}));
     if(role==='motoboy'){window.renderMotoOrders?.();return;} window.renderAdmin();window.renderDashboard();window.renderTracking();window.startGlobalPixPolling?.();
   };
   window.BV_GLOBAL_PIX_TIMER=null;
