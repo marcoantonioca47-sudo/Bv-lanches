@@ -1,0 +1,234 @@
+/* BV LANCHES — MOTOBOY v3 — telas únicas e fluxo único */
+(() => {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const isMoto = () => ['motoboy'].includes(String(window.BV_ROLE || '').toLowerCase());
+  const db = () => window.BV_SUPABASE;
+
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.3';
+
+  function motoAllowedPage(p) {
+    return p === 'pedidos' || p === 'taxa-entrega';
+  }
+
+  /* Uma única camada de navegação para o motoboy. */
+  const baseShowPage = window.showPage;
+  window.showPage = function(page, internal) {
+    if (isMoto() && !motoAllowedPage(page)) page = 'pedidos';
+    return typeof baseShowPage === 'function'
+      ? baseShowPage.call(this,page,internal)
+      : undefined;
+  };
+
+  function hideMotoAdminUi() {
+    if (!isMoto()) return;
+    document.querySelectorAll('.sideNav [data-page]').forEach(el => {
+      const allowed = el.dataset.page === 'pedidos' || el.dataset.page === 'taxa-entrega';
+      const isAdminDuplicate = el.classList.contains('adminOnly') || el.classList.contains('adminDeliveryFeeLink');
+      el.style.setProperty('display', allowed && !isAdminDuplicate ? '' : 'none','important');
+    });
+    document.querySelectorAll('.navTitle,.sideBottom .adminBtn,.cartTop,.homeNotificationBar').forEach(el => {
+      el.style.setProperty('display','none','important');
+    });
+  }
+
+  function orderCard(o,items) {
+    const status = String(o.status);
+    const inRoute = status === 'saiu_entrega';
+    const label = inRoute ? 'Saiu para entrega' : status === 'em_producao' ? 'Em produção' : 'Em preparo';
+    const action = inRoute
+      ? '<button type="button" class="motoActionBtn motoDeliver" data-action="entregar" data-order="'+esc(o.id)+'">✅ Confirmar entrega</button>'
+      : '<button type="button" class="motoActionBtn motoCollect" data-action="coletar" data-order="'+esc(o.id)+'">📦 Coletar pedido</button>';
+    const itemsText = items.length
+      ? items.map(i => esc(i.quantity)+'x '+esc(i.product_name)).join(', ')
+      : 'Itens do pedido';
+    const address = [o.address,o.neighborhood].filter(Boolean).map(esc).join(' · ') || 'Endereço não informado';
+    return '<article class="motoSingleCard">'+
+      '<div class="motoCardTop"><div><small>PEDIDO</small><strong>#'+esc(o.order_number || String(o.id).slice(0,6))+'</strong></div><span>'+esc(label)+'</span></div>'+
+      '<div class="motoCardBody"><h3>'+esc(o.customer_name || 'Cliente')+'</h3><p>'+itemsText+'</p>'+
+      '<div class="motoInfo"><div><small>📍 Endereço</small><b>'+address+'</b></div><div><small>📱 Celular</small><b>'+esc(o.phone || 'Não informado')+'</b></div></div></div>'+
+      '<div class="motoFee"><span>Taxa de entrega</span><strong>'+money(o.delivery_fee)+'</strong></div>'+
+      action+
+    '</article>';
+  }
+
+  async function queryMotoOrders() {
+    const client = db();
+    if (!client) throw new Error('Banco de dados indisponível.');
+    const {data:{user},error:uerr} = await client.auth.getUser();
+    if (uerr || !user) throw new Error('Sessão do motoboy não encontrada.');
+
+    const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id';
+    const [prep,prod,route] = await Promise.all([
+      client.from('orders').select(fields).eq('status','em_preparo')
+        .or('motoboy_id.is.null,motoboy_id.eq.'+user.id).order('created_at',{ascending:false}),
+      client.from('orders').select(fields).eq('status','em_producao')
+        .or('motoboy_id.is.null,motoboy_id.eq.'+user.id).order('created_at',{ascending:false}),
+      client.from('orders').select(fields).eq('status','saiu_entrega')
+        .eq('motoboy_id',user.id).order('created_at',{ascending:false})
+    ]);
+    const err = prep.error || prod.error || route.error;
+    if (err) throw err;
+
+    const map = new Map();
+    [...(prep.data||[]),...(prod.data||[]),...(route.data||[])].forEach(o => map.set(String(o.id),o));
+    const rows = [...map.values()].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+
+    const items = {};
+    if (rows.length) {
+      const ir = await client.from('order_items').select('order_id,product_name,quantity').in('order_id',rows.map(o=>o.id));
+      if (!ir.error) (ir.data||[]).forEach(i => (items[i.order_id] ||= []).push(i));
+    }
+    return {rows,items};
+  }
+
+  window.renderMotoOrders = async function() {
+    if (!isMoto()) return;
+    const box = $('orders');
+    if (!box) return;
+    const filters = $('adminOrderFilters');
+    if (filters) filters.style.display='none';
+
+    box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
+
+    try {
+      const {rows,items} = await queryMotoOrders();
+      if (!rows.length) {
+        box.innerHTML='<div class="motoEmpty"><span>🏍️</span><b>Nenhum pedido disponível</b><small>Pedidos em preparo ou produção aparecerão aqui. Após coletado, o pedido permanece aqui até a entrega.</small></div>';
+        return;
+      }
+      box.innerHTML=rows.map(o=>orderCard(o,items[o.id]||[])).join('');
+    } catch(e) {
+      console.error('[BV MOTO v3]',e);
+      box.innerHTML='<div class="motoEmpty"><span>⚠️</span><b>Erro ao carregar pedidos</b><small>'+esc(e?.message||'Erro de conexão.')+'</small><button type="button" id="motoRetry">Tentar novamente</button></div>';
+      $('motoRetry')?.addEventListener('click',window.renderMotoOrders);
+    }
+  };
+
+  async function motoAction(id,action) {
+    if (!isMoto()) return;
+    const client=db();
+    if (!client) return;
+    document.querySelectorAll('.motoActionBtn').forEach(b=>b.disabled=true);
+    try {
+      const r=await client.rpc('motoboy_collect_or_deliver',{p_order_id:id,p_action:action});
+      if (r.error) throw r.error;
+      await window.renderMotoOrders();
+      await window.renderMotoFeeOrders();
+      window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido marcado como entregue.');
+    } catch(e) {
+      console.error('[BV MOTO ACTION v3]',e);
+      window.toast?.('Não foi possível atualizar o pedido: '+String(e?.message||'Erro').slice(0,180));
+    } finally {
+      document.querySelectorAll('.motoActionBtn').forEach(b=>b.disabled=false);
+    }
+  }
+  window.motoAction = motoAction;
+  window.motoFinish = id => motoAction(id,'entregar');
+
+  window.renderMotoFeeOrders = async function() {
+    if (!isMoto()) return;
+    const box=$('motoFeeOrders');
+    if (!box) return;
+    box.innerHTML='<div class="motoLoading">⏳ Carregando taxas...</div>';
+
+    try {
+      const client=db();
+      const {data:{user},error:uerr}=await client.auth.getUser();
+      if (uerr || !user) throw new Error('Sessão do motoboy não encontrada.');
+      const r=await client.from('orders')
+        .select('id,order_number,delivery_fee,created_at,motoboy_id')
+        .eq('status','entregue').eq('motoboy_id',user.id)
+        .order('created_at',{ascending:false});
+      if (r.error) throw r.error;
+
+      const rows=r.data||[];
+      const total=rows.reduce((n,o)=>n+Number(o.delivery_fee||0),0);
+      box.innerHTML=
+        '<div class="motoFeeHead"><div><small>MINHAS ENTREGAS</small><h3>Taxas recebidas</h3></div><strong>'+money(total)+'</strong></div>'+
+        '<div class="motoFeeCount">'+rows.length+' entrega'+(rows.length===1?'':'s')+' confirmada'+(rows.length===1?'':'s')+'</div>'+
+        (rows.length
+          ? rows.map(o=>'<div class="motoFeeRow"><div><b>#'+esc(o.order_number||String(o.id).slice(0,6))+'</b><small>'+new Date(o.created_at).toLocaleDateString('pt-BR')+'</small></div><strong>'+money(o.delivery_fee)+'</strong></div>').join('')
+          : '<div class="motoEmpty"><span>💰</span><b>Nenhuma taxa registrada</b><small>As taxas aparecem após as entregas serem confirmadas.</small></div>');
+    } catch(e) {
+      console.error('[BV MOTO FEES v3]',e);
+      box.innerHTML='<div class="motoEmpty"><span>⚠️</span><b>Erro ao carregar taxas</b><small>'+esc(e?.message||'Erro de conexão.')+'</small><button type="button" id="motoFeeRetry">Tentar novamente</button></div>';
+      $('motoFeeRetry')?.addEventListener('click',window.renderMotoFeeOrders);
+    }
+  };
+
+  function bindActions() {
+    document.querySelectorAll('.motoActionBtn').forEach(btn=>{
+      if (btn.dataset.bound) return;
+      btn.dataset.bound='1';
+      btn.addEventListener('click',()=>motoAction(btn.dataset.order,btn.dataset.action));
+    });
+  }
+
+  const observer=new MutationObserver(()=>bindActions());
+  observer.observe(document.body,{subtree:true,childList:true});
+
+  function showMoto(page) {
+    hideMotoAdminUi();
+    window.showPage(page,true);
+    if (page==='pedidos') window.renderMotoOrders();
+    if (page==='taxa-entrega') window.renderMotoFeeOrders();
+  }
+
+  const oldShow=window.showPage;
+  window.showPage=function(page,internal) {
+    if (isMoto() && !motoAllowedPage(page)) page='pedidos';
+    return oldShow.call(this,page,internal);
+  };
+
+  document.addEventListener('click',e=>{
+    const btn=e.target.closest('.motoActionBtn');
+    if (btn) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  },true);
+
+  const style=document.createElement('style');
+  style.textContent=
+    '.motoSingleCard{margin:0 0 14px;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}'+
+    '.motoCardTop,.motoFeeHead,.motoFeeRow{display:flex;align-items:center;justify-content:space-between;gap:12px}'+
+    '.motoCardTop small,.motoFeeHead small,.motoInfo small{display:block;opacity:.65;font-size:11px}'+
+    '.motoCardTop strong{display:block;font-size:22px;margin-top:3px}'+
+    '.motoCardTop span{padding:7px 10px;border-radius:10px;background:rgba(229,9,20,.15);font-weight:800;font-size:12px}'+
+    '.motoCardBody h3{margin:16px 0 5px}.motoCardBody p{margin:0 0 14px;opacity:.85}'+
+    '.motoInfo{display:grid;gap:10px}.motoInfo b{display:block;margin-top:3px}'+
+    '.motoFee{display:flex;justify-content:space-between;align-items:center;margin:15px 0;padding:12px;border-radius:12px;background:rgba(0,0,0,.16)}'+
+    '.motoFee strong{font-size:18px}'+
+    '.motoActionBtn{width:100%;min-height:48px;border:0;border-radius:12px;color:#fff;font-weight:900;cursor:pointer}.motoCollect{background:linear-gradient(135deg,#e50914,#900007)}.motoDeliver{background:linear-gradient(135deg,#20a65a,#08783b)}.motoActionBtn:disabled{opacity:.55}'+
+    '.motoLoading,.motoEmpty{padding:35px 18px;text-align:center}.motoEmpty span{display:block;font-size:32px;margin-bottom:8px}.motoEmpty b,.motoEmpty small{display:block}.motoEmpty small{margin:7px 0 14px;opacity:.7}'+
+    '.motoFeeHead{padding:5px 0 14px}.motoFeeHead h3{margin:4px 0}.motoFeeHead>strong{font-size:22px}.motoFeeCount{margin-bottom:12px;opacity:.7}.motoFeeRow{padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}.motoFeeRow small{display:block;opacity:.65;margin-top:3px}';
+  document.head.appendChild(style);
+
+  function boot() {
+    hideMotoAdminUi();
+    if (isMoto()) {
+      const active=document.querySelector('.page.activePage')?.id;
+      if (!['page-pedidos','page-taxa-entrega'].includes(active)) {
+        window.showPage('pedidos',true);
+      } else if (active==='page-pedidos') {
+        window.renderMotoOrders();
+      } else {
+        window.renderMotoFeeOrders();
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,150));
+  const originalLoadApp=window.loadApp;
+  if (typeof originalLoadApp==='function') {
+    window.loadApp=async function() {
+      const r=await originalLoadApp.apply(this,arguments);
+      setTimeout(boot,100);
+      return r;
+    };
+  }
+})();
