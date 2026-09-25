@@ -1,22 +1,22 @@
 /* BV LANCHES — camada de estabilidade final
-   Mantém o Motoboy somente em Pedidos e Taxa de entrega.
-   Evita conflitos de navegação entre módulos antigos.
+   Camada leve de compatibilidade. A limpeza completa do Motoboy fica
+   centralizada em bv-motoboy-v3.js para evitar listeners/loops duplicados.
 */
 (()=>{
  'use strict';
- const moto=()=>String(window.BV_ROLE||'').toLowerCase()==='motoboy';
- const allowed=new Set(['pedidos','taxa-entrega']);
+ window.BV_CLEANUP_VERSION='2026.09.25.140';
  function apply(){
-   if(!moto()) return;
+   if(String(window.BV_ROLE||'').toLowerCase()!=='motoboy') return;
+   const allowed=new Set(['pedidos','taxa-entrega']);
    document.querySelectorAll('.sideNav [data-page]').forEach(el=>{
      const p=el.dataset.page;
-     el.style.display=allowed.has(p)?'':'none';
+     el.style.setProperty('display',allowed.has(p)?'':'none','important');
    });
-   document.querySelectorAll('.sideNav .navTitle,.sideNav .adminOnly,.sideBottom .adminOnly').forEach(el=>el.style.display='none');
-   document.querySelectorAll('.cartTop,.floatingCart,.homeNotificationBar').forEach(el=>el.style.setProperty('display','none','important'));
+   document.querySelectorAll('.sideNav .navTitle,.sideNav .adminOnly,.sideBottom .adminOnly').forEach(el=>{
+     el.style.setProperty('display','none','important');
+   });
  }
-
- window.BV_CLEANUP_VERSION='2026.09.25.124';
- document.addEventListener('DOMContentLoaded',()=>{hook();setTimeout(apply,300);setTimeout(apply,1000)});
- window.addEventListener('load',()=>{hook();apply()});
+ const boot=()=>{apply();setTimeout(apply,250);};
+ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true});
+ else boot();
 })();
