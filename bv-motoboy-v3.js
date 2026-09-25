@@ -84,39 +84,10 @@
       actionButton(o)+'</article>';
   }
 
-  function syncPromoBanner() {
-    if (!isMoto()) return;
-    const page = $('page-pedidos');
-    const orders = $('orders');
-    if (!page || !orders) return;
-    try { window.renderHomePromoBanner?.(); } catch(e) {}
-    let box = $('motoboyPromoBanner');
-    if (!box) {
-      box = document.createElement('section');
-      box.id = 'motoboyPromoBanner';
-      box.className = 'homePromoBanner motoPromoBanner';
-      box.setAttribute('aria-label','Promoções ativas');
-      orders.parentNode?.insertBefore(box, orders);
-    }
-    const source = $('homePromoBanner');
-    if (source) {
-      const track = source.querySelector('#homePromoTrack');
-      const dots = source.querySelector('#homePromoDots');
-      if (track && track.innerHTML.trim()) {
-        box.innerHTML = '<div class="homePromoTrack">'+track.innerHTML+'</div>' +
-          (dots ? '<div class="homePromoDots">'+dots.innerHTML+'</div>' : '');
-        box.classList.add('show');
-      } else {
-        box.classList.remove('show');
-      }
-    }
-  }
-
   window.renderMotoOrders = async function(options) {
     if (!isMoto()) return;
     const box = $('orders');
     if (!box) return;
-    syncPromoBanner();
     const silent = options?.silent === true;
     const existing = !!box.querySelector('.motoSingleCard,.motoEmpty');
     if (!silent && !existing) box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
@@ -252,7 +223,6 @@
     applyMenu();
     injectStyle();
     if(!isMoto()) return;
-    syncPromoBanner();
     const active=document.querySelector('.page.activePage')?.id||'';
     if(active==='page-pedidos') window.renderMotoOrders();
     else if(active==='page-taxa-entrega') window.renderMotoFeeOrders();
