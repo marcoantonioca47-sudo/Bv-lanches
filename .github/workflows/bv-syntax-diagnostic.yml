@@ -1,0 +1,16 @@
+name: BV syntax diagnostic
+on:
+  push:
+    branches: [main]
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          set -e
+          for f in *.js; do
+            echo "=== $f ==="
+            node --check "$f"
+          done
