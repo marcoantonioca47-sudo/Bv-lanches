@@ -119,13 +119,4 @@
     if (isAdmin()) return renderAdminFees(options);
     return typeof previous === 'function' ? previous() : undefined;
   };
-
-  const previousShowPage = window.showPage;
-  window.showPage = function(page, internal) {
-    const result = typeof previousShowPage === 'function'
-      ? previousShowPage.call(this,page,internal)
-      : undefined;
-    if (page === 'taxa-entrega' && isAdmin()) setTimeout(renderAdminFees,0);
-    return result;
-  };
 })();
