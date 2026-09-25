@@ -87,14 +87,18 @@
     return {rows,items};
   }
 
-  window.renderMotoOrders = async function() {
+  window.renderMotoOrders = async function(options) {
     if (!isMoto()) return;
     const box = $('orders');
     if (!box) return;
+    const silent = options === false || options?.silent === true;
     const filters = $('adminOrderFilters');
     if (filters) filters.style.display='none';
 
-    box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
+    // Não apaga a lista atual durante atualizações automáticas.
+    // A mensagem de carregamento aparece somente quando a tela ainda está vazia.
+    const hasContent = !!box.querySelector('.motoSingleCard,.motoEmpty');
+    if (!silent && !hasContent) box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
 
     try {
       const {rows,items} = await queryMotoOrders();
@@ -135,7 +139,7 @@
       if (r.error) throw r.error;
 
       // Atualiza a lista depois da confirmação sem bloquear ações de outros pedidos.
-      await window.renderMotoOrders();
+      await window.renderMotoOrders({silent:true});
       await window.renderMotoFeeOrders();
       window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido marcado como entregue.');
     } catch(e) {
