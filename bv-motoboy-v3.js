@@ -8,10 +8,10 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.270';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.272';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.270';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.272';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -126,7 +126,7 @@
       if(!o.id)return;
       const status=String(o.status||'').toLowerCase();
       const oldStatus=String(payload.old?.status||'').toLowerCase();
-      const available=status==='em_producao';
+      const available=['em_preparo','em_producao'].includes(status);
       const becameAvailable=available && oldStatus!==status;
       if((payload.eventType==='INSERT'&&available)|| (payload.eventType==='UPDATE'&&becameAvailable)){
         motoVisualNotify(o);
@@ -260,7 +260,9 @@
   }
 
   function actionButton(o) {
-    const action = o.status === 'saiu_entrega' ? 'entregar' : 'coletar';
+    const status=String(o.status||'').toLowerCase();
+    if(status==='em_preparo') return '<div class="motoWaiting">⏳ Aguardando ficar pronto</div>';
+    const action = status === 'saiu_entrega' ? 'entregar' : 'coletar';
     const text = action === 'coletar' ? '📦 Coletar pedido' : '✅ Confirmar entrega';
     const cls = action === 'coletar' ? 'motoCollect' : 'motoDeliver';
     return '<button type="button" class="motoActionBtn '+cls+'" data-order-id="'+esc(o.id)+'" data-action="'+action+'" onclick="event.preventDefault();event.stopPropagation();window.motoAction(this.dataset.orderId,this.dataset.action,this);return false;">'+text+'</button>';
@@ -275,7 +277,7 @@
 
     const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for';
     const results = await Promise.all([
-      client.from('orders').select(fields).eq('status','em_producao').order('created_at',{ascending:false}),
+      client.from('orders').select(fields).in('status',['em_preparo','em_producao']).order('created_at',{ascending:false}),
       client.from('orders').select(fields).eq('status','saiu_entrega').eq('motoboy_id',user.id).order('created_at',{ascending:false})
     ]);
     const bad = results.find(x => x.error);
@@ -328,7 +330,7 @@
       const {rows,items} = await getOrders();
       window.motoCheckNewOrders?.(rows);
       if (!rows.length) {
-        box.innerHTML='<div class="motoEmpty"><span>🏍️</span><b>Nenhum pedido disponível</b><small>Pedidos prontos aparecerão aqui.</small></div>';
+        box.innerHTML='<div class="motoEmpty"><span>🏍️</span><b>Nenhum pedido disponível</b><small>Pedidos em preparo e prontos aparecerão aqui.</small></div>';
         return;
       }
       box.innerHTML=rows.map(o=>card(o,items[o.id]||[])).join('');
