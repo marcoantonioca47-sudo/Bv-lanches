@@ -29,11 +29,8 @@
         window.renderMotoFeeOrders?.({silent:true});
       }
       window.renderDashboard?.();
-      if (typeof window.renderTracking === 'function') {
-        const id = localStorage.getItem('bv_track_id');
-        const found = (window.orders || []).find(o => String(o.id) === String(id));
-        if (found) window.renderTracking(found);
-      }
+      // BV_REFRESH_ORDERS já atualiza a tela de acompanhamento somente quando
+      // o conteúdo mudou. Não redesenhar aqui para evitar oscilação.
     } catch (e) {
       console.warn('[BV REALTIME] atualização:', reason, e);
     } finally {
@@ -84,5 +81,5 @@
     boot();
   }
 
-  window.BV_REALTIME_VERSION = '2026.09.25.3';
+  window.BV_REALTIME_VERSION = '2026.09.25.4';
 })();
