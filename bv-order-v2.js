@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.25.160';
+  window.BV_ORDER_V2 = '2026.09.25.282';
 
   window.finish = async function(){
     const sb = getSB();
@@ -172,13 +172,21 @@
 
       const created=(window.orders || []).find(o=>String(o.id)===String(orderId));
       if(payment==='pix'){
-        // Não bloquear a tela com alert(): o QR Code deve aparecer imediatamente
-        // assim que o pedido for finalizado.
         if(window.BV_LAST_PIX_ERROR){
-          msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' criado, mas o PIX ainda não pôde ser gerado.');
+          window.bvModal?.({
+            type:'info',icon:'PIX',kicker:'PEDIDO CRIADO',
+            title:'Pedido enviado',
+            message:'Pedido <strong>#'+String(created?.orderNumber || '').padStart(3,'0')+'</strong> foi criado. O código PIX ainda não pôde ser gerado. Você pode tentar novamente pelo acompanhamento.',
+            button:'Entendi'
+          }) || msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' criado, mas o PIX ainda não pôde ser gerado.');
         }
       }else{
-        msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' enviado com sucesso!');
+        window.bvModal?.({
+          type:'success',icon:'✓',kicker:'BV LANCHES',
+          title:'Pedido enviado!',
+          message:'Seu pedido <strong>#'+String(created?.orderNumber || '').padStart(3,'0')+'</strong> foi enviado com sucesso. Agora você pode acompanhar o preparo e a entrega em tempo real.',
+          button:'Acompanhar pedido'
+        },()=>window.showPage?.('acompanhar')) || msg('Pedido #' + String(created?.orderNumber || '').padStart(3,'0') + ' enviado com sucesso!');
       }
     } catch(e) {
       console.error('[BV ORDER V2] Falha ao finalizar',e);
