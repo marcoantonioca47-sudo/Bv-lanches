@@ -7,7 +7,7 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.BV_STABILITY_VERSION='2026.09.24.85';
+  window.BV_STABILITY_VERSION='2026.09.24.86';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -581,11 +581,9 @@
     const isCollect=String(stage)==='em_preparo';
     const isFinish=String(stage)==='saiu_entrega';
     if(!isCollect&&!isFinish)return toast('Etapa do pedido inválida.');
-    const r=await sb.rpc('motoboy_update_delivery',{
+    const r=await sb.rpc('motoboy_collect_or_deliver',{
       p_order_id:id,
-      p_fee_collected:isFinish,
-      p_mark_delivered:isFinish,
-      p_collect:isCollect
+      p_action:isCollect?'coletar':'entregar'
     });
     if(r.error)return toast('Erro: '+r.error.message);
     await window.BV_REFRESH_ORDERS();
