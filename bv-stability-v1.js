@@ -37,7 +37,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.274';
+  window.BV_STABILITY_VERSION='2026.09.25.275';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
@@ -264,7 +264,7 @@
     const b=$('orders');if(!b)return;
     const q=norm($('orderSearch')?.value||''),sf=$('orderStatusFilter')?.value||'',pf=$('orderPaymentFilter')?.value||'',df=$('orderDateFilter')?.value||'',now=Date.now();
     const filtered=(window.orders||[]).filter(o=>{
-      if(o.rawStatus==='entregue')return false;
+      if(['entregue','cancelado'].includes(String(o.rawStatus||'').toLowerCase()))return false;
       const text=norm([o.customer,o.phone,o.address?.rua,o.address?.bairro,window.orderLabel(o),o.id].join(' '));
       if(q&&!text.includes(q))return false;
       const rawStatus=String(o.rawStatus||'').toLowerCase();
