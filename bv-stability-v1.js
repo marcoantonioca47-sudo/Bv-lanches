@@ -310,7 +310,19 @@
       (!novos.length&&!andamento.length?'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Novos pedidos aparecerão automaticamente aqui.</small></div>':'');
     if(novos.length)b.scrollIntoView({block:'nearest',behavior:'smooth'});
   };
-  window.cancelOrder=async(id)=>{\n    if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');\n    const o=(window.orders||[]).find(x=>String(x.id)===String(id));\n    if(!o)return toast('Pedido não encontrado. Atualize a lista e tente novamente.');\n    if(String(o.rawStatus||'').toLowerCase()!=='em_preparo')return toast('Somente pedidos em preparo podem ser cancelados.');\n    if(!confirm('Cancelar este pedido?'))return;\n    const r=await sb.from('orders').update({status:'cancelado',updated_at:new Date().toISOString()}).eq('id',id).eq('status','em_preparo');\n    if(r.error)return toast('Não foi possível cancelar o pedido: '+r.error.message);\n    window.orders=(window.orders||[]).filter(x=>String(x.id)!==String(id));\n    window.renderAdmin?.();\n    toast('Pedido cancelado.');\n  };\n  window.statusOrder=async(id,s)=>{
+  window.cancelOrder=async(id)=>{
+    if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
+    const o=(window.orders||[]).find(x=>String(x.id)===String(id));
+    if(!o)return toast('Pedido não encontrado. Atualize a lista e tente novamente.');
+    if(String(o.rawStatus||'').toLowerCase()!=='em_preparo')return toast('Somente pedidos em preparo podem ser cancelados.');
+    if(!confirm('Cancelar este pedido?'))return;
+    const r=await sb.from('orders').update({status:'cancelado',updated_at:new Date().toISOString()}).eq('id',id).eq('status','em_preparo');
+    if(r.error)return toast('Não foi possível cancelar o pedido: '+r.error.message);
+    window.orders=(window.orders||[]).filter(x=>String(x.id)!==String(id));
+    window.renderAdmin?.();
+    toast('Pedido cancelado.');
+  };
+  window.statusOrder=async(id,s)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
     s=String(s||'').trim().toLowerCase();
     if(!['em_preparo','em_producao'].includes(s))return toast('Status inválido para esta etapa.');
