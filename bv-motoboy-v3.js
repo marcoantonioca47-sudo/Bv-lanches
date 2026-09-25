@@ -8,13 +8,29 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.11';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.125';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
 
   const allowed = new Set(['inicio','cardapio','pedido','acompanhar','pedidos','taxa-entrega']);
 
   function applyMenu() {
     if (!isMoto()) return;
+    // Na aba Pedidos do motoboy, manter somente a pesquisa.
+    const filterBox = document.getElementById('adminOrderFilters');
+    if (filterBox) {
+      filterBox.style.setProperty('display','block','important');
+      filterBox.querySelector('.filterHeader')?.style.setProperty('display','none','important');
+      ['orderStatusFilter','orderPaymentFilter','orderDateFilter'].forEach(id => {
+        document.getElementById(id)?.style.setProperty('display','none','important');
+      });
+      const search = document.getElementById('orderSearch');
+      if (search) {
+        search.style.setProperty('display','block','important');
+        search.placeholder = '🔎 Pesquisar cliente, pedido, telefone ou endereço...';
+        search.oninput = () => filterMotoCards(search.value);
+      }
+      filterBox.querySelector('.filterGrid')?.style.setProperty('display','block','important');
+    }
     document.querySelectorAll('.sideNav [data-page]').forEach(el => {
       const page = el.dataset.page;
       const admin = el.classList.contains('adminOnly') || el.classList.contains('adminDeliveryFeeLink');
@@ -72,6 +88,14 @@
       actionButton(o)+'</article>';
   }
 
+  function filterMotoCards(value) {
+    if (!isMoto()) return;
+    const term=String(value||'').trim().toLowerCase();
+    document.querySelectorAll('#orders .motoSingleCard').forEach(card => {
+      card.style.display = !term || card.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+  }
+
   window.renderMotoOrders = async function(options) {
     if (!isMoto()) return;
     const box = $('orders');
@@ -87,6 +111,8 @@
         return;
       }
       box.innerHTML=rows.map(o=>card(o,items[o.id]||[])).join('');
+      const search=document.getElementById('orderSearch');
+      if (search) filterMotoCards(search.value);
     } catch(e) {
       console.error('[MOTO PEDIDOS]',e);
       box.innerHTML='<div class="motoEmpty"><span>⚠️</span><b>Erro ao carregar pedidos</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" id="motoRetry">Tentar novamente</button></div>';
