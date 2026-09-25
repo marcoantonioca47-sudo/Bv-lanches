@@ -302,7 +302,7 @@
     const section=(title,sub,rows,cls)=>rows.length?
       '<section class="bvProductionSection '+cls+'"><div class="bvProductionSectionHead"><div><span>'+title+'</span><small>'+sub+'</small></div><strong>'+rows.length+'</strong></div><div class="bvProductionGrid">'+rows.map(card).join('')+'</div></section>':'';
     b.innerHTML=section('🔔 NOVOS PEDIDOS','Aguardando o administrador iniciar o preparo.',novos,'bvNewOrdersSection')+
-      section('EM PRODUÇÃO / ENTREGA','Os demais status são apenas acompanhados nesta tela.',andamento,'bvProductionSectionMuted')+
+      section('PRONTOS / ENTREGA','Os demais status são apenas acompanhados nesta tela.',andamento,'bvProductionSectionMuted')+
       (!novos.length&&!andamento.length?'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Novos pedidos aparecerão automaticamente aqui.</small></div>':'');
     if(novos.length)b.scrollIntoView({block:'nearest',behavior:'smooth'});
   };
