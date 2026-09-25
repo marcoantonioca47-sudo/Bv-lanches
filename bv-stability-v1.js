@@ -715,55 +715,53 @@
     if(!sb)return;
     if(!firstLoginDone()){ $('login')&&$('login').style.setProperty('display','flex','important'); return; }
 
-    // Abre a interface imediatamente usando o último perfil/produtos salvos.
-    // As informações do Supabase são atualizadas em segundo plano.
-    let cachedProfile=null;
-    try{cachedProfile=JSON.parse(localStorage.getItem('bv_profile_cache')||'null')}catch(e){}
+    // A função de perfil é sempre validada no Supabase antes de aplicar permissões.
+    // Isso evita que o cache de uma conta administradora apareça na conta do motoboy.
+    const {data:{user},error:authError}=await sb.auth.getUser();
+    if(authError||!user){
+      $('login')&&$('login').style.setProperty('display','flex','important');
+      return;
+    }
+
     let cachedProducts=null;
     try{cachedProducts=JSON.parse(localStorage.getItem('bv_products')||'null')}catch(e){}
-    if(cachedProfile?.role){
-      window.BV_ROLE=cachedProfile.role;
-      window.BV_USER_NAME=cachedProfile.name||'';
-      window.applyAccess();
-      $('login')&&$('login').style.setProperty('display','none','important');
-    }
     if(Array.isArray(cachedProducts)&&cachedProducts.length){
       window.products=cachedProducts;
       window.renderProducts();
     }
 
-    const {data:{session},error}=await sb.auth.getSession();
-    const user=session?.user;
-    if(error||!user){
-      $('login')&&$('login').style.setProperty('display','flex','important');
+    const profileRes=await sb.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
+    if(profileRes.error||!profileRes.data){
+      console.error('[BV PROFILE]',profileRes.error||'Perfil não encontrado');
+      toast('Seu perfil não foi encontrado.');
       return;
     }
 
-    // Se não houver cache, busca o perfil antes de liberar a tela.
-    if(!cachedProfile?.role){
-      const p=await sb.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
-      if(p.error||!p.data){toast('Seu perfil não foi encontrado.');return}
-      window.BV_ROLE=p.data.role||'usuario';
-      window.BV_USER_NAME=p.data.name||user.email;
-      try{localStorage.setItem('bv_profile_cache',JSON.stringify({name:window.BV_USER_NAME,role:window.BV_ROLE,userId:user.id}))}catch(e){}
-      window.applyAccess();
-      $('login')&&$('login').style.setProperty('display','none','important');
+    window.BV_ROLE=String(profileRes.data.role||'usuario').trim().toLowerCase();
+    window.BV_USER_NAME=profileRes.data.name||user.email||'';
+    try{
+      localStorage.setItem('bv_profile_cache',JSON.stringify({
+        name:window.BV_USER_NAME,
+        role:window.BV_ROLE,
+        userId:user.id
+      }));
+    }catch(e){}
+    window.applyAccess();
+    $('login')&&$('login').style.setProperty('display','none','important');
+
+    // Se a conta é motoboy, garante que a interface e a navegação sejam as do motoboy.
+    if(window.BV_ROLE==='motoboy'){
+      window.applyAccess?.();
+      window.applyMotoPageChrome?.();
     }
 
     if(!window.BV_HAS_NAVIGATED)window.showPage('inicio',true);
 
     // Atualização de dados sem bloquear a abertura do aplicativo.
     Promise.all([
-      sb.from('profiles').select('name,role').eq('id',user.id).maybeSingle(),
       sb.from('products').select('*').order('created_at'),
       sb.from('settings').select('fee,whatsapp').eq('id',1).maybeSingle()
-    ]).then(async([p,pr,st])=>{
-      if(p?.data){
-        window.BV_ROLE=p.data.role||'usuario';
-        window.BV_USER_NAME=p.data.name||user.email;
-        try{localStorage.setItem('bv_profile_cache',JSON.stringify({name:window.BV_USER_NAME,role:window.BV_ROLE,userId:user.id}))}catch(e){}
-        window.applyAccess();
-      }
+    ]).then(async([pr,st])=>{
       if(!pr.error){
         window.products=pr.data||[];
         try{localStorage.setItem('bv_products',JSON.stringify(window.products))}catch(e){}
