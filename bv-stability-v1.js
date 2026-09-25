@@ -37,11 +37,15 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.276';
+  window.BV_STABILITY_VERSION='2026.09.25.277';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
-  // Ao recarregar o site, a tela inicial é sempre a primeira tela exibida.
-  // Não persistimos a aba atual para evitar que o usuário retorne a uma tela administrativa/checkout após F5.
+  const NAV_KEY='bv_current_page';
+  const getSavedPage=()=>{try{return String(localStorage.getItem(NAV_KEY)||'').trim()}catch(e){return ''}};
+  const savePage=p=>{try{if(p)localStorage.setItem(NAV_KEY,String(p))}catch(e){}};
+  const clearSavedPage=()=>{try{localStorage.removeItem(NAV_KEY)}catch(e){}};
+  // Mantém a tela atual após F5/recarregamento. A restauração acontece depois da autenticação e do perfil.
+
   try{window.cart=Array.isArray(window.cart)?window.cart:(JSON.parse(localStorage.getItem('bv_cart')||'[]')||[])}catch{window.cart=[]}
   try{window.products=Array.isArray(window.products)?window.products:(JSON.parse(localStorage.getItem('bv_products')||'[]')||[])}catch{window.products=[]}
   if(!Array.isArray(window.orders))window.orders=[];
@@ -88,7 +92,7 @@
   window.showPage=(p,internal=false)=>{
     const role=String(window.BV_ROLE||'').toLowerCase();
     if(role==='motoboy' && !['pedidos','taxa-entrega'].includes(String(p))) p='pedidos';
-    if(!internal)window.BV_HAS_NAVIGATED=true;
+    if(!internal){window.BV_HAS_NAVIGATED=true;savePage(p)}
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('activePage'));
     $('page-'+p)?.classList.add('activePage');
     if($('pageTitle'))$('pageTitle').textContent=labels[p]||p;
@@ -244,7 +248,7 @@
     if(r.data.user){const z=await sb.from('profiles').upsert({id:r.data.user.id,name:n,role:'usuario'},{onConflict:'id'});if(z.error)return $('registerErr').textContent=z.error.message}
     window.closeRegister();toast(r.data.session?'Conta criada com sucesso.':'Conta criada. Confirme o e-mail se o sistema solicitar.');
   };
-  window.logout=async()=>{if(sb)await sb.auth.signOut();window.BV_ROLE='';window.BV_USER_NAME='';window.applyAccess();$('login')&&($('login').style.display='flex');window.showPage('inicio')};
+  window.logout=async()=>{if(sb)await sb.auth.signOut();window.BV_ROLE='';window.BV_USER_NAME='';clearSavedPage();window.applyAccess();$('login')&&($('login').style.display='flex');window.showPage('inicio',true)};
 
   window.loadProfile=async()=>{
     if(!sb)return;const {data:{user}}=await sb.auth.getUser();if(!user)return;
@@ -888,12 +892,18 @@ window.BV_TRACKING_REALTIME=null;
     }
 
     if(window.BV_ROLE==='motoboy'){
-      // Motoboy entra diretamente em Pedidos. A tela Início nunca é aberta nesse perfil.
+      // Motoboy entra em Pedidos ou restaura a última tela permitida.
+      const saved=getSavedPage();
+      const target=['pedidos','taxa-entrega'].includes(saved)?saved:'pedidos';
       window.BV_HAS_NAVIGATED=true;
-      window.showPage('pedidos',true);
+      window.showPage(target,true);
       window.applyMotoPageChrome?.();
     }else if(!window.BV_HAS_NAVIGATED){
-      window.showPage('inicio',true);
+      // Restaura a última tela usada; se não houver uma salva, começa em Início.
+      const saved=getSavedPage();
+      const allowed=['inicio','cardapio','pedido','acompanhar','dashboard','pedidos','produtos','promocoes','cupons','config','taxa-entrega'];
+      const target=allowed.includes(saved)?saved:'inicio';
+      window.showPage(target,true);
     }
 
     // Atualização de dados sem bloquear a abertura do aplicativo.
