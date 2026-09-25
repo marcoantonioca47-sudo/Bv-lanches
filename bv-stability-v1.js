@@ -7,6 +7,22 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
+  window.bvModal=(opts={},onClose)=>{
+    const old=document.getElementById('bvSystemModal');if(old)old.remove();
+    const type=opts.type==='success'?'success':'info';
+    const wrap=document.createElement('div');wrap.id='bvSystemModal';wrap.className='bvSystemModal '+type;
+    wrap.innerHTML='<div class="bvSystemModalCard" role="dialog" aria-modal="true">'+
+      '<div class="bvSystemModalTop"><div class="bvSystemModalIcon">'+String(opts.icon||'✓')+'</div><div><span class="bvSystemModalKicker">'+String(opts.kicker||'BV LANCHES')+'</span><h3 class="bvSystemModalTitle">'+esc(opts.title||'Aviso')+'</h3></div></div>'+
+      '<div class="bvSystemModalBody">'+String(opts.message||'')+'</div>'+
+      '<div class="bvSystemModalActions"><button type="button" class="bvSystemModalBtn">'+esc(opts.button||'OK')+'</button></div></div>';
+    document.body.appendChild(wrap);
+    const close=()=>{wrap.classList.remove('show');setTimeout(()=>wrap.remove(),180);if(typeof onClose==='function')onClose()};
+    wrap.querySelector('.bvSystemModalBtn')?.addEventListener('click',close);
+    wrap.addEventListener('click',e=>{if(e.target===wrap)close()});
+    requestAnimationFrame(()=>wrap.classList.add('show'));
+    setTimeout(()=>wrap.querySelector('.bvSystemModalBtn')?.focus(),80);
+    return {close};
+  };
   if(!$('bvDeliveryCardStyle')){
     const st=document.createElement('style');st.id='bvDeliveryCardStyle';st.textContent='.bvDeliveryCard .orderBody{display:grid;gap:10px}.bvOrderCustomer{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.bvOrderCustomer b{font-size:18px}.bvOrderCustomer span{font-size:12px;opacity:.7;text-align:right}.bvOrderItems{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035)}.bvOrderItems small,.bvDeliveryTitle{font-size:10px;font-weight:900;letter-spacing:.12em;opacity:.65}.bvOrderItems p{margin:5px 0 0;line-height:1.45}.bvDeliveryBox{padding:13px 14px;border-radius:14px;background:rgba(229,9,20,.06);border:1px solid rgba(229,9,20,.18)}.bvAddressMain{margin-top:5px;font-weight:850;line-height:1.35}.bvAddressSub{margin-top:3px;font-size:13px;opacity:.75}.orderPaymentBadge{margin-top:0!important}.bvDeliveryCard .orderFoot{display:flex;align-items:end;justify-content:space-between;gap:12px}.bvDeliveryCard .orderFoot>div{display:flex;flex-direction:column;gap:3px}.bvDeliveryCard .orderFoot small{font-size:10px;letter-spacing:.1em;opacity:.65}.bvDeliveryCard .orderFoot strong{font-size:21px}@media(max-width:600px){.bvOrderCustomer{display:block}.bvOrderCustomer span{display:block;text-align:left;margin-top:3px}.bvDeliveryCard .orderFoot{align-items:stretch;flex-direction:column}.bvDeliveryCard .orderFoot select{width:100%}}';document.head.appendChild(st);
   }
@@ -37,7 +53,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.281';
+  window.BV_STABILITY_VERSION='2026.09.25.282';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
