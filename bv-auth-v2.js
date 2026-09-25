@@ -111,13 +111,53 @@
 
   window.resetBVPassword = async () => {
     const email = String($('email')?.value || '').trim().toLowerCase();
-    if (!email) return window.toast?.('Digite seu e-mail primeiro.');
+    const err = $('err');
+    if (!email) {
+      if (err) err.textContent = 'Digite o e-mail cadastrado para receber a redefinição.';
+      return;
+    }
+    if (!client) {
+      if (err) err.textContent = 'Serviço de recuperação indisponível. Recarregue a página.';
+      return;
+    }
     const { error } = await client.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + window.location.pathname
     });
-    if (error) return window.toast?.(errorText(error));
-    window.toast?.('Link de recuperação enviado para o e-mail.');
+    if (error) {
+      if (err) err.textContent = errorText(error);
+      return;
+    }
+    if (err) err.textContent = '';
+    window.toast?.('E-mail de redefinição enviado. Verifique sua caixa de entrada e o spam.');
   };
+
+  function showPasswordRecovery() {
+    if ($('bvPasswordRecovery')) return;
+    const d=document.createElement('div');
+    d.id='bvPasswordRecovery';
+    d.style.cssText='position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.82);backdrop-filter:blur(7px)';
+    d.innerHTML='<div style="width:min(420px,100%);padding:22px;border:1px solid #343a44;border-radius:18px;background:#0f1115;color:#fff;box-shadow:0 25px 80px rgba(0,0,0,.65)"><small style="color:#e50914;font-weight:900;letter-spacing:1px">REDEFINIR SENHA</small><h3 style="margin:7px 0 6px">Crie uma nova senha</h3><p style="margin:0 0 16px;color:#9ba1aa;font-size:13px">Digite a nova senha para acessar sua conta.</p><input id="bvNewPassword" type="password" autocomplete="new-password" placeholder="Nova senha" style="width:100%;box-sizing:border-box;padding:13px 14px;margin-bottom:10px;border-radius:10px;border:1px solid #343a44;background:#080a0d;color:#fff"><input id="bvNewPassword2" type="password" autocomplete="new-password" placeholder="Repita a nova senha" style="width:100%;box-sizing:border-box;padding:13px 14px;border-radius:10px;border:1px solid #343a44;background:#080a0d;color:#fff"><div id="bvRecoveryErr" style="min-height:18px;margin:9px 0;color:#ff6870;font-size:13px"></div><button id="bvRecoverySave" type="button" style="width:100%;min-height:44px;border:0;border-radius:10px;background:#e50914;color:#fff;font-weight:900;cursor:pointer">Salvar nova senha</button></div>';
+    document.body.appendChild(d);
+    $('bvRecoverySave').onclick=async()=>{
+      const p=String($('bvNewPassword')?.value||'');
+      const p2=String($('bvNewPassword2')?.value||'');
+      const e=$('bvRecoveryErr');
+      if(p.length<6){e.textContent='A senha deve ter pelo menos 6 caracteres.';return}
+      if(p!==p2){e.textContent='As senhas não conferem.';return}
+      const b=$('bvRecoverySave');b.disabled=true;b.textContent='Salvando...';
+      const {error}=await client.auth.updateUser({password:p});
+      if(error){e.textContent=errorText(error);b.disabled=false;b.textContent='Salvar nova senha';return}
+      try{localStorage.removeItem('bv_first_login_done');localStorage.removeItem('bv_profile_cache')}catch(_){}
+      d.remove();
+      window.toast?.('Senha redefinida com sucesso. Faça login com a nova senha.');
+      await client.auth.signOut();
+      $('login')?.style.setProperty('display','flex','important');
+    };
+  }
+
+  client?.auth.onAuthStateChange((event) => {
+    if(event==='PASSWORD_RECOVERY') setTimeout(showPasswordRecovery,0);
+  });
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (!client) return;
