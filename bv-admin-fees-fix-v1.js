@@ -22,15 +22,23 @@
       const sb = client();
       if (!sb) throw new Error('Banco de dados indisponível.');
 
-      const { data, error } = await sb.from('orders')
-        .select('id,order_number,delivery_fee,created_at,motoboy_id')
-        .eq('status','entregue')
-        .order('created_at',{ascending:false});
+      const [{ data, error }, { data: motoboys, error: motoboyError }] = await Promise.all([
+        sb.from('orders')
+          .select('id,order_number,delivery_fee,created_at,motoboy_id')
+          .eq('status','entregue')
+          .order('created_at',{ascending:false}),
+        sb.from('profiles')
+          .select('id,name,role')
+          .eq('role','motoboy')
+          .order('name',{ascending:true})
+      ]);
 
       if (error) throw error;
+      if (motoboyError) throw motoboyError;
 
       const rows = Array.isArray(data) ? data : [];
       const filter = window.BV_MOTO_FEE_FILTER || 'all';
+      const userFilter = window.BV_ADMIN_FEE_USER_FILTER || 'all';
       const now = new Date();
       const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
       let start = null, end = null, specific = '';
@@ -51,11 +59,13 @@
         }
       }
 
-      const filtered = end
+      const userRows = Array.isArray(motoboys) ? motoboys : [];
+      const filtered = (end
         ? rows.filter(o => { const d=new Date(o.created_at); return d>=start && d<end; })
         : start
           ? rows.filter(o => new Date(o.created_at) >= start)
-          : rows;
+          : rows)
+        .filter(o => userFilter === 'all' || String(o.motoboy_id || '') === String(userFilter));
 
       const total = filtered.reduce((sum,o)=>sum+Number(o.delivery_fee||0),0);
       const date = value => {
@@ -75,7 +85,7 @@
             '<button type="button" class="'+(filter==='month'?'active':'')+'" onclick="setMotoFeeFilter(\'month\')">Este mês</button>'+
             '<button type="button" class="'+(filter==='all'?'active':'')+'" onclick="setMotoFeeFilter(\'all\')">Todas</button>'+
           '</div>'+
-          '<label><span>Data específica</span><input id="motoFeeDate" type="date" value="'+esc(specific)+'" onchange="setMotoFeeSpecificDate(this.value)"></label>'+
+          '<label><span>Data específica</span><input id="motoFeeDate" type="date" value="'+esc(specific)+'" onchange="setMotoFeeSpecificDate(this.value)"></label>'+          '<label><span>Motoboy</span><select id="motoFeeUser" onchange="setMotoFeeUserFilter(this.value)">'+            '<option value="all" '+(userFilter==='all'?'selected':'')+'>Todos os motoboys</option>'+            userRows.map(u => '<option value="'+esc(u.id)+'" '+(String(userFilter)===String(u.id)?'selected':'')+'>'+esc(u.name || 'Motoboy')+'</option>').join('')+          '</select></label>'+
         '</div>'+
         '<div class="motoFeeHeader">'+
           '<div><small>ENTREGAS REALIZADAS</small><strong>'+filtered.length+'</strong></div>'+
@@ -98,6 +108,11 @@
         '<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as taxas</b><small>'+esc(e?.message || 'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>';
     }
   }
+
+  window.setMotoFeeUserFilter = function(value) {
+    window.BV_ADMIN_FEE_USER_FILTER = value || 'all';
+    renderAdminFees();
+  };
 
   const previous = window.renderMotoFeeOrders;
   window.renderMotoFeeOrders = function(options) {
