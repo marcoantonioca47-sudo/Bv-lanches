@@ -297,8 +297,9 @@
       }
       return true;
     });
-    // Painel de produção: exibe exclusivamente pedidos novos.
-    const novos=filtered.filter(o=>String(o.rawStatus||'').toLowerCase()==='recebido');
+    // Os cards administrativos continuam mostrando todos os pedidos ativos.
+    // O filtro de "somente novos" pertence exclusivamente ao painel de produção (bvKitchen).
+    const novos=filtered;
     const card=o=>{
       const raw=String(o.rawStatus||'').toLowerCase();
       const isNew=raw==='recebido';
