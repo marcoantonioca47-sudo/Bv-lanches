@@ -22,7 +22,64 @@ function patchCart(){
 }
 function patchLogout(){if(window.BV_FINAL_LOGOUT_PATCH)return;const old=window.logout;if(typeof old!=='function')return;window.logout=async function(){try{localStorage.removeItem('bv_first_login_done');localStorage.removeItem('bv_checkout_draft_v1')}catch(e){}return old.apply(this,arguments)};window.BV_FINAL_LOGOUT_PATCH=true}
 function dashboardTools(){const p=$('page-dashboard');if(!p||$('bvDashboardRefresh'))return;const h=p.querySelector('.adminTopActions');if(!h)return;const b=document.createElement('button');b.id='bvDashboardRefresh';b.type='button';b.textContent='↻ Atualizar';b.onclick=async()=>{b.disabled=true;b.textContent='Atualizando...';try{await window.BV_REFRESH_ORDERS?.();window.renderDashboard?.();window.renderAnalytics?.(true)}finally{b.disabled=false;b.textContent='↻ Atualizar'}};h.prepend(b)}
+
+/* Dashboard: exibe sempre o item comprado, nunca a representação [object Object].
+   A rotina principal já carrega os itens de order_items; aqui apenas normalizamos a
+   apresentação do Dashboard, sem alterar os dados nem o restante do fluxo. */
+function dashboardItemName(v){
+  if(v==null)return '';
+  if(typeof v==='string'||typeof v==='number')return String(v);
+  if(Array.isArray(v))return v.map(dashboardItemName).filter(Boolean).join(', ');
+  if(typeof v==='object'){
+    const direct=v.product_name??v.productName??v.name??v.title??v.label;
+    if(direct!=null&&typeof direct!=='object')return String(direct);
+    const nested=v.product??v.item??v.data;
+    if(nested&&nested!==v){const n=dashboardItemName(nested);if(n)return n;}
+    return '';
+  }
+  return '';
+}
+function dashboardItemsText(order){
+  const raw=order?.items;
+  if(Array.isArray(raw)){
+    const parts=raw.map(item=>{
+      if(item==null)return '';
+      if(typeof item==='string'||typeof item==='number')return String(item);
+      const qty=Number(item.quantity??item.qty??item.q??1)||1;
+      const name=dashboardItemName(item);
+      return name?(qty+'x '+name):'';
+    }).filter(Boolean);
+    if(parts.length)return parts.join(', ');
+  }
+  if(raw&&typeof raw==='object'){
+    const name=dashboardItemName(raw);
+    if(name)return name;
+  }
+  const fallback=order?.items_text??order?.itemsText??order?.order_items_text;
+  return fallback&&typeof fallback!=='object'?String(fallback):'Nenhum item informado';
+}
+function patchDashboardItems(){
+  if(window.BV_DASHBOARD_ITEMS_PATCH)return;
+  const old=window.renderDashboard;
+  if(typeof old!=='function')return;
+  window.renderDashboard=function(){
+    const result=old.apply(this,arguments);
+    setTimeout(()=>{
+      const list=$('dashboardOrders');
+      if(!list)return;
+      const orders=(window.orders||[]).filter(o=>String(o?.rawStatus||o?.status||'').toLowerCase().replace(/\s+/g,'_')==='entregue').slice(0,20);
+      list.querySelectorAll('.dashboardOrderLine').forEach((row,index)=>{
+        const target=row.querySelector('.dashboardOrderMain small:not(.dashboardOrderDate)');
+        const text=dashboardItemsText(orders[index]);
+        if(target)target.textContent=text;
+      });
+    },0);
+    return result;
+  };
+  window.BV_DASHBOARD_ITEMS_PATCH=true;
+  setTimeout(()=>window.renderDashboard?.(),0);
+}
 function patchShowPage(){if(window.BV_FINAL_SHOW_PAGE_PATCH)return;const old=window.showPage;if(typeof old!=='function')return;window.showPage=function(){const r=old.apply(this,arguments);updateCartFloat();return r};window.BV_FINAL_SHOW_PAGE_PATCH=true}
-function boot(){injectStatus();installSearch();cartFloat();restoreDraft();dashboardTools();patchRender();patchCart();patchLogout();patchShowPage();setOnline(navigator.onLine);document.querySelectorAll('#page-pedido input,#page-pedido textarea').forEach(e=>e.addEventListener('input',saveDraft));window.addEventListener('online',()=>setOnline(true));window.addEventListener('offline',()=>setOnline(false));updateCartFloat()}
+function boot(){injectStatus();installSearch();cartFloat();restoreDraft();dashboardTools();patchRender();patchCart();patchLogout();patchDashboardItems();patchShowPage();setOnline(navigator.onLine);document.querySelectorAll('#page-pedido input,#page-pedido textarea').forEach(e=>e.addEventListener('input',saveDraft));window.addEventListener('online',()=>setOnline(true));window.addEventListener('offline',()=>setOnline(false));updateCartFloat()}
 document.addEventListener('DOMContentLoaded',boot,{once:true});
 })();
