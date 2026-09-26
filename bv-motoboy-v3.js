@@ -12,7 +12,7 @@
   window.BV_MOTO_SCREEN_VERSION = '2026.09.26.920';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.700';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.701';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -133,8 +133,10 @@
       const oldStatus=String(payload.old?.status||'').toLowerCase();
       const available=['em_preparo','em_producao'].includes(status);
       const becameAvailable=available && oldStatus!==status;
-      if((payload.eventType==='INSERT'&&available)|| (payload.eventType==='UPDATE'&&becameAvailable)){
+      if(payload.eventType==='INSERT'){
         motoVisualNotify(o);
+        clearTimeout(window.BV_MOTO_RT_TIMER);window.BV_MOTO_RT_TIMER=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1600);
+      }else if(payload.eventType==='UPDATE'){
         clearTimeout(window.BV_MOTO_RT_TIMER);window.BV_MOTO_RT_TIMER=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1600);
       }
     }).subscribe((status,err)=>{if(err)console.warn('[MOTO REALTIME]',err);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){try{client.removeChannel(window.BV_MOTO_ORDER_CHANNEL)}catch(e){}window.BV_MOTO_ORDER_CHANNEL=null;setTimeout(subscribeMotoNewOrders,3000)}});
