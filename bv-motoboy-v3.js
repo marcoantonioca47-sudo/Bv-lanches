@@ -11,7 +11,7 @@
   window.BV_MOTO_SCREEN_VERSION = '2026.09.26.503';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.510';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.511';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
