@@ -133,21 +133,27 @@ window.change=async(id,d)=>{
 };
 
 function refreshMiniCatalogUI(){
- const p=(window.products||[]).find(mini);if(!p)return;
+ const products=window.products||[];
+ const miniProduct=products.find(mini);
+ const refri2=products.find(p=>norm(p?.name)==='refri 2l');
  document.querySelectorAll('#products .productCard').forEach(card=>{
-  if(norm(card.querySelector('h3')?.textContent)!=='refri mini')return;
-  const hasStock=MINI.some(f=>stockOf(p.id,f.key)>0);
-  card.classList.toggle('productOutOfStock',!hasStock);
-  card.querySelectorAll('.catalogStock,.stockControl,[class*="stockControl"]').forEach(x=>x.style.display='none');
-  let box=card.querySelector('.bvMiniCatalog');
-  if(!box){box=document.createElement('div');box.className='bvMiniCatalog';card.querySelector('.productInfo')?.appendChild(box)}
-  box.innerHTML='';
-  const btn=card.querySelector('.productBottom button');
-  if(btn){
-    btn.disabled=!hasStock;
-    btn.className=hasStock?'':'addDisabled';
-    btn.textContent=hasStock?'+ Adicionar':'Esgotado';
-    btn.onclick=hasStock?()=>openPicker(p):null;
+  const name=norm(card.querySelector('h3')?.textContent);
+  if(name==='refri mini' && miniProduct){
+   const hasStock=MINI.some(f=>stockOf(miniProduct.id,f.key)>0);
+   card.classList.toggle('productOutOfStock',!hasStock);
+   card.querySelectorAll('.catalogStock,.stockControl,[class*="stockControl"]').forEach(x=>x.style.display='none');
+   let box=card.querySelector('.bvMiniCatalog');
+   if(!box){box=document.createElement('div');box.className='bvMiniCatalog';card.querySelector('.productInfo')?.appendChild(box)}
+   box.innerHTML='';
+   const btn=card.querySelector('.productBottom button');
+   if(btn){btn.disabled=!hasStock;btn.className=hasStock?'':'addDisabled';btn.textContent=hasStock?'+ Adicionar':'Esgotado';btn.onclick=hasStock?()=>openPicker(miniProduct):null;}
+  }
+  if(name==='refri 2l' && refri2){
+   const hasStock=stockOf(refri2.id,'guarana')>0 || stockOf(refri2.id,'laranja')>0;
+   card.classList.toggle('productOutOfStock',!hasStock);
+   card.querySelectorAll('.catalogStock,.stockControl,[class*="stockControl"]').forEach(x=>x.style.display='none');
+   const btn=card.querySelector('.productBottom button');
+   if(btn){btn.disabled=!hasStock;btn.className=hasStock?'':'addDisabled';btn.textContent=hasStock?'+ Adicionar':'Esgotado';btn.onclick=hasStock?()=>window.BV_OPEN_FLAVOR_PICKER?.(refri2.id):null;}
   }
  });
 }
@@ -164,5 +170,5 @@ if(typeof oldRender==='function'){
 
 const st=document.createElement('style');st.id='bvMiniV2Style';st.textContent='.bvMiniOnly,.bvMiniCatalog{margin-top:10px;padding:10px;border-radius:12px;background:rgba(0,0,0,.28)}.productBottom button:not(.addDisabled){background:var(--primary,#e50914)!important;color:#fff!important;border:0!important;opacity:1!important;filter:none!important;box-shadow:none!important}.productBottom button:not(.addDisabled):active{transform:scale(.98);filter:brightness(.92)!important}.bvMiniRow{display:grid;grid-template-columns:1fr 38px 42px 38px;align-items:center;gap:6px;margin-top:7px}.bvMiniRow button{min-height:34px;border:0;border-radius:8px;font-size:18px;font-weight:800;cursor:pointer;background:var(--primary,#e11);color:#fff;padding:0 12px;transition:transform .08s,filter .08s}.bvMiniRow button:active{transform:scale(.94);filter:brightness(.9)}.bvMiniRow button:disabled{opacity:.65}.bvMiniRow strong{text-align:center}.bvMiniCatalog{display:grid;grid-template-columns:1fr 1fr;gap:5px}.bvMiniCatalog b{grid-column:1/-1}.bvMiniPicker{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:99999;padding:18px}.bvMiniPicker.show{display:flex}.bvMiniPickerBox{width:min(420px,100%);padding:20px;border-radius:18px;background:#171717;color:#fff}.bvMiniClose{float:right;border:0;background:none;color:#fff;font-size:28px}.bvMiniChoices{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bvMiniChoices button{padding:14px;border:0;border-radius:12px;font-weight:800}.bvMiniChoices small{display:block;margin-top:4px;opacity:.7}@media(max-width:600px){.bvMiniChoices{grid-template-columns:1fr 1fr}}';
 document.head.appendChild(st);
-window.BV_REFRI_FLAVORS_VERSION='2026.09.26.1007';
+window.BV_REFRI_FLAVORS_VERSION='2026.09.26.1008';
 })();
