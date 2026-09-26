@@ -10,14 +10,20 @@ function playOrderSound(){if(!bvAudioReady||!bvAudioCtx)return;try{if(bvAudioCtx
 document.addEventListener('pointerdown',unlockNotificationSound,{passive:true});
 document.addEventListener('pointerdown',()=>{const role=String(window.BV_ROLE||'').toLowerCase();if(['administrador','admin'].includes(role))requestAdminNotificationPermission?.()},{passive:true});
 document.addEventListener('touchstart',unlockNotificationSound,{passive:true});
-function notifyNewOrderDevice(o){
+async function notifyNewOrderDevice(o){
+  const title='🔔 NOVO PEDIDO — BV Lanches';
+  const body='Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' recebido de '+(o.customer||'Cliente')+'.';
   try{
     if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
-    const title='🔔 NOVO PEDIDO — BV Lanches';
-    const body='Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' recebido de '+(o.customer||'Cliente')+'.';
-    const n=new Notification(title,{body,tag:'bv-new-order-'+o.id,renotify:true,requireInteraction:true,silent:false});
+    const tag='bv-new-order-'+o.id;
+    const reg=await navigator.serviceWorker?.ready.catch(()=>null);
+    if(reg?.showNotification){
+      await reg.showNotification(title,{body,tag,renotify:true,requireInteraction:true,silent:false,icon:'./bv-logo.png',badge:'./bv-logo.png',data:{orderId:o.id}});
+      return;
+    }
+    const n=new Notification(title,{body,tag,renotify:true,requireInteraction:true,silent:false,icon:'./bv-logo.png'});
     n.onclick=()=>{window.focus?.();document.querySelector('[data-page="pedidos"],#menuPedidos,button[onclick*="pedidos"]')?.click();n.close?.()};
-  }catch(e){}
+  }catch(e){console.warn('[BV NOTIFY]',e)}
 }
 async function requestAdminNotificationPermission(){
   try{
@@ -30,7 +36,6 @@ function addN(title,detail,key){let a;try{a=JSON.parse(localStorage.getItem('bv_
 function renderNotices(){let l=$('bvNoticeList'),b=$('bvBadge');if(!l)return;let a=getN();l.innerHTML=a.length?a.map((n,i)=>'<div class="bvN" data-notice-index="'+i+'"><span>🔔</span><div><b>'+esc(n.title)+'</b><small>'+esc(n.detail)+'</small></div><button type="button" class="bvNDelete" data-notice-delete="'+i+'" aria-label="Excluir notificação" title="Excluir notificação">×</button></div>').join(''):'<small style="color:#737b86">Nenhuma notificação.</small>';if(b){b.textContent=Math.min(a.length,99);b.style.display=a.length?'grid':'none'}}
 function kpis(){let p=$('page-dashboard');if(!p)return;let b=$('bvKpiGrid');if(!b){b=document.createElement('div');b.id='bvKpiGrid';b.className='bvKpiGrid';p.prepend(b)}let t=new Date(),a=(window.orders||[]).filter(o=>{let d=new Date(o.created_at);return o.rawStatus!=='cancelado'&&d.toDateString()===t.toDateString()}),v=a.reduce((s,o)=>s+Math.max(0,(Number(o.total)||0)-(Number(o.deliveryFee ?? o.delivery_fee)||0)),0),avg=a.length?v/a.length:0,done=a.filter(o=>o.rawStatus==='entregue').length,open=a.filter(o=>!['entregue','cancelado'].includes(o.rawStatus)).length;b.innerHTML='<div class="bvKpi"><small>Faturamento hoje</small><strong>'+money(v)+'</strong><span>'+a.length+' pedido(s)</span></div><div class="bvKpi"><small>Ticket médio</small><strong>'+money(avg)+'</strong><span>Hoje</span></div><div class="bvKpi"><small>Entregues</small><strong>'+done+'</strong><span>Hoje</span></div><div class="bvKpi"><small>Em aberto</small><strong>'+open+'</strong><span>Acompanhar</span></div>'}
 async function advance(id,st){if(typeof window.statusOrder==='function')return window.statusOrder(id,st);return toast('Função de atualização indisponível.')}
-function kitchen(){if(String(window.BV_ROLE||'').trim().toLowerCase()==='motoboy'){document.getElementById('bvKitchen')?.remove();return;}if(!admin())return;let p=$('page-pedidos');if(!p)return;let b=$('bvKitchen');if(!b){b=document.createElement('section');b.id='bvKitchen';b.className='bvKitchen';p.prepend(b)}let a=(window.orders||[]).filter(o=>String(o.rawStatus||'').toLowerCase()==='recebido');let ar=a;let cards=ar.length?ar.map(o=>'<div class="bvKI"><b>#'+esc(window.orderLabel?.(o)||o.orderNumber||'—')+' · '+esc(o.customer||'Cliente')+'</b><small>'+esc(o.items||'Itens')+'</small><small>'+money(o.total)+'</small><button data-id="'+esc(o.id)+'" data-st="em_preparo">Avançar → Em preparo</button></div>').join(''):'<small style="color:#737b86">Nenhum pedido novo.</small>';b.innerHTML='<div class="bvKH"><div><h3>🍔 Painel de produção</h3><small>Somente pedidos novos aguardando início do preparo.</small></div></div><div class="bvKG"><div class="bvKC"><h4>Novos · '+ar.length+'</h4>'+cards+'</div></div>';b.querySelectorAll('[data-id]').forEach(x=>x.onclick=()=>advance(x.dataset.id,x.dataset.st))}
 function timeline(){let p=$('page-acompanhar'),c=p?.querySelector('.trackingCard');if(!c)return;let old=c.querySelector('.bvTL');if(old)old.remove();let o=(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')))||(window.orders||[])[0];if(!o)return;let flow=['recebido','em_preparo','em_producao','saiu_entrega','entregue'],cur=flow.indexOf(o.rawStatus),w=document.createElement('div');w.className='bvTL';w.innerHTML=flow.map((s,i)=>'<div class="bvTS '+(i<cur||o.rawStatus==='entregue'?'done ':'')+(i===cur?'current':'')+'">'+labels[s]+'</div>').join('');c.appendChild(w)}
 let last='';
 function watch(){
@@ -94,7 +99,6 @@ function watch(){
   a.forEach(o=>m[o.id]=o.rawStatus);
   sessionStorage.setItem('bv_statuses',JSON.stringify(m));
   kpis();
-  kitchen();
   timeline();
 
   const trackId=localStorage.getItem('bv_track_id');
@@ -116,8 +120,8 @@ function watch(){
   last=snap;
 }
 function patch(){if(window.BV_UPDATES_PATCHED||typeof window.BV_REFRESH_ORDERS!=='function')return;let f=window.BV_REFRESH_ORDERS;window.BV_REFRESH_ORDERS=async(...x)=>{let r=await f(...x);setTimeout(watch,20);return r};window.BV_UPDATES_PATCHED=true}
-function boot(){injectCss();notices();patch();watch();kpis();kitchen();timeline()}
-document.addEventListener('DOMContentLoaded',boot,{once:true});setInterval(()=>{patch();watch();kpis();kitchen();timeline()},1500);window.BV_UPDATES_VERSION='2026.09.25.288'
+function boot(){injectCss();notices();patch();watch();kpis();timeline()}
+document.addEventListener('DOMContentLoaded',boot,{once:true});setInterval(()=>{patch();watch();kpis();timeline()},1500);window.BV_UPDATES_VERSION='2026.09.26.500'
 })();
 
 /* DASHBOARD PRO — vendas, produtos, pagamentos e faturamento por período */
