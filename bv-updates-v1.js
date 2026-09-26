@@ -52,14 +52,7 @@ function watch(){
       const isAdmin=['administrador','admin'].includes(role);
 
       if(isMoto){
-        if(!old[o.id]){
-          addN(
-            '🔔 Novo pedido',
-            'Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' recebido.',
-            'new:'+o.id
-          );
-          playOrderSound();
-        }else if(old[o.id]!==o.rawStatus&&o.rawStatus==='em_preparo'){
+        if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='em_preparo'){
           addN(
             '👨‍🍳 Pedido em preparo',
             'O pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' está em preparo.',
@@ -67,7 +60,7 @@ function watch(){
           );
           playOrderSound();
         }
-      }else if(!isAdmin){
+      }      }else if(!isAdmin){
         if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega'&&String(localStorage.getItem('bv_track_id')||'')===String(o.id)){
           addN(
             '🛵 Pedido saiu para entrega',
@@ -128,7 +121,7 @@ document.addEventListener('DOMContentLoaded',boot,{once:true});
 let bvHousekeepingTimer=null;
 function startHousekeeping(){if(bvHousekeepingTimer)clearInterval(bvHousekeepingTimer);bvHousekeepingTimer=setInterval(()=>{patch();watch()},4000)}
 startHousekeeping();
-window.BV_UPDATES_VERSION='2026.09.26.512'
+window.BV_UPDATES_VERSION='2026.09.26.513'
 })();
 
 /* DASHBOARD PRO — vendas, produtos, pagamentos e faturamento por período */
