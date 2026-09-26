@@ -1,10 +1,10 @@
-const CACHE_NAME='bv-lanches-pwa-v11';
+const CACHE_NAME='bv-lanches-pwa-v12';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',event=>event.waitUntil(
   caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
     .then(()=>self.clients.claim())
 ));
-self.addEventListener('fetch',event=>{
+self.addEventListener('notificationclick',event=>{\n  event.notification.close();\n  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{\n    const target=list.find(c=>c.url.includes(self.location.origin));\n    return target?target.focus():clients.openWindow('./');\n  }));\n});\nself.addEventListener('fetch',event=>{
   const req=event.request;
   if(req.method!=='GET') return;
   const url=new URL(req.url);
