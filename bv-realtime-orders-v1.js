@@ -10,6 +10,7 @@
   let lastRefresh = 0;
   let refreshPending = false;
   let motoTimer = null;
+  let generalTimer = null;
 
   const sb = () => window.BV_SUPABASE;
 
@@ -24,6 +25,12 @@
     },1500);
   }
 
+  function queueGeneralRefresh(reason) {
+    if (isMotoPedidos()) return;
+    clearTimeout(generalTimer);
+    generalTimer=setTimeout(()=>refreshNow(reason),1400);
+  }
+
   async function refreshNow(reason) {
     if (isMotoPedidos()) { return; }
     const fn = window.BV_REFRESH_ORDERS;
@@ -36,12 +43,12 @@
     lastRefresh = now;
     try {
       await fn();
-      window.renderMotoOrders?.({silent:true});
+      if (document.getElementById('page-dashboard')?.classList.contains('activePage')) window.renderMotoOrders?.({silent:true});
       // Só atualiza a tela de taxas se ela estiver aberta, e sem apagar o conteúdo atual.
       if (document.getElementById('page-taxa-entrega')?.classList.contains('activePage')) {
         window.renderMotoFeeOrders?.({silent:true});
       }
-      window.renderDashboard?.();
+      if (document.getElementById('page-dashboard')?.classList.contains('activePage')) window.renderDashboard?.();
       // BV_REFRESH_ORDERS já atualiza a tela de acompanhamento somente quando
       // o conteúdo mudou. Não redesenhar aqui para evitar oscilação.
     } catch (e) {
@@ -62,7 +69,7 @@
         { event: '*', schema: 'public', table: 'orders' },
         payload => {
           console.log('[BV REALTIME] pedido atualizado:', payload.eventType, payload.new?.id || payload.old?.id);
-          refreshNow('realtime');
+          queueGeneralRefresh('realtime');
         }
       )
       .subscribe(status => {
@@ -96,5 +103,5 @@
     boot();
   }
 
-  window.BV_REALTIME_VERSION = '2026.09.26.700';
+  window.BV_REALTIME_VERSION = '2026.09.26.800';
 })();
