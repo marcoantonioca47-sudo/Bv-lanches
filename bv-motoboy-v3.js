@@ -103,10 +103,10 @@
     const notifyId=String(o.id);
     if(window.BV_MOTO_NOTIFIED.has(notifyId))return;
     window.BV_MOTO_NOTIFIED.add(notifyId);
-    const n=document.createElement('div');n.className='bvMotoIncoming';n.innerHTML='<div class="bvMotoIncomingIcon">🏍️</div><div><b>NOVO PEDIDO!</b><strong>Pedido #'+esc(o.order_number||'')+'</strong><small>'+esc(o.customer_name||'Cliente')+' · '+money(o.total)+'</small></div><button type="button" aria-label="Fechar">×</button>';
+    const n=document.createElement('div');n.className='bvMotoIncoming';n.innerHTML='<div class="bvMotoIncomingIcon">🏍️</div><div><b>PEDIDO EM PREPARO</b><strong>Pedido #'+esc(o.order_number||'')+'</strong><small>'+esc(o.customer_name||'Cliente')+' · '+money(o.total)+'</small></div><button type="button" aria-label="Fechar">×</button>';
     n.querySelector('button').onclick=()=>n.remove();document.body.appendChild(n);setTimeout(()=>n.remove(),12000);
     motoBeep();
-    if('Notification' in window && Notification.permission==='granted' && document.hidden){try{new Notification('BV Lanches — novo pedido',{body:'Pedido #'+(o.order_number||'')+' aguardando coleta.',tag:'bv-order-'+o.id})}catch(e){}}
+    if('Notification' in window && Notification.permission==='granted' && document.hidden){try{new Notification('BV Lanches — pedido em preparo',{body:'Pedido #'+(o.order_number||'')+' está em preparo e disponível para coleta.',tag:'bv-order-'+o.id})}catch(e){}}
   }
   function motoCheckNewOrders(rows){
     const current=new Set((rows||[]).map(o=>String(o.id)));
@@ -134,7 +134,7 @@
       const available=['em_preparo','em_producao'].includes(status);
       const becameAvailable=available && oldStatus!==status;
       if(payload.eventType==='INSERT'){
-        motoVisualNotify(o);
+        if(becameAvailable) motoVisualNotify(o);
         clearTimeout(window.BV_MOTO_RT_TIMER);window.BV_MOTO_RT_TIMER=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1600);
       }else if(payload.eventType==='UPDATE'){
         clearTimeout(window.BV_MOTO_RT_TIMER);window.BV_MOTO_RT_TIMER=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1600);
