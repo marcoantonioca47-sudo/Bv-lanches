@@ -52,12 +52,13 @@ function watch(){
       const isAdmin=['administrador','admin'].includes(role);
 
       if(isMoto){
-        if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='em_preparo'){
+        if(!old[o.id]){
           addN(
-            '🚚 Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),
-            'Pedido em preparação. Retire no balcão quando estiver pronto.',
-            'pickup:'+o.id+':'+o.rawStatus
+            '🔔 Novo pedido',
+            'Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' recebido.',
+            'new:'+o.id
           );
+          playOrderSound();
         }
       }else if(isAdmin){
         if(!old[o.id]){
@@ -68,28 +69,6 @@ function watch(){
           );
           playOrderSound();
           notifyNewOrderDevice(o);
-        }else if(old[o.id]!==o.rawStatus){
-          addN(
-            'Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),
-            'Status: '+(labels[o.rawStatus]||o.status),
-            'st:'+o.id+':'+o.rawStatus
-          );
-        }
-
-        if(old[o.id]&&old[o.id]!==o.paymentStatus&&o.paymentStatus==='pago'&&String(o.payment||'').toLowerCase().includes('pix')){
-          addN(
-            'Pagamento PIX confirmado',
-            'Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),
-            'pay:'+o.id
-          );
-        }
-
-        if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega'){
-          addN(
-            '🛵 Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),
-            'Seu pedido saiu para entrega.',
-            'delivery:'+o.id+':'+o.rawStatus
-          );
         }
       }
     });
@@ -125,7 +104,7 @@ document.addEventListener('DOMContentLoaded',boot,{once:true});
 let bvHousekeepingTimer=null;
 function startHousekeeping(){if(bvHousekeepingTimer)clearInterval(bvHousekeepingTimer);bvHousekeepingTimer=setInterval(()=>{patch();watch()},4000)}
 startHousekeeping();
-window.BV_UPDATES_VERSION='2026.09.26.509'
+window.BV_UPDATES_VERSION='2026.09.26.510'
 })();
 
 /* DASHBOARD PRO — vendas, produtos, pagamentos e faturamento por período */
