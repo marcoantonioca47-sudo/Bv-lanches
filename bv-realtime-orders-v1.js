@@ -25,7 +25,7 @@
   }
 
   async function refreshNow(reason) {
-    if (isMotoPedidos()) { refreshMoto(); return; }
+    if (isMotoPedidos()) { return; }
     const fn = window.BV_REFRESH_ORDERS;
     if (typeof fn !== 'function') return;
     const now = Date.now();
@@ -87,7 +87,7 @@
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && Date.now() - lastRefresh > 3000) refreshNow('visibility');
+    if (document.visibilityState === 'visible' && !isMotoPedidos() && Date.now() - lastRefresh > 3000) refreshNow('visibility');
   });
 
   if (document.readyState === 'loading') {
