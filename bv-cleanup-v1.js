@@ -1,6 +1,6 @@
 /* BV LANCHES — CONTROLE DE ACESSO MOTOBOY v2 */
 (()=>{'use strict';
-const VERSION='2026.09.26.700';window.BV_ACCESS_VERSION=VERSION;
+const VERSION='2026.09.26.800';window.BV_ACCESS_VERSION=VERSION;
 const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
 const roleNorm=v=>{const r=norm(v);if(['motoboy','moto boy','moto'].includes(r))return'motoboy';if(['administrador','admin','administrador geral'].includes(r))return'administrador';return r||'usuario'};
 const isMoto=()=>roleNorm(window.BV_ROLE)==='motoboy',allowed=new Set(['pedidos','taxa-entrega']),$=id=>document.getElementById(id);
@@ -50,6 +50,6 @@ async function boot(){
 let timer=0;const schedule=()=>{if(!isMoto())return;clearTimeout(timer);timer=setTimeout(()=>{installNav();enforce()},100)};
 document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,120),{once:true});window.addEventListener('load',()=>setTimeout(boot,120),{once:true});
 const client=window.BV_SUPABASE||window.sb;client?.auth?.onAuthStateChange?.(event=>{if(event==='SIGNED_OUT'){window.BV_ROLE='usuario';return}setTimeout(boot,120)});
-const observer=new MutationObserver(schedule);document.addEventListener('DOMContentLoaded',()=>document.body&&observer.observe(document.body,{childList:true,subtree:true}),{once:true});
+const observer=new MutationObserver(mutations=>{if(!isMoto())return;const relevant=mutations.some(m=>{const nodes=[...m.addedNodes,...m.removedNodes];return nodes.some(n=>n.nodeType===1&&(n.matches?.('.sideNav,.sideNav *, .page')||n.querySelector?.('.sideNav,.page')))});if(relevant)schedule()});document.addEventListener('DOMContentLoaded',()=>document.body&&observer.observe(document.body,{childList:true,subtree:true}),{once:true});
 setTimeout(()=>{installNav();if(isMoto())enforce()},300);
 })();
