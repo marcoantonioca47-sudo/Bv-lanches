@@ -561,15 +561,26 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   const formatDashboardItems=value=>{
     if(value==null||value==='')return 'Nenhum item informado';
     if(typeof value==='string')return value;
-    const rows=Array.isArray(value)?value:[value];
-    return rows.map(item=>{
+    const collect=src=>{
+      if(src==null)return [];
+      if(Array.isArray(src))return src.flatMap(collect);
+      if(typeof src==='string'||typeof src==='number')return [src];
+      if(typeof src==='object'){
+        const nested=src.items||src.order_items||src.products||src.data;
+        if(Array.isArray(nested))return nested.flatMap(collect);
+        return [src];
+      }
+      return [];
+    };
+    return collect(value).map(item=>{
       if(item==null)return '';
       if(typeof item==='string'||typeof item==='number')return String(item);
-      const name=item.name||item.product_name||item.productName||item.title||item.description||'Item';
+      const product=item.product||item.item||item.data||{};
+      const name=item.product_name||item.productName||item.name||item.title||item.description||product.product_name||product.name||product.title||'Item';
       const qty=Number(item.quantity??item.q??item.qty??1)||1;
       const extras=item.addons||item.adicionais||item.additions||item.flavors||item.sabores;
       let line=qty+'x '+String(name);
-      if(Array.isArray(extras)&&extras.length)line+=' ('+extras.map(x=>typeof x==='object'?(x.name||x.product_name||''):String(x)).filter(Boolean).join(', ')+')';
+      if(Array.isArray(extras)&&extras.length)line+=' ('+extras.map(x=>typeof x==='object'?(x.name||x.product_name||x.productName||''):String(x)).filter(Boolean).join(', ')+')';
       return line;
     }).filter(Boolean).join(' • ')||'Nenhum item informado';
   };
