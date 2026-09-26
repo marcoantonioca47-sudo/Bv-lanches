@@ -63,7 +63,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.289';
+  window.BV_STABILITY_VERSION='2026.09.25.315';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -295,7 +295,7 @@
   const saveProfile=async()=>{if(!sb)return;const {data:{user}}=await sb.auth.getUser();if(!user)return;await sb.from('profiles').update({name:$('name')?.value.trim()||'',phone:$('phone')?.value.trim()||'',street:$('street')?.value.trim()||'',number:$('num')?.value.trim()||'',neighborhood:$('bairro')?.value.trim()||'',cep:$('cep')?.value.trim()||'',complement:$('comp')?.value.trim()||''}).eq('id',user.id)};
 
 
-  window.orderItemsMarkup=items=>{const rows=Array.isArray(items)?items:[];const groups={ADICIONAIS:[],BEBIDAS:[],ITENS:[]};rows.forEach(i=>{const name=String(i&&i.product_name||'Produto');const p=(window.products||[]).find(x=>norm(x&&x.name)===norm(name));const cat=p&&p.category?String(p.category).trim():'';const key=cat==='Adicionais'?'ADICIONAIS':cat==='Bebidas'?'BEBIDAS':'ITENS';groups[key].push((Number(i&&i.quantity)||1)+'x '+name)});return ['ADICIONAIS','BEBIDAS','ITENS'].filter(k=>groups[k].length).map(k=>'<div class="bvOrderItemGroup"><small>'+k+'</small><p>'+esc(groups[k].join(' • '))+'</p></div>').join('')||'<div class="bvOrderItemGroup"><small>ITENS</small><p>Itens do pedido</p></div>'};
+  window.orderItemsMarkup=items=>{let rows=[];if(Array.isArray(items)){rows=items.map(i=>({name:String(i?.product_name||i?.name||'Produto'),quantity:Math.max(1,Number(i?.quantity)||1)}));}else{const raw=String(items??'').trim();if(raw){rows=raw.split(/\s*(?:•|,|\n)\s*/).map(part=>{const m=part.match(/^([0-9]+)x\s*(.+)$/i);return{name:String(m?m[2]:part).trim(),quantity:Math.max(1,Number(m?m[1]:1)||1)}}).filter(x=>x.name);}}const groups={Lanches:[],Bebidas:[],Adicionais:[]};rows.forEach(i=>{const name=i.name||'Produto';const p=(window.products||[]).find(x=>norm(x?.name)===norm(name));let cat=String(p?.category||'').trim().toLowerCase();if(cat==='bebidas')cat='Bebidas';else if(cat==='adicionais')cat='Adicionais';else cat='Lanches';groups[cat].push(i.quantity+'x '+name)});return ['Lanches','Bebidas','Adicionais'].filter(k=>groups[k].length).map(k=>'<div class="bvOrderItemGroup"><small>'+k.toUpperCase()+'</small><p>'+esc(groups[k].join(' • '))+'</p></div>').join('')||'<div class="bvOrderItemGroup"><small>LANCHES</small><p>Itens do pedido</p></div>'};rows.forEach(i=>{const name=String(i&&i.product_name||'Produto');const p=(window.products||[]).find(x=>norm(x&&x.name)===norm(name));const cat=p&&p.category?String(p.category).trim():'';const key=cat==='Adicionais'?'ADICIONAIS':cat==='Bebidas'?'BEBIDAS':'ITENS';groups[key].push((Number(i&&i.quantity)||1)+'x '+name)});return ['ADICIONAIS','BEBIDAS','ITENS'].filter(k=>groups[k].length).map(k=>'<div class="bvOrderItemGroup"><small>'+k+'</small><p>'+esc(groups[k].join(' • '))+'</p></div>').join('')||'<div class="bvOrderItemGroup"><small>ITENS</small><p>Itens do pedido</p></div>'};
   window.orderLabel=o=>Number(o?.orderNumber)>0?String(Math.trunc(o.orderNumber)).padStart(3,'0'):String(o?.id||'').slice(-5);
   window.renderAdmin=()=>{
     const b=$('orders');if(!b)return;
