@@ -64,7 +64,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.346';
+  window.BV_STABILITY_VERSION='2026.09.26.347';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -195,7 +195,41 @@
     }).join(''):'<div class="panel"><p class="muted">Nenhum produto disponível nesta categoria.</p></div>';
   };
   window.addPromotionToCart=async id=>{const promo=(window.promotions||[]).find(x=>String(x.id)===String(id));if(!promo)return toast('Promoção não encontrada.');const now=Date.now();if(!promo.active||(promo.starts_at&&new Date(promo.starts_at).getTime()>now)||(promo.ends_at&&new Date(promo.ends_at).getTime()<now))return toast('Esta promoção não está mais ativa.');const items=window.promotionItems?.[promo.id]||[];const legacy=promo.product_id?[{product_id:promo.product_id,quantity:1}]:[];const rows=items.length?items:legacy;if(!rows.length)return toast('Esta promoção não possui itens.');const ps=window.products||[];const resolved=rows.map(i=>({p:ps.find(p=>String(p.id)===String(i.product_id)),q:Math.max(1,Number(i.quantity)||1)}));if(resolved.some(x=>!x.p))return toast('Não foi possível localizar todos os itens da promoção.');const refriItems=resolved.filter(x=>norm(x.p.name)==='refri 2l');if(refriItems.length){const stockReady=await window.BV_REFRESH_FLAVOR_STOCKS?.();if(!stockReady)return toast('Não foi possível consultar o estoque de sabores.');const m=$('bvFlavorModal')||null;window.BV_OPEN_PROMO_FLAVOR_PICKER?.(promo.id,refriItems);return;}const key='promo:'+promo.id;const r=window.cart.find(x=>x.id===key);if(r)r.q=(Number(r.q)||0)+1;else window.cart.push({id:key,name:'🎁 '+promo.name,price:Number(promo.promotional_price)||0,q:1,isPromotion:true,promotionId:promo.id,promotionItems:resolved.map(x=>({id:x.p.id,name:x.p.name,quantity:x.q}))});saveCart();toast('Promoção adicionada ao pedido por '+money(promo.promotional_price)+'.');showPage('pedido')};
-window.BV_OPEN_PROMO_FLAVOR_PICKER=(promoId,refriItems)=>{let m=$('bvFlavorModal');if(!m){window.BV_OPEN_FLAVOR_PICKER?.((window.products||[]).find(p=>norm(p?.name)==='refri 2l'));m=$('bvFlavorModal')}if(!m)return;m.dataset.promotionId=String(promoId);m.dataset.promotionRefriQty=String(refriItems.reduce((s,x)=>s+x.q,0));m.dataset.productId=String(refriItems[0].p.id);const gs=Number(window.BV_FLAVOR_STOCKS?.[String(refriItems[0].p.id)+'::guarana']??0),ls=Number(window.BV_FLAVOR_STOCKS?.[String(refriItems[0].p.id)+'::laranja']??0);m.dataset.guaranaStock=String(gs);m.dataset.laranjaStock=String(ls);m.classList.add('show')};
+window.BV_OPEN_PROMO_FLAVOR_PICKER=async(promoId,refriItems)=>{
+    let m=$('bvFlavorModal');
+    if(!m){
+      const refri=(window.products||[]).find(p=>norm(p?.name)==='refri 2l');
+      if(!refri)return toast('Produto Refri 2L não encontrado.');
+      await window.BV_OPEN_FLAVOR_PICKER?.(refri);
+      m=$('bvFlavorModal');
+    }
+    if(!m)return toast('Não foi possível abrir a seleção de sabor.');
+    const refri=refriItems?.find(x=>norm(x?.p?.name)==='refri 2l')||refriItems?.[0];
+    if(!refri?.p)return toast('Refri 2L não encontrado na promoção.');
+    const productId=String(refri.p.id);
+    const gs=Number(window.BV_FLAVOR_STOCKS?.[productId+'::guarana']??0);
+    const ls=Number(window.BV_FLAVOR_STOCKS?.[productId+'::laranja']??0);
+    m.dataset.promotionId=String(promoId);
+    m.dataset.promotionRefriQty=String(Math.max(1,Number(refri.q)||1));
+    m.dataset.productId=productId;
+    m.dataset.guaranaStock=String(gs);
+    m.dataset.laranjaStock=String(ls);
+    const box=m.querySelector('.bvFlavorOptions');
+    if(box){
+      box.innerHTML='';
+      const addOption=(label,emoji,flavor,stock)=>{
+        const b=document.createElement('button');
+        b.type='button';
+        b.disabled=stock<=0;
+        b.innerHTML=emoji+' '+label+' <small>('+stock+' em estoque)</small>';
+        b.addEventListener('click',()=>window.BV_SELECT_FLAVOR(flavor));
+        box.appendChild(b);
+      };
+      addOption('Guaraná','🥤','Guaraná',gs);
+      addOption('Laranja','🍊','Laranja',ls);
+    }
+    m.classList.add('show');
+  };
   const saveCart=()=>{localStorage.setItem('bv_cart',JSON.stringify(window.cart||[]));const n=(window.cart||[]).reduce((s,x)=>s+(Number(x.q)||0),0);if($('count'))$('count').textContent=n;if($('sideCount'))$('sideCount').textContent=n;window.renderCart()};
   window.addToCart=id=>{const p=(window.products||[]).find(x=>String(x.id)===String(id));if(!p)return toast('Produto não encontrado.');if(norm(p.name)==='refri 2l'){window.BV_OPEN_FLAVOR_PICKER?.(p);return}const category=String(p.category||'Lanches');const isRefrigerante=category==='Bebidas'&&/coca|refri|refrigerante/i.test(String(p.name||''));const stock=Math.max(0,Number(p.stock)||0);if(isRefrigerante&&stock<=0)return toast('Este refrigerante está esgotado.');window.BV_ADD_PRODUCT_TO_CART?.(p,'')};
 window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
@@ -290,7 +324,7 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     if(!['guarana','laranja'].includes(key))return toast('Sabor inválido.');
     const stock=Math.max(0,Number(m.dataset[key+'Stock']||0));
     if(stock<=0)return toast('Este sabor está esgotado.');
-    if(m.dataset.promotionId){const promoId=String(m.dataset.promotionId);const qty=Number(m.dataset.promotionRefriQty)||1;const flavorKey=key;const flavorCacheKey=String(m.dataset.productId)+'::'+flavorKey;const stock=Math.max(0,Number(m.dataset[flavorKey==='guarana'?'guaranaStock':'laranjaStock']||0));if(stock<qty)return toast('Estoque insuficiente para este sabor. Disponível: '+stock+'.');const promo=(window.promotions||[]).find(x=>String(x.id)===promoId);const rows=window.promotionItems?.[promoId]|| (promo?.product_id?[{product_id:promo.product_id,quantity:1}]:[]);const ps=window.products||[];const resolved=rows.map(i=>({p:ps.find(p=>String(p.id)===String(i.product_id)),q:Math.max(1,Number(i.quantity)||1)}));const refri=resolved.find(x=>norm(x.p?.name)==='refri 2l');if(!promo||!refri)return toast('Promoção não encontrada.');const cartKey='promo:'+promoId;const existing=window.cart.find(x=>x.id===cartKey);if(existing){const nextQ=(Number(existing.q)||0)+1;if(stock<qty*nextQ)return toast('Estoque insuficiente para adicionar outra promoção. Disponível: '+stock+'.');existing.q=nextQ;existing.promotionFlavors=[{productId:refri.p.id,flavor:flavorKey==='guarana'?'Guaraná':'Laranja',quantity:refri.q}];}else window.cart.push({id:cartKey,name:'🎁 '+promo.name,price:Number(promo.promotional_price)||0,q:1,isPromotion:true,promotionId:promoId,promotionItems:resolved.map(x=>({id:x.p.id,name:x.p.name,quantity:x.q})),promotionFlavors:[{productId:refri.p.id,flavor:key.endsWith('::guarana')?'Guaraná':'Laranja',quantity:refri.q}]});m.dataset.promotionId='';m.dataset.promotionRefriQty='';window.BV_CLOSE_FLAVOR_PICKER();saveCart();toast('Promoção adicionada ao pedido por '+money(promo.promotional_price)+'.');showPage('pedido');return;}
+    if(m.dataset.promotionId){const promoId=String(m.dataset.promotionId);const qty=Number(m.dataset.promotionRefriQty)||1;const flavorKey=key;const flavorCacheKey=String(m.dataset.productId)+'::'+flavorKey;const stock=Math.max(0,Number(m.dataset[flavorKey==='guarana'?'guaranaStock':'laranjaStock']||0));if(stock<qty)return toast('Estoque insuficiente para este sabor. Disponível: '+stock+'.');const promo=(window.promotions||[]).find(x=>String(x.id)===promoId);const rows=window.promotionItems?.[promoId]|| (promo?.product_id?[{product_id:promo.product_id,quantity:1}]:[]);const ps=window.products||[];const resolved=rows.map(i=>({p:ps.find(p=>String(p.id)===String(i.product_id)),q:Math.max(1,Number(i.quantity)||1)}));const refri=resolved.find(x=>norm(x.p?.name)==='refri 2l');if(!promo||!refri)return toast('Promoção não encontrada.');const cartKey='promo:'+promoId;const existing=window.cart.find(x=>x.id===cartKey);if(existing){const nextQ=(Number(existing.q)||0)+1;if(stock<qty*nextQ)return toast('Estoque insuficiente para adicionar outra promoção. Disponível: '+stock+'.');existing.q=nextQ;existing.promotionFlavors=[{productId:refri.p.id,flavor:flavorKey==='guarana'?'Guaraná':'Laranja',quantity:refri.q}];}else window.cart.push({id:cartKey,name:'🎁 '+promo.name,price:Number(promo.promotional_price)||0,q:1,isPromotion:true,promotionId:promoId,promotionItems:resolved.map(x=>({id:x.p.id,name:x.p.name,quantity:x.q})),promotionFlavors:[{productId:refri.p.id,flavor:flavorKey==='guarana'?'Guaraná':'Laranja',quantity:refri.q}]});m.dataset.promotionId='';m.dataset.promotionRefriQty='';window.BV_CLOSE_FLAVOR_PICKER();saveCart();toast('Promoção adicionada ao pedido por '+money(promo.promotional_price)+'.');showPage('pedido');return;}
   const p0=(window.products||[]).find(x=>norm(x?.name)==='refri 2l');
     if(!p0)return toast('Produto Refri 2L não encontrado.');
     const p={...p0,id:String(id),name:'Refri 2L'};
