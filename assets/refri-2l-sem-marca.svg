@@ -1,18 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 720">
 <defs>
-<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f7f7f7"/><stop offset="1" stop-color="#dedede"/></linearGradient>
-<linearGradient id="pet" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#555" stop-opacity=".25"/><stop offset=".18" stop-color="#fff" stop-opacity=".65"/><stop offset=".5" stop-color="#888" stop-opacity=".18"/><stop offset=".82" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#444" stop-opacity=".25"/></linearGradient>
-<linearGradient id="drink" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#4a2a1b"/><stop offset=".5" stop-color="#1b0d08"/><stop offset="1" stop-color="#050303"/></linearGradient>
-<linearGradient id="cap" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eee"/><stop offset=".5" stop-color="#777"/><stop offset="1" stop-color="#ddd"/></linearGradient>
-<filter id="shadow"><feGaussianBlur stdDeviation="14"/></filter>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8f8f8"/><stop offset="1" stop-color="#e2e2e2"/></linearGradient>
+<linearGradient id="soda" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#160906"/><stop offset=".22" stop-color="#5a2412"/><stop offset=".5" stop-color="#24100a"/><stop offset=".78" stop-color="#6a2b15"/><stop offset="1" stop-color="#120705"/></linearGradient>
+<linearGradient id="pet" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#9aa0a6" stop-opacity=".18"/><stop offset=".16" stop-color="#fff" stop-opacity=".7"/><stop offset=".34" stop-color="#dfe5e9" stop-opacity=".2"/><stop offset=".62" stop-color="#fff" stop-opacity=".42"/><stop offset=".84" stop-color="#b8c0c6" stop-opacity=".18"/><stop offset="1" stop-color="#555" stop-opacity=".28"/></linearGradient>
+<linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fafafa"/><stop offset=".5" stop-color="#9b9b9b"/><stop offset="1" stop-color="#e8e8e8"/></linearGradient>
+<filter id="shadow"><feGaussianBlur stdDeviation="13"/></filter>
 </defs>
-<rect width="420" height="720" fill="url(#bg)" rx="28"/>
-<ellipse cx="210" cy="655" rx="105" ry="24" fill="#777" opacity=".25" filter="url(#shadow)"/>
-<path d="M164 92h92v54c0 17 15 29 29 45 15 17 25 37 25 66v315c0 49-32 76-100 76s-100-27-100-76V257c0-29 10-49 25-66 14-16 29-28 29-45z" fill="url(#drink)" stroke="#555" stroke-width="5"/>
-<path d="M164 92h92v54c0 17 15 29 29 45 15 17 25 37 25 66v315c0 49-32 76-100 76s-100-27-100-76V257c0-29 10-49 25-66 14-16 29-28 29-45z" fill="url(#pet)" opacity=".9"/>
-<path d="M171 112h78v43c0 22 23 35 34 57 7 14 10 30 10 49v301c0 30-22 49-73 54V205c0-27-17-39-27-55-9-14-14-25-22-38z" fill="#fff" opacity=".12"/>
-<path d="M145 260h130M145 285h130M145 540h130M150 566h120" stroke="#fff" stroke-opacity=".22" stroke-width="4"/>
-<rect x="174" y="52" width="72" height="55" rx="12" fill="url(#cap)" stroke="#555" stroke-width="4"/>
-<path d="M180 63h60M180 75h60M180 87h60" stroke="#555" stroke-width="4" opacity=".45"/>
-<path d="M167 103h86" stroke="#fff" stroke-width="5" opacity=".45"/>
+<rect width="420" height="720" rx="28" fill="url(#bg)"/>
+<ellipse cx="210" cy="674" rx="108" ry="22" fill="#555" opacity=".25" filter="url(#shadow)"/>
+
+<!-- líquido do refrigerante -->
+<path d="M139 275c0-30 10-51 29-69 13-13 25-26 25-48V151h34v7c0 22 12 35 25 48 19 18 29 39 29 69v304c0 48-22 75-89 75s-89-27-89-75z" fill="url(#soda)"/>
+
+<!-- corpo da garrafa PET de 2 litros -->
+<path d="M174 95h72v63c0 18 10 29 27 47 18 19 28 42 28 70v304c0 52-29 82-91 82s-91-30-91-82V275c0-28 10-51 28-70 17-18 27-29 27-47z" fill="url(#pet)" stroke="#777" stroke-width="5"/>
+
+<!-- brilho frontal do plástico -->
+<path d="M181 176c-13 22-20 39-20 72v297c0 37 17 61 49 69V254c0-34-7-53-18-78z" fill="#fff" opacity=".18"/>
+<path d="M270 208c12 18 17 36 17 67v300c0 34-14 55-39 66V255c0-20 5-35 22-47z" fill="#fff" opacity=".08"/>
+
+<!-- marcações do relevo da garrafa -->
+<path d="M143 306h134M143 330h134M143 530h134M148 555h124" stroke="#fff" stroke-opacity=".27" stroke-width="4"/>
+<path d="M145 342h130M145 365h130" stroke="#111" stroke-opacity=".12" stroke-width="3"/>
+
+<!-- gargalo -->
+<path d="M174 95h72v52h-72z" fill="url(#pet)" stroke="#777" stroke-width="4"/>
+<rect x="170" y="48" width="80" height="53" rx="10" fill="url(#cap)" stroke="#666" stroke-width="4"/>
+<path d="M176 60h68M176 73h68M176 86h68" stroke="#666" stroke-width="4" opacity=".5"/>
+
+<!-- gás/burbujas discretas -->
+<g fill="#fff" opacity=".38">
+<circle cx="181" cy="407" r="3"/><circle cx="238" cy="455" r="2.5"/><circle cx="207" cy="500" r="3"/>
+<circle cx="252" cy="355" r="2.5"/><circle cx="173" cy="474" r="2"/>
+</g>
 </svg>
