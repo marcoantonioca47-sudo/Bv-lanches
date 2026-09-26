@@ -53,7 +53,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.286';
+  window.BV_STABILITY_VERSION='2026.09.25.287';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -297,8 +297,8 @@
       }
       return true;
     });
+    // Painel de produção: exibe exclusivamente pedidos novos.
     const novos=filtered.filter(o=>String(o.rawStatus||'').toLowerCase()==='recebido');
-    const andamento=filtered.filter(o=>String(o.rawStatus||'').toLowerCase()!=='recebido');
     const card=o=>{
       const raw=String(o.rawStatus||'').toLowerCase();
       const isNew=raw==='recebido';
