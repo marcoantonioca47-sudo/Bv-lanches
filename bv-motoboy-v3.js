@@ -9,10 +9,10 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.26.513';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.26.700';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.513';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.700';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -273,12 +273,25 @@
   }
 
   function actionButton(o) {
-    const status=String(o.status||'').toLowerCase();
-    if(status==='em_preparo') return '<div class="motoWaiting">⏳ Aguardando ficar pronto</div>';
-    const action = status === 'saiu_entrega' ? 'entregar' : 'coletar';
-    const text = action === 'coletar' ? '📦 Coletar pedido' : '✅ Confirmar entrega';
-    const cls = action === 'coletar' ? 'motoCollect' : 'motoDeliver';
-    return '<button type="button" class="motoActionBtn '+cls+'" data-order-id="'+esc(o.id)+'" data-action="'+action+'" onclick="event.preventDefault();event.stopPropagation();window.motoAction(this.dataset.orderId,this.dataset.action,this);return false;">'+text+'</button>';
+    const status=String(o.status||'').trim().toLowerCase();
+
+    // REGRA DO MOTOBOY:
+    // 1) em_preparo = pedido visível, mas ainda sendo preparado. NUNCA mostrar coleta.
+    // 2) em_producao = pedido pronto. Somente aqui liberar "Coletar pedido".
+    // 3) saiu_entrega = pedido já coletado. Liberar somente "Confirmar entrega".
+    if(status==='em_preparo'){
+      return '<div class="motoWaiting">⏳ Em preparação — aguardando ficar pronto</div>';
+    }
+
+    if(status==='em_producao'){
+      return '<button type="button" class="motoActionBtn motoCollect" data-order-id="'+esc(o.id)+'" data-action="coletar" onclick="event.preventDefault();event.stopPropagation();window.motoAction(this.dataset.orderId,this.dataset.action,this);return false;">📦 Coletar pedido</button>';
+    }
+
+    if(status==='saiu_entrega'){
+      return '<button type="button" class="motoActionBtn motoDeliver" data-order-id="'+esc(o.id)+'" data-action="entregar" onclick="event.preventDefault();event.stopPropagation();window.motoAction(this.dataset.orderId,this.dataset.action,this);return false;">✅ Confirmar entrega</button>';
+    }
+
+    return '<div class="motoWaiting">⏳ Aguardando liberação</div>';
   }
 
   async function getOrders() {
@@ -360,6 +373,20 @@
     }
 
     try {
+      // A coleta só pode ser iniciada quando o pedido estiver PRONTO
+      // (status interno: em_producao). Mesmo que algum botão antigo/cache
+      // tente chamar a ação, o front-end bloqueia a coleta antes do RPC.
+      if(action==='coletar'){
+        const check=await client.from('orders').select('status').eq('id',id).maybeSingle();
+        if(check.error) throw check.error;
+        const currentStatus=String(check.data?.status||'').trim().toLowerCase();
+        if(currentStatus!=='em_producao'){
+          throw new Error(currentStatus==='em_preparo'
+            ? 'O pedido ainda está em preparação. A coleta será liberada quando estiver pronto.'
+            : 'A coleta só está disponível quando o pedido estiver pronto.');
+        }
+      }
+
       const session=await client.auth.getSession();
       const user=session?.data?.session?.user;
       if (!user) throw new Error('Sessão expirada. Entre novamente.');
