@@ -649,7 +649,31 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   };
   window.updateBairroFee=async n=>{const v=prompt('Nova taxa para '+n);if(v===null)return;const f=Number(String(v).replace(',','.'));if(!Number.isFinite(f)||f<0)return toast('Taxa inválida.');const r=await sb.from('neighborhood_fees').update({fee:f,active:true}).eq('name',n);if(r.error)return toast('Erro: '+r.error.message);await window.refreshDeliveryFees();toast('Taxa atualizada.')};
   window.deleteBairroFee=async n=>{if(!confirm('Excluir a taxa de '+n+'?'))return;const r=await sb.from('neighborhood_fees').delete().eq('name',n);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.refreshDeliveryFees();toast('Bairro excluído.')};
-  window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value||0).replace(',','.')),w=$('waCfg')?.value.trim()||'';if(!Number.isFinite(f)||f<0)return toast('Taxa padrão inválida.');const r=await sb.from('settings').upsert({id:1,fee:f,whatsapp:w},{onConflict:'id'});if(r.error)return toast('Erro ao salvar configurações: '+r.error.message);window.BV_DEFAULT_FEE=f;toast('Configurações salvas.')};
+  window.BV_STORE_OPEN=true;
+window.renderStoreStatus=async function(){
+  const wrap=document.getElementById('storeStatusControl'),label=document.getElementById('storeStatusLabel'),btn=document.getElementById('storeStatusBtn');
+  if(!wrap||!label||!btn)return;
+  const open=window.BV_STORE_OPEN!==false;
+  wrap.classList.toggle('open',open);wrap.classList.toggle('closed',!open);
+  label.textContent=open?'🟢 Loja aberta':'🔴 Loja fechada';
+  btn.textContent=open?'Fechar loja':'Abrir loja';
+};
+window.toggleStoreStatus=async function(){
+  const next=window.BV_STORE_OPEN===false;
+  window.BV_STORE_OPEN=next;
+  window.renderStoreStatus?.();
+  try{
+    const r=await sb.from('settings').upsert({id:1,store_open:next},{onConflict:'id'});
+    if(r.error)throw r.error;
+    toast(next?'Loja aberta.':'Loja fechada.');
+  }catch(e){
+    window.BV_STORE_OPEN=!next;
+    window.renderStoreStatus?.();
+    toast('Não foi possível salvar o status da loja.');
+    console.error('[BV STORE STATUS]',e);
+  }
+};
+window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value||0).replace(',','.')),w=$('waCfg')?.value.trim()||'';if(!Number.isFinite(f)||f<0)return toast('Taxa padrão inválida.');const r=await sb.from('settings').upsert({id:1,fee:f,whatsapp:w},{onConflict:'id'});if(r.error)return toast('Erro ao salvar configurações: '+r.error.message);window.BV_DEFAULT_FEE=f;toast('Configurações salvas.')};
 
   window.promotions=[];window.promotionItems={};
   window.BV_REFRESH_PROMOTIONS=async()=>{if(!sb)return;const r=await sb.from('promotions').select('*').order('created_at',{ascending:false});if(r.error)return toast('Erro ao carregar promoções: '+r.error.message);window.promotions=r.data||[];const ids=window.promotions.map(x=>x.id);window.promotionItems={};if(ids.length){const z=await sb.from('promotion_items').select('promotion_id,product_id,quantity').in('promotion_id',ids);if(!z.error)(z.data||[]).forEach(i=>{(window.promotionItems[i.promotion_id]??=[]).push(i)})}
