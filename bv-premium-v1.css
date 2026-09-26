@@ -408,3 +408,22 @@ input:focus,select:focus,textarea:focus{
   #bvSystemModal .bvSystemModalActions{padding:0 16px 16px!important}
   #bvSystemModal .bvSystemModalBtn{width:100%!important}
 }
+
+#bvCancelConfirmModal .bvCancelActions{justify-content:stretch!important}
+#bvCancelConfirmModal .bvCancelActions button{flex:1!important;min-height:44px!important;border-radius:11px!important;font-weight:900!important}
+#bvCancelConfirmModal .bvCancelKeepBtn{
+  border:1px solid #343a44!important;
+  background:#20242a!important;
+  color:#fff!important;
+}
+#bvCancelConfirmModal .bvCancelKeepBtn:hover{background:#292e35!important}
+#bvCancelConfirmModal .bvCancelConfirmBtn{
+  border:1px solid #ff2530!important;
+  background:linear-gradient(135deg,#ff2530,#b90008)!important;
+  color:#fff!important;
+  box-shadow:0 10px 25px rgba(229,9,20,.18)!important;
+}
+#bvCancelConfirmModal .bvCancelConfirmBtn:hover{transform:translateY(-1px)}
+@media(max-width:600px){
+  #bvCancelConfirmModal .bvCancelActions{flex-direction:column-reverse!important}
+}
