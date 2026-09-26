@@ -388,24 +388,26 @@
 <section id="page-config" class="page adminPage"><div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Configurações</h2></div></div><div class="panel settingsPanel"><label>Taxa padrão de entrega<input id="feeCfg" type="number" step="0.01" min="0" value="5"></label><label>WhatsApp<input id="waCfg"></label><h3>Taxa por bairro</h3><div class="two"><input id="bairroCfg" placeholder="Bairro"><input id="bairroFeeCfg" type="number" step="0.01" placeholder="Taxa"></div><button onclick="addBairroFee()">+ Adicionar bairro</button><div id="bairroFees"></div><button onclick="saveCfg()">Salvar configurações</button></div><div class="panel permissionsPanel"><div class="managerHeader"><div><h3>Usuários e contas</h3></div><span id="userCount" class="pill">0 usuários</span></div><input id="userSearch" type="search" oninput="renderUsers()" placeholder="Buscar..."><div id="userPermissions"></div></div></section>
 </main></div></div><div id="toast"></div>
 <script>
-window.renderDeliveryFees=function(){
+window.renderDeliveryFees=async function(){
   const box=document.getElementById('publicDeliveryFees');
   if(!box)return;
-  if(String(window.BV_ROLE||'').toLowerCase()==='administrador')return;
-  const cfg=(typeof config==='object'&&config)||{};
-  const fees=cfg.bairroFees&&typeof cfg.bairroFees==='object'?cfg.bairroFees:{};
-  const entries=Object.entries(fees).filter(([n,v])=>String(n).trim()&&Number.isFinite(Number(v))).sort((a,b)=>String(a[0]).localeCompare(String(b[0]),'pt-BR'));
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const standard=Number(cfg.fee);
-  box.innerHTML='<div class="publicFeeHead"><div><small>ENTREGA BV LANCHES</small><b>Taxas por bairro</b></div><span>'+entries.length+' bairro'+(entries.length===1?'':'s')+'</span></div>'+
-    '<div class="publicFeeGrid">'+
-    (entries.length?entries.map(([name,value])=>'<div class="publicFeeCard"><span>📍</span><div><b>'+esc(name.replace(/\b\w/g,m=>m.toUpperCase()))+'</b><small>Taxa de entrega</small></div><strong>'+money(value)+'</strong></div>').join(''):
-    '<div class="publicFeeEmpty">Nenhuma taxa por bairro cadastrada.</div>')+
-    '</div>'+
-    (Number.isFinite(standard)&&standard>=0?'<div class="publicFeeDefault"><span>🚚</span><div><b>Taxa padrão</b><small>Aplicada quando o bairro não possui uma taxa específica.</small></div><strong>'+money(standard)+'</strong></div>':'');
-};
-</script>
+  box.innerHTML='<div class="publicFeeHead"><div><small>ENTREGA BV LANCHES</small><b>Taxas por bairro</b></div></div><div class="publicFeeGrid"><div class="publicFeeEmpty">⏳ Carregando taxas...</div></div>';
+  try{
+    const sb=window.BV_SUPABASE||window.sb;
+    if(!sb)throw new Error('Banco de dados indisponível.');
+    const r=await sb.from('neighborhood_fees').select('name,fee,active').eq('active',true).order('name',{ascending:true});
+    if(r.error)throw r.error;
+    const entries=(r.data||[]).filter(x=>String(x.name||'').trim()&&Number.isFinite(Number(x.fee)));
+    box.innerHTML='<div class="publicFeeHead"><div><small>ENTREGA BV LANCHES</small><b>Taxas por bairro</b></div><span>'+entries.length+' bairro'+(entries.length===1?'':'s')+'</span></div><div class="publicFeeGrid">'+
+      (entries.length?entries.map(x=>'<div class="publicFeeCard"><span>📍</span><div><b>'+esc(x.name)+'</b></div><strong>'+money(x.fee)+'</strong></div>').join(''):'<div class="publicFeeEmpty">Nenhuma taxa por bairro cadastrada.</div>')+
+      '</div>';
+  }catch(e){
+    console.error('[BV PUBLIC DELIVERY FEES]',e);
+    box.innerHTML='<div class="publicFeeEmpty">Não foi possível carregar as taxas por bairro.</div>';
+  }
+};</script>
 <style>
 #page-taxa-entrega .publicFeeHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:2px 0 12px;border-bottom:1px solid rgba(255,255,255,.07)}
 #page-taxa-entrega .publicFeeHead div{display:flex;flex-direction:column;gap:4px}
@@ -428,6 +430,6 @@ window.renderDeliveryFees=function(){
 #page-taxa-entrega .publicFeeEmpty{grid-column:1/-1;padding:25px;text-align:center;color:#8f96a0;border:1px dashed rgba(255,255,255,.1);border-radius:13px}
 @media(max-width:600px){#page-taxa-entrega .publicFeeGrid{grid-template-columns:1fr}#page-taxa-entrega .publicFeeCard{min-height:66px}}
 </style>
-<script>window.BV_SITE_VERSION='2026.09.26.940';try{if(window.caches&&caches.keys)caches.keys().then(keys=>keys.filter(k=>!String(k).includes('bv-lanches-pwa-v4')).forEach(k=>caches.delete(k))).catch(()=>{})}catch(e){}</script>
+<script>window.BV_SITE_VERSION='2026.09.26.950';try{if(window.caches&&caches.keys)caches.keys().then(keys=>keys.filter(k=>!String(k).includes('bv-lanches-pwa-v4')).forEach(k=>caches.delete(k))).catch(()=>{})}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js?v=20260926.335"></script><script src="bv-auth-v2.js?v=20260926.335"></script><script src="bv-register-v1.js?v=20260926.335"></script><script src="bv-stability-v1.js?v=20260926.508"></script><script src="bv-order-v2.js?v=20260926.406"></script><script src="bv-updates-v1.js?v=20260926.504"></script><script src="bv-icons-v1.js?v=20260926.335"></script><script src="bv-icon-styles-v1.js?v=20260926.335"></script><link rel="stylesheet" href="bv-home-mobile-fix-v1.css?v=20260926.335">
 <script src="bv-pwa-v1.js?v=20260926.900"></script><script src="bv-ultimate-v1.js?v=20260926.402"></script><script src="bv-motoboy-v3.js?v=20260926.920"></script><script src="bv-admin-fees-fix-v1.js?v=20260926.335"></script><script src="bv-realtime-orders-v1.js?v=20260926.800"></script><script src="bv-cleanup-v1.js?v=20260926.900"></script><script src="bv-promotions-dedupe-v1.js?v=20260926.335"></script></body></html>
