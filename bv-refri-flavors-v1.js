@@ -141,7 +141,13 @@ function refreshMiniCatalogUI(){
   if(name==='refri mini' && miniProduct){
    const hasStock=MINI.some(f=>stockOf(miniProduct.id,f.key)>0);
    card.classList.toggle('productOutOfStock',!hasStock);
-   card.querySelectorAll('.catalogStock,.stockControl,[class*="stockControl"]').forEach(x=>x.style.display='none');
+   card.querySelectorAll('.catalogStock,.stockControl,[class*="stockControl"],[class*="stockBadge"],[class*="stockInfo"],[data-stock]').forEach(x=>x.style.display='none');
+   /* Não mostrar quantidade/estoque no card público da Coca-Cola 2L; o estoque continua sendo usado para bloquear a venda. */
+   card.querySelectorAll('*').forEach(x=>{
+    if(x===card || x.children.length>0)return;
+    const t=norm(x.textContent);
+    if(t.includes('estoque') || /^\\d+\\s*(disponiveis|disponíveis|unidades)$/.test(t))x.style.display='none';
+   });
    let box=card.querySelector('.bvMiniCatalog');
    if(!box){box=document.createElement('div');box.className='bvMiniCatalog';card.querySelector('.productInfo')?.appendChild(box)}
    box.innerHTML='';
