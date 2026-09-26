@@ -59,6 +59,13 @@ function watch(){
             'new:'+o.id
           );
           playOrderSound();
+        }else if(old[o.id]!==o.rawStatus&&o.rawStatus==='em_preparo'){
+          addN(
+            '👨‍🍳 Pedido em preparo',
+            'O pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' está em preparo.',
+            'preparo:'+o.id
+          );
+          playOrderSound();
         }
       }else if(!isAdmin){
         if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega'&&String(localStorage.getItem('bv_track_id')||'')===String(o.id)){
@@ -121,7 +128,7 @@ document.addEventListener('DOMContentLoaded',boot,{once:true});
 let bvHousekeepingTimer=null;
 function startHousekeeping(){if(bvHousekeepingTimer)clearInterval(bvHousekeepingTimer);bvHousekeepingTimer=setInterval(()=>{patch();watch()},4000)}
 startHousekeeping();
-window.BV_UPDATES_VERSION='2026.09.26.511'
+window.BV_UPDATES_VERSION='2026.09.26.512'
 })();
 
 /* DASHBOARD PRO — vendas, produtos, pagamentos e faturamento por período */
