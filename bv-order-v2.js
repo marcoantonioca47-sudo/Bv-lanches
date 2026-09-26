@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.26.504';
+  window.BV_ORDER_V2 = '2026.09.26.505';
 
   window.finish = async function(){
     const sb = getSB();
@@ -32,6 +32,30 @@
     if(btn){ btn.disabled = true; btn.textContent = '⏳ Enviando pedido...'; }
 
     try {
+      // Consulta o status atual da loja diretamente no Supabase antes de criar o pedido.
+      // Isso impede pedidos mesmo que o cliente tenha uma tela antiga/cacheada aberta.
+      const {data:storeSettings,error:storeError} = await sb
+        .from('settings')
+        .select('store_open')
+        .eq('id',1)
+        .maybeSingle();
+      if(storeError) throw new Error('Não foi possível verificar o status da loja: ' + storeError.message);
+      if(storeSettings?.store_open === false){
+        if(typeof window.bvModal==='function'){
+          window.bvModal({
+            type:'warning',
+            icon:'🔒',
+            kicker:'LOJA FECHADA',
+            title:'Pedidos indisponíveis',
+            message:'A loja está <strong>fechada</strong> no momento. Assim que ela for aberta, você poderá fazer seu pedido.',
+            button:'Entendi'
+          });
+        }else{
+          msg('A loja está fechada no momento.');
+        }
+        return;
+      }
+
       const {data:auth,error:authError} = await sb.auth.getUser();
       const user = auth?.user;
       if(authError || !user) throw new Error('Faça login para finalizar o pedido.');
