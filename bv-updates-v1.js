@@ -8,6 +8,7 @@ let bvAudioCtx=null,bvAudioReady=false;
 function unlockNotificationSound(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!bvAudioCtx)bvAudioCtx=new AC();if(bvAudioCtx.state==='suspended')bvAudioCtx.resume().catch(()=>{});bvAudioReady=true}catch(e){}}
 function playOrderSound(){if(!bvAudioReady||!bvAudioCtx)return;try{if(bvAudioCtx.state==='suspended')bvAudioCtx.resume().catch(()=>{});const now=bvAudioCtx.currentTime;[0,0.22,0.44,0.66].forEach((offset,i)=>{const o=bvAudioCtx.createOscillator(),g=bvAudioCtx.createGain();o.type=i===2?'square':'sine';o.frequency.value=[740,988,1175,988][i];g.gain.setValueAtTime(0.0001,now+offset);g.gain.exponentialRampToValueAtTime(0.42,now+offset+0.025);g.gain.exponentialRampToValueAtTime(0.0001,now+offset+0.19);o.connect(g);g.connect(bvAudioCtx.destination);o.start(now+offset);o.stop(now+offset+0.21)})}catch(e){}}
 document.addEventListener('pointerdown',unlockNotificationSound,{passive:true});
+document.addEventListener('pointerdown',()=>{const role=String(window.BV_ROLE||'').toLowerCase();if(['administrador','admin'].includes(role))requestAdminNotificationPermission?.()},{passive:true});
 document.addEventListener('touchstart',unlockNotificationSound,{passive:true});
 function notifyNewOrderDevice(o){
   try{
