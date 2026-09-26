@@ -70,6 +70,15 @@ function watch(){
           playOrderSound();
           notifyNewOrderDevice(o);
         }
+      }else{
+        // Cliente: somente avisa quando o próprio pedido saiu para entrega.
+        if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega'){
+          addN(
+            '🛵 Pedido saiu para entrega',
+            'Seu pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' saiu para entrega.',
+            'delivery:'+o.id+':'+o.rawStatus
+          );
+        }
       }
     });
   }
@@ -104,7 +113,7 @@ document.addEventListener('DOMContentLoaded',boot,{once:true});
 let bvHousekeepingTimer=null;
 function startHousekeeping(){if(bvHousekeepingTimer)clearInterval(bvHousekeepingTimer);bvHousekeepingTimer=setInterval(()=>{patch();watch()},4000)}
 startHousekeeping();
-window.BV_UPDATES_VERSION='2026.09.26.510'
+window.BV_UPDATES_VERSION='2026.09.26.511'
 })();
 
 /* DASHBOARD PRO — vendas, produtos, pagamentos e faturamento por período */
