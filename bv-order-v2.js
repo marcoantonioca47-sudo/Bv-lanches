@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.26.502';
+  window.BV_ORDER_V2 = '2026.09.26.503';
 
   window.finish = async function(){
     const sb = getSB();
@@ -50,7 +50,21 @@
       if(!name) throw new Error('Informe seu nome.');
       if(!phone) throw new Error('Informe seu WhatsApp.');
       if(delivery && (!street || !num || !bairro)){
-        throw new Error('Preencha rua, número e bairro.');
+        const missing=[];
+        if(!street) missing.push('rua');
+        if(!num) missing.push('número');
+        if(!bairro) missing.push('bairro');
+        if(typeof window.bvModal==='function'){
+          window.bvModal({
+            type:'warning',icon:'📍',kicker:'ENDEREÇO DE ENTREGA',
+            title:'Endereço incompleto',
+            message:'Informe '+missing.join(', ')+' antes de enviar o pedido. Assim conseguimos preparar a entrega corretamente.',
+            button:'Entendi'
+          });
+        }else{
+          msg('Informe '+missing.join(', ')+' antes de enviar o pedido.');
+        }
+        return;
       }
 
       // Sempre consulta o catálogo atual antes de criar o pedido.
