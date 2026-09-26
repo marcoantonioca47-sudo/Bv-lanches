@@ -124,7 +124,7 @@
     if($('pageTitle'))$('pageTitle').textContent=labels[p]||p;
     document.querySelectorAll('.sideNav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
     if(innerWidth<=850)$('sidebar')?.classList.remove('open');
-    if(p==='cardapio'){await window.BV_REFRESH_PRODUCTS?.();window.renderProducts();}
+    if(p==='cardapio'){if(!window.BV_CAT){const active=document.querySelector('#page-cardapio .menuCategoryTabs button.active');window.BV_CAT=active?.dataset.menuCategory||'Lanches'}window.renderProducts();await window.BV_REFRESH_PRODUCTS?.();window.renderProducts();}
     if(p==='pedido'){window.initPaymentSelection?.();window.renderCart();setTimeout(window.loadProfile,50)}
     if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();window.startTrackingStatusPolling?.();}
     if(p==='dashboard')window.renderDashboard();
@@ -684,7 +684,7 @@
   };
   window.addProduct=async e=>{e.preventDefault();const role=String(window.BV_ROLE||'').trim().toLowerCase();if(!['administrador','admin'].includes(role))return toast('Acesso restrito ao administrador.');if(!sb)return toast('Banco de dados indisponível. Recarregue a página.');const form=e.target;const n=$('productName')?.value.trim()||'',raw=String($('productPrice')?.value||'').trim().replace(',','.'),p=Number(raw),cat=String($('productCategory')?.value||'').trim(),d=$('productDesc')?.value.trim()||'';if(!n)return toast('Informe o nome do produto.');if(raw===''||!Number.isFinite(p)||p<0)return toast('Informe um valor válido para o produto.');if(!['Lanches','Bebidas','Adicionais'].includes(cat))return toast('Selecione uma categoria válida.');const btn=form.querySelector('.formSave');if(btn){btn.disabled=true;btn.textContent='Cadastrando...'}try{const r=await sb.from('products').insert({name:n,price:p,category:cat,description:d,active:true}).select('id').single();if(r.error)throw r.error;form.reset();if($('productCategory'))$('productCategory').value='Lanches';window.closeProductForm();await window.BV_REFRESH_PRODUCTS();toast('Produto cadastrado com sucesso.')}catch(err){console.error('Cadastro de produto:',err);const msg=err?.message||'Verifique os dados e tente novamente.';toast('Erro ao cadastrar produto: '+msg)}finally{if(btn){btn.disabled=false;btn.textContent='✓ Cadastrar produto'}}};
   window.removeProduct=async id=>{if(!confirm('Excluir este produto do cardápio?'))return;const r=await sb.from('products').update({active:false}).eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PRODUCTS();toast('Produto removido.')};
-  window.BV_REFRESH_PRODUCTS=async()=>{if(!sb)return;const r=await sb.from('products').select('*').order('created_at');if(r.error)return toast('Erro ao carregar cardápio: '+r.error.message);window.products=r.data||[];localStorage.setItem('bv_products',JSON.stringify(window.products));window.renderProducts();window.renderProductsAdmin?.();window.renderPromotionsAdmin?.();await window.BV_REFRESH_PROMOTIONS?.()};
+  window.BV_REFRESH_PRODUCTS=async()=>{if(!sb)return false;const r=await sb.from('products').select('*').order('created_at');if(r.error){console.error('[BV PRODUCTS]',r.error);let cached=[];try{cached=JSON.parse(localStorage.getItem('bv_products')||'[]')}catch(e){}if(!Array.isArray(window.products)||!window.products.length){if(Array.isArray(cached)&&cached.length)window.products=cached}toast('Não foi possível sincronizar o cardápio agora. Os produtos já carregados foram preservados.');window.renderProducts();window.renderProductsAdmin?.();return false}window.products=Array.isArray(r.data)?r.data:[];try{localStorage.setItem('bv_products',JSON.stringify(window.products))}catch(e){}window.renderProducts();window.renderProductsAdmin?.();window.renderPromotionsAdmin?.();await window.BV_REFRESH_PROMOTIONS?.();return true};
   window.BV_REFRESH_PROMOTIONS?.();
   window.BV_REFRESH_ORDERS=async()=>{
     if(!sb)return;const {data:{user}}=await sb.auth.getUser();if(!user)return;
@@ -1043,9 +1043,12 @@ window.BV_TRACKING_REALTIME=null;
       sb.from('products').select('*').order('created_at'),
       sb.from('settings').select('fee,whatsapp').eq('id',1).maybeSingle()
     ]).then(async([pr,st])=>{
-      if(!pr.error){
-        window.products=pr.data||[];
+      if(!pr.error && Array.isArray(pr.data)){
+        window.products=pr.data;
         try{localStorage.setItem('bv_products',JSON.stringify(window.products))}catch(e){}
+        window.renderProducts();
+      }else if(pr.error){
+        console.warn('[BV] background products sync failed; preserving current catalog',pr.error);
         window.renderProducts();
       }
       window.BV_DEFAULT_FEE=st?.data?Number(st.data.fee)||0:5;
