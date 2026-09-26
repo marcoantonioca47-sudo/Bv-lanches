@@ -153,11 +153,11 @@ window.renderProducts=async()=>{
     if(!box){box=document.createElement('div');box.className='catalogStock flavorStock';const info=card.querySelector('.productInfo');info?.insertBefore(box,info.querySelector('.productBottom'))}
     box.innerHTML='<span>ESTOQUE POR SABOR</span><div class="flavorStockGrid">'+stocks.map(x=>'<div class="flavorStockItem"><span>'+x.f.emoji+' '+x.f.label+'</span><strong>'+x.n+'</strong></div>').join('')+'</div>';
     const bottom=card.querySelector('.productBottom');const oldBtn=bottom?.querySelector('button');if(oldBtn){oldBtn.disabled=false;oldBtn.classList.remove('addDisabled');oldBtn.textContent='+ Escolher sabor';oldBtn.onclick=()=>window.BV_OPEN_FLAVOR_PICKER?.(p)}
-    card.classList.toggle('productOutOfStock',stocks.every(x=>x.n<=0));
+    card.classList.toggle('productOutOfStock',stocks.every(x=>x.n<=0));\n    hideMiniGeneralStock();
   });
 };
 
-const oldAdmin=window.renderProductsAdmin;
+const hideMiniGeneralStock=()=>{\n  document.querySelectorAll('#products .productCard,#manage .adminProductCard').forEach(card=>{\n    const title=norm(card.querySelector('h3')?.textContent);\n    if(title!=='refri mini')return;\n    card.querySelectorAll('.catalogStock:not(.flavorStock),.adminStockBox:not(.adminMiniFlavorBox),[class*="stockControl"]:not(.adminMiniFlavorBox)').forEach(el=>el.style.display='none');\n    card.querySelectorAll('input[name*="stock"],input[id*="stock"]').forEach(el=>{const row=el.closest('.formRow,.field,.adminStockBox,.productInfo'); if(row&&!row.querySelector('.adminMiniFlavorBox'))row.style.display='none'});\n  });\n};\n\nconst oldAdmin=window.renderProductsAdmin;
 window.renderProductsAdmin=async()=>{
   if(typeof oldAdmin!=='function')return;
   await oldAdmin();
@@ -176,5 +176,5 @@ window.renderProductsAdmin=async()=>{
 if(!$('bvMiniFlavorStyle')){
  const st=document.createElement('style');st.id='bvMiniFlavorStyle';st.textContent='.flavorStockGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.adminMiniFlavorBox{display:block!important}.adminMiniFlavorBox .adminStockControls b{font-size:12px;min-width:92px}.bvFlavorOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.bvFlavorOptions button{min-height:50px}.bvFlavorOptions button small{display:block;margin-top:3px;opacity:.7}@media(max-width:600px){.flavorStockGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bvFlavorOptions{grid-template-columns:1fr 1fr}.adminMiniFlavorBox .adminStockControls b{min-width:82px;font-size:11px}}</style>';document.head.appendChild(st);
 }
-window.BV_REFRI_FLAVORS_VERSION='2026.09.26.980';
+window.BV_REFRI_FLAVORS_VERSION='2026.09.26.981';
 })();
