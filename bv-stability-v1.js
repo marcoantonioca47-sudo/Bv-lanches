@@ -725,18 +725,25 @@ window.renderStoreStatus=async function(){
   const topStore=document.querySelector('.adminState');if(topStore)topStore.textContent=open?'Loja aberta':'Loja fechada';
 };
 window.toggleStoreStatus=async function(){
-  const next=window.BV_STORE_OPEN===false;
-  window.BV_STORE_OPEN=next;
-  window.renderStoreStatus?.();
+  if(!sb)return toast('Sistema ainda carregando. Tente novamente.');
+  const btn=document.getElementById('storeStatusBtn');
+  if(btn)btn.disabled=true;
+  const previous=window.BV_STORE_OPEN!==false;
+  const next=!previous;
   try{
-    const r=await sb.from('settings').upsert({id:1,store_open:next},{onConflict:'id'});
+    const r=await sb.from('settings').update({store_open:next}).eq('id',1).select('store_open').maybeSingle();
     if(r.error)throw r.error;
-    toast(next?'Loja aberta.':'Loja fechada.');
-  }catch(e){
-    window.BV_STORE_OPEN=!next;
+    if(!r.data)throw new Error('Configuração da loja não encontrada.');
+    window.BV_STORE_OPEN=r.data.store_open!==false;
     window.renderStoreStatus?.();
-    toast('Não foi possível salvar o status da loja.');
+    toast(window.BV_STORE_OPEN?'Loja aberta.':'Loja fechada.');
+  }catch(e){
+    window.BV_STORE_OPEN=previous;
+    window.renderStoreStatus?.();
+    toast('Não foi possível alterar a loja: '+(e?.message||'erro ao salvar.'));
     console.error('[BV STORE STATUS]',e);
+  }finally{
+    if(btn)btn.disabled=false;
   }
 };
 window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value||0).replace(',','.')),w=$('waCfg')?.value.trim()||'';if(!Number.isFinite(f)||f<0)return toast('Taxa padrão inválida.');const r=await sb.from('settings').upsert({id:1,fee:f,whatsapp:w},{onConflict:'id'});if(r.error)return toast('Erro ao salvar configurações: '+r.error.message);window.BV_DEFAULT_FEE=f;toast('Configurações salvas.')};
