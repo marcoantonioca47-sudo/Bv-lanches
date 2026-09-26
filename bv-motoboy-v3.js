@@ -157,7 +157,7 @@
       window.applyAccess?.();
       applyMotoPageChrome();
       window.showPage?.(page,true);
-      if (page==='pedidos') { await window.renderMotoOrders?.(); setTimeout(()=>window.renderMotoOrders?.({silent:true}),450); }
+      if (page==='pedidos') { await window.renderMotoOrders?.(); }
       if (page==='taxa-entrega') await window.renderMotoFeeOrders?.();
     } catch(e) {
       console.error('[MOTO OPEN]',e);
