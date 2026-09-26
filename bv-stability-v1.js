@@ -1448,7 +1448,7 @@ window.BV_TRACKING_REALTIME=null;
 
   window.addEventListener?.('error',e=>{console.error('BV error',e.error||e.message)});
   document.addEventListener('DOMContentLoaded',async()=>{
-    window.applyAccess();window.renderProducts();window.renderCart();
+    window.applyAccess();window.renderProducts();window.renderCart();window.setupPromotionsRealtime?.();
     if(sb&&firstLoginDone()){const s=await sb.auth.getSession();if(s.data.session)await window.loadApp()}else{$('login')&&$('login').style.setProperty('display','flex','important')}
   });
   if(sb)sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){window.BV_ROLE='';window.BV_USER_NAME='';window.applyAccess();$('login')&&($('login').style.display='flex')}else if(event==='SIGNED_IN'&&session&&firstLoginDone()){setTimeout(()=>window.loadApp(),100)}});
