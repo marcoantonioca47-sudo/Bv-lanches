@@ -165,6 +165,36 @@ function refreshMiniCatalogUI(){
 }
 window.BV_REFRESH_MINI_CATALOG_UI=refreshMiniCatalogUI;
 
+/* Imagens definitivas dos cards de 2L — aplicadas depois de todos os renderizadores. */
+window.BV_APPLY_2L_IMAGES=()=>{
+  const cards=document.querySelectorAll('#products .productCard');
+  cards.forEach(card=>{
+    const title=norm(card.querySelector('h3')?.textContent||'');
+    const isCoca=/^coca\s*-?\s*cola\s*2\s*(l|litros?)$/.test(title);
+    const isRefri=/^refri\s*2\s*(l|litros?)$/.test(title);
+    if(!isCoca&&!isRefri)return;
+    const media=card.querySelector('.productImage');
+    if(!media)return;
+    const img=media.querySelector('img');
+    const src=isCoca
+      ? 'https://andinacocacola.vtexassets.com/arquivos/ids/158758-800-auto?aspect=true&height=auto&v=639156020671730000&width=800'
+      : 'assets/refri-2l-sem-marca.svg';
+    if(img){
+      if(img.getAttribute('src')!==src)img.setAttribute('src',src);
+      img.alt=isCoca?'Coca-Cola 2 litros':'Refrigerante 2 litros sem marca';
+      img.style.display='block';
+    }else{
+      media.innerHTML='<img src="'+src+'" alt="'+(isCoca?'Coca-Cola 2 litros':'Refrigerante 2 litros sem marca')+'" loading="eager" decoding="async" style="display:block;width:100%;height:100%;object-fit:contain">';
+    }
+    media.querySelectorAll('span').forEach(s=>s.style.display='none');
+  });
+};
+const bv2LObserver=new MutationObserver(()=>window.BV_APPLY_2L_IMAGES?.());
+if(document.body)bv2LObserver.observe(document.body,{subtree:true,childList:true});
+setTimeout(()=>window.BV_APPLY_2L_IMAGES?.(),50);
+setTimeout(()=>window.BV_APPLY_2L_IMAGES?.(),500);
+
+
 const oldRender=window.renderProducts;
 if(typeof oldRender==='function'){
  window.renderProducts=async function(){
