@@ -648,3 +648,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
   border:0!important;
   border-radius:0!important;
 }
+
+/* BV LANCHES — fotos reais dos adicionais nos cards */
+#page-cardapio #products .productCard.product .productImage .addonRealPhoto,
+#page-produtos #manage .productCard.adminProductCard .productImage .addonRealPhoto{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:100%!important;
+  min-height:100%!important;
+  padding:0!important;
+  margin:0!important;
+  font-size:0!important;
+  background-repeat:no-repeat!important;
+  background-size:500% 200%!important;
+  background-color:#111!important;
+  border-radius:0!important;
+  box-sizing:border-box!important;
+}
