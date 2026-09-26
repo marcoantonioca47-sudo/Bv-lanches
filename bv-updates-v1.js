@@ -6,9 +6,24 @@ function injectCss(){if($('bvUpdCss'))return;let s=document.createElement('style
 function notices(){if($('bvUpd'))return;let d=document.createElement('div');d.id='bvUpd';d.innerHTML='<div id="bvNotices"><h3>🔔 Notificações</h3><div id="bvNoticeList"></div></div><button id="bvBell" type="button">🔔<i id="bvBadge">0</i></button>';document.body.appendChild(d);$('bvBell').onclick=()=>{$('bvNotices').classList.toggle('show')};$('bvNoticeList').onclick=e=>{let btn=e.target.closest('[data-notice-delete]');if(!btn)return;let i=Number(btn.dataset.noticeDelete),a=getN();if(Number.isInteger(i)&&i>=0&&i<a.length){a.splice(i,1);localStorage.setItem('bv_notifications',JSON.stringify(a));renderNotices()}};const sync=()=>{const login=$('login'),box=$('bvUpd');if(!box)return;const hidden=login&&getComputedStyle(login).display!=='none';const role=String(window.BV_ROLE||'').toLowerCase();const allowed=!hidden&&!['administrador','admin'].includes(role);box.style.display=allowed?'':'none'};renderNotices();sync();new MutationObserver(sync).observe(document.body,{attributes:true,subtree:true,attributeFilter:['style','class']})}
 let bvAudioCtx=null,bvAudioReady=false;
 function unlockNotificationSound(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!bvAudioCtx)bvAudioCtx=new AC();if(bvAudioCtx.state==='suspended')bvAudioCtx.resume().catch(()=>{});bvAudioReady=true}catch(e){}}
-function playOrderSound(){if(!bvAudioReady||!bvAudioCtx)return;try{const now=bvAudioCtx.currentTime;[0,0.16,0.32].forEach((offset,i)=>{const o=bvAudioCtx.createOscillator(),g=bvAudioCtx.createGain();o.type='sine';o.frequency.value=i===1?880:660;g.gain.setValueAtTime(0.0001,now+offset);g.gain.exponentialRampToValueAtTime(0.16,now+offset+0.015);g.gain.exponentialRampToValueAtTime(0.0001,now+offset+0.12);o.connect(g);g.connect(bvAudioCtx.destination);o.start(now+offset);o.stop(now+offset+0.13)})}catch(e){}}
+function playOrderSound(){if(!bvAudioReady||!bvAudioCtx)return;try{if(bvAudioCtx.state==='suspended')bvAudioCtx.resume().catch(()=>{});const now=bvAudioCtx.currentTime;[0,0.22,0.44,0.66].forEach((offset,i)=>{const o=bvAudioCtx.createOscillator(),g=bvAudioCtx.createGain();o.type=i===2?'square':'sine';o.frequency.value=[740,988,1175,988][i];g.gain.setValueAtTime(0.0001,now+offset);g.gain.exponentialRampToValueAtTime(0.42,now+offset+0.025);g.gain.exponentialRampToValueAtTime(0.0001,now+offset+0.19);o.connect(g);g.connect(bvAudioCtx.destination);o.start(now+offset);o.stop(now+offset+0.21)})}catch(e){}}
 document.addEventListener('pointerdown',unlockNotificationSound,{passive:true});
 document.addEventListener('touchstart',unlockNotificationSound,{passive:true});
+function notifyNewOrderDevice(o){
+  try{
+    if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
+    const title='🔔 NOVO PEDIDO — BV Lanches';
+    const body='Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' recebido de '+(o.customer||'Cliente')+'.';
+    const n=new Notification(title,{body,tag:'bv-new-order-'+o.id,renotify:true,requireInteraction:true,silent:false});
+    n.onclick=()=>{window.focus?.();document.querySelector('[data-page="pedidos"],#menuPedidos,button[onclick*="pedidos"]')?.click();n.close?.()};
+  }catch(e){}
+}
+async function requestAdminNotificationPermission(){
+  try{
+    if(typeof Notification==='undefined'||Notification.permission==='denied')return;
+    if(Notification.permission==='default')await Notification.requestPermission();
+  }catch(e){}
+}
 function getN(){try{let a=JSON.parse(localStorage.getItem('bv_notifications')||'[]')||[];const role=String(window.BV_ROLE||'').toLowerCase();if(role==='motoboy')return a.filter(n=>n&&n.deliveryPickup===true);if(role!=='administrador'&&role!=='admin')return a.filter(n=>n&&n.customerNotice===true);return a}catch{return[]}}
 function addN(title,detail,key){let a;try{a=JSON.parse(localStorage.getItem('bv_notifications')||'[]')||[]}catch{a=[]}const role=String(window.BV_ROLE||'').toLowerCase();const deliveryPickup=role==='motoboy',customerNotice=role!=='motoboy'&&!['administrador','admin'].includes(role);if(a.some(x=>x.key===key))return;a.unshift({title,detail,key,deliveryPickup,customerNotice});localStorage.setItem('bv_notifications',JSON.stringify(a.slice(0,25)));renderNotices()}
 function renderNotices(){let l=$('bvNoticeList'),b=$('bvBadge');if(!l)return;let a=getN();l.innerHTML=a.length?a.map((n,i)=>'<div class="bvN" data-notice-index="'+i+'"><span>🔔</span><div><b>'+esc(n.title)+'</b><small>'+esc(n.detail)+'</small></div><button type="button" class="bvNDelete" data-notice-delete="'+i+'" aria-label="Excluir notificação" title="Excluir notificação">×</button></div>').join(''):'<small style="color:#737b86">Nenhuma notificação.</small>';if(b){b.textContent=Math.min(a.length,99);b.style.display=a.length?'grid':'none'}}
@@ -46,6 +61,7 @@ function watch(){
             'new:'+o.id
           );
           playOrderSound();
+          notifyNewOrderDevice(o);
         }else if(old[o.id]!==o.rawStatus){
           addN(
             'Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—'),
