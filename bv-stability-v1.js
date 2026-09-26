@@ -316,7 +316,9 @@
           (paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':'')+
         '</div>'+
         '<div class="orderFoot"><div><small>TOTAL</small><strong>'+money(o.total)+'</strong></div>'+
-        (isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':String(o.rawStatus||'').toLowerCase()==='em_preparo'?'<div class="bvReadyActions"><button type="button" class="bvStartOrderBtn bvReadyOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_producao\')">✓ PRONTO</button><button type="button" class="bvCancelOrderBtn" onclick="cancelOrder(\''+esc(o.id)+'\')">Cancelar pedido</button></div>':'<span class="bvProductionLocked">Status controlado pela produção/entrega</span>')+
+        '<div class="bvOrderActions">'+
+        (isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':String(o.rawStatus||'').toLowerCase()==='em_preparo'?'<button type="button" class="bvStartOrderBtn bvReadyOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_producao\')">✓ PRONTO</button>':'<span class="bvProductionLocked">Status controlado pela produção/entrega</span>')+
+        '<button type="button" class="bvCancelOrderBtn" onclick="cancelOrder(\''+esc(o.id)+'\')">Cancelar pedido</button></div>'+
         '</div></article>';
     };
     const section=(title,sub,rows,cls)=>rows.length?
@@ -330,9 +332,9 @@
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
     const o=(window.orders||[]).find(x=>String(x.id)===String(id));
     if(!o)return toast('Pedido não encontrado. Atualize a lista e tente novamente.');
-    if(String(o.rawStatus||'').toLowerCase()!=='em_preparo')return toast('Somente pedidos em preparo podem ser cancelados.');
+    if(String(o.rawStatus||'').toLowerCase()==='cancelado')return toast('Este pedido já está cancelado.');
     if(!confirm('Cancelar este pedido?'))return;
-    const r=await sb.from('orders').update({status:'cancelado',updated_at:new Date().toISOString()}).eq('id',id).eq('status','em_preparo');
+    const r=await sb.from('orders').update({status:'cancelado',updated_at:new Date().toISOString()}).eq('id',id).neq('status','cancelado');
     if(r.error)return toast('Não foi possível cancelar o pedido: '+r.error.message);
     window.orders=(window.orders||[]).filter(x=>String(x.id)!==String(id));
     window.renderAdmin?.();
