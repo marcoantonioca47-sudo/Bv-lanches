@@ -101,32 +101,13 @@
         ? street + ', ' + num + (comp ? ' — ' + comp : '')
         : '';
 
-      const payload = {
-        p_customer_name: name,
-        p_phone: phone,
-        p_address: address,
-        p_neighborhood: delivery ? bairro : '',
-        p_payment_method: payment,
-        p_coupon: String($('coupon')?.value || '').trim().toUpperCase(),
-        p_items: items
-      };
-
-      const {data:orderId,error:rpcError} = await sb.rpc('create_bv_order', payload);
-      if(rpcError) {
-        console.error('[BV ORDER V2] RPC error', rpcError, payload);
-        const detail = [rpcError.message,rpcError.details,rpcError.hint].filter(Boolean).join(' — ');
-        throw new Error(detail || 'O servidor recusou a criação do pedido.');
-      }
-      if(!orderId) throw new Error('O servidor não retornou o ID do pedido.');
-
-      // Persiste a opção de sabor escolhida para que administrador e motoboy
-      // recebam o mesmo nome exibido ao cliente (ex.: Refri 2L — Guaraná).
+      // Itens + sabores são enviados na mesma RPC para que a criação seja atômica.
       const variants = cart.flatMap(item => {
         if(item?.flavor && !item?.isPromotion){
           return [{
             product_id: String(item.productId || String(item.id).split('::')[0]),
             flavor: String(item.flavor),
-            quantity: Math.max(1, Math.floor(Number(item.q)||1))
+            quantity: Math.max(1,Math.floor(Number(item.q)||1))
           }];
         }
         if(item?.isPromotion && Array.isArray(item.promotionFlavors)){
@@ -139,16 +120,26 @@
         }
         return [];
       });
-      if(variants.length && typeof sb.rpc === 'function'){
-        const vr = await sb.rpc('finalize_bv_order_flavors', {
-          p_order_id: orderId,
-          p_variants: variants
-        });
-        if(vr.error){
-          console.error('[BV ORDER V2] Falha ao reservar estoque por sabor:', vr.error);
-          throw new Error('O estoque do sabor escolhido mudou. Volte ao cardápio, atualize e tente novamente.');
-        }
+
+      const payload = {
+        p_customer_name: name,
+        p_phone: phone,
+        p_address: address,
+        p_neighborhood: delivery ? bairro : '',
+        p_payment_method: payment,
+        p_coupon: String($('coupon')?.value || '').trim().toUpperCase(),
+        p_items: items,
+        p_variants: variants
+      };
+
+      const {data:orderId,error:rpcError} = await sb.rpc('create_bv_order', payload);
+      if(rpcError) {
+        console.error('[BV ORDER V2] RPC error', rpcError, payload);
+        const detail = [rpcError.message,rpcError.details,rpcError.hint].filter(Boolean).join(' — ');
+        throw new Error(detail || 'O servidor recusou a criação do pedido.');
       }
+      if(!orderId) throw new Error('O servidor não retornou o ID do pedido.');
+
 
       localStorage.setItem('bv_last_order', JSON.stringify({id:orderId,phone}));
       localStorage.setItem('bv_track_id', orderId);
