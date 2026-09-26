@@ -69,7 +69,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.355';
+  window.BV_STABILITY_VERSION='2026.09.26.356';
   window.BV_PIX_QR_TIMER=null;
   window.BV_PIX_QR_INFLIGHT=null;
   window.ensurePixQr=async(order)=>{
@@ -459,14 +459,34 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   window.closeProductForm=window.BV_CLOSE_PRODUCT_FORM;
 
   window.login=async()=>{
-    $('err')&&($('err').textContent='');
-    if(!sb)return $('err').textContent='Conexão com o banco indisponível. Recarregue a página.';
-    const email=$('email')?.value.trim(),pass=$('pass')?.value||'';
-    if(!email||!pass)return $('err').textContent='Informe e-mail e senha.';
-    const r=await sb.auth.signInWithPassword({email,password:pass});
-    if(r.error)return $('err').textContent=r.error.message;
-    try{localStorage.setItem('bv_first_login_done','1')}catch(e){}
-    await window.loadApp();
+    const err=$('err');
+    if(err)err.textContent='';
+    const email=String($('email')?.value||'').trim().toLowerCase();
+    const pass=String($('pass')?.value||'');
+    if(!email||!pass){if(err)err.textContent='Informe e-mail e senha.';return;}
+    const btn=document.querySelector('#login button:not(.registerLoginBtn)');
+    const oldText=btn?.textContent;
+    if(btn){btn.disabled=true;btn.textContent='Entrando...';}
+    try{
+      // A autenticação oficial fica centralizada em bv-auth-v2.js.
+      // Esta camada não deve sobrescrever o fluxo nem criar uma segunda sessão.
+      if(typeof window.BV_LOGIN==='function'){
+        const r=await window.BV_LOGIN(email,pass);
+        if(r?.error){if(err)err.textContent=r.error;return;}
+      }else{
+        if(!sb)throw new Error('Conexão com o banco indisponível. Recarregue a página.');
+        const r=await sb.auth.signInWithPassword({email,password:pass});
+        if(r.error)throw r.error;
+        localStorage.setItem('bv_first_login_done','1');
+      }
+      if(err)err.textContent='';
+      $('login')?.style.setProperty('display','none','important');
+    }catch(e){
+      console.error('[BV LOGIN]',e);
+      if(err)err.textContent=String(e?.message||'Não foi possível entrar. Tente novamente.');
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent=oldText||'Entrar';}
+    }
   };
   window.registerUser=async e=>{
     e.preventDefault();$('registerErr')&&($('registerErr').textContent='');
