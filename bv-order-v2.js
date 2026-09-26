@@ -121,13 +121,24 @@
 
       // Persiste a opção de sabor escolhida para que administrador e motoboy
       // recebam o mesmo nome exibido ao cliente (ex.: Refri 2L — Guaraná).
-      const variants = cart
-        .filter(item => item?.flavor && !item?.isPromotion)
-        .map(item => ({
-          product_id: String(item.productId || String(item.id).split('::')[0]),
-          flavor: String(item.flavor),
-          quantity: Math.max(1, Math.floor(Number(item.q)||1))
-        }));
+      const variants = cart.flatMap(item => {
+        if(item?.flavor && !item?.isPromotion){
+          return [{
+            product_id: String(item.productId || String(item.id).split('::')[0]),
+            flavor: String(item.flavor),
+            quantity: Math.max(1, Math.floor(Number(item.q)||1))
+          }];
+        }
+        if(item?.isPromotion && Array.isArray(item.promotionFlavors)){
+          const promoQty=Math.max(1,Math.floor(Number(item.q)||1));
+          return item.promotionFlavors.map(v => ({
+            product_id: String(v.productId || ''),
+            flavor: String(v.flavor || ''),
+            quantity: Math.max(1,Math.floor(Number(v.quantity)||1))*promoQty
+          })).filter(v=>v.product_id && v.flavor);
+        }
+        return [];
+      });
       if(variants.length && typeof sb.rpc === 'function'){
         const vr = await sb.rpc('finalize_bv_order_flavors', {
           p_order_id: orderId,
