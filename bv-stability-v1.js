@@ -185,7 +185,7 @@
     if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();window.startTrackingStatusPolling?.();}
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
-    if(p==='taxa-entrega')window.renderMotoFeeOrders?.()
+    if(p==='taxa-entrega'){if(['administrador','admin','motoboy'].includes(role))window.renderMotoFeeOrders?.();else window.renderDeliveryFees?.()}
     if(p==='produtos'){const el=$('page-produtos');if(!el)return;el.classList.add('activePage');const manage=$('manage');if(manage&&!manage.innerHTML.trim())manage.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando produtos...</b><small>Aguarde um instante.</small></div>';try{window.renderProductsAdmin?.()}catch(e){console.error('[BV PRODUTOS RENDER]',e)};Promise.resolve(window.BV_REFRESH_PRODUCTS?.()).then(()=>{try{window.renderProductsAdmin?.()}catch(e){console.error('[BV PRODUTOS FINAL]',e)}}).catch(e=>{console.error('[BV PRODUTOS SYNC]',e);try{window.renderProductsAdmin?.()}catch(_){}});}
     if(p==='promocoes'){await window.BV_REFRESH_PROMOTIONS?.();window.renderPromotionsAdmin?.();}
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.()}
