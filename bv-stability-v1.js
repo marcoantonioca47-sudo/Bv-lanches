@@ -63,7 +63,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.330';
+  window.BV_STABILITY_VERSION='2026.09.26.331';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -677,7 +677,7 @@ window.BV_SELECT_FLAVOR=flavor=>{const id=$('bvFlavorModal')?.dataset.productId;
     }
   };
   window.BV_REFRESH_FLAVOR_STOCKS=async()=>{if(!sb)return false;const p=(window.products||[]).find(x=>norm(x?.name)==='refri 2l');if(!p){window.BV_FLAVOR_STOCKS={};return false}const r=await sb.from('product_flavor_stock').select('product_id,flavor,stock').eq('product_id',p.id);if(r.error){console.error('[BV FLAVOR STOCK]',r.error);return false}window.BV_FLAVOR_STOCKS={};(r.data||[]).forEach(x=>window.BV_FLAVOR_STOCKS[String(x.product_id)+'::'+norm(x.flavor)]=Math.max(0,Number(x.stock)||0));return true};
-  window.adjustProductFlavorStock=async(productId,flavor,delta)=>{if(!['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase()))return toast('Acesso restrito ao administrador.');const r=await sb.rpc('adjust_product_flavor_stock',{p_product_id:productId,p_flavor:flavor,p_delta:Number(delta)||0});if(r.error)return toast('Erro ao atualizar estoque de '+flavor+': '+r.error.message);const total=Object.entries(window.BV_FLAVOR_STOCKS||{}).filter(([k])=>k.startsWith(String(productId)+'::')).reduce((s,[k,v])=>s+Number(v||0),0)+(Number(delta)||0);await window.BV_REFRESH_FLAVOR_STOCKS();const rr=await sb.from('product_flavor_stock').select('stock').eq('product_id',productId);const sum=(rr.data||[]).reduce((s,x)=>s+Number(x.stock||0),0);await sb.from('products').update({stock:sum}).eq('id',productId);const p=(window.products||[]).find(x=>String(x.id)===String(productId));if(p)p.stock=sum;try{localStorage.setItem('bv_products',JSON.stringify(window.products||[]))}catch(e){}window.renderProductsAdmin?.();window.renderProducts?.();};
+  window.adjustProductFlavorStock=async(productId,flavor,delta)=>{if(!['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase()))return toast('Acesso restrito ao administrador.');if(!sb)return toast('Banco de dados indisponível.');try{const r=await sb.rpc('adjust_product_flavor_stock',{p_product_id:String(productId),p_flavor:String(flavor),p_delta:Number(delta)||0});if(r.error)throw r.error;await window.BV_REFRESH_FLAVOR_STOCKS();const p=(window.products||[]).find(x=>String(x.id)===String(productId));if(p){const rr=await sb.from('products').select('id,name,stock,active,category').eq('id',productId).maybeSingle();if(!rr.error&&rr.data){Object.assign(p,rr.data);try{localStorage.setItem('bv_products',JSON.stringify(window.products||[]))}catch(e){}}}window.renderProductsAdmin?.();window.renderProducts?.();toast(flavor+' atualizado: '+Number(r.data||0));}catch(e){console.error('[BV FLAVOR STOCK UPDATE]',e);toast('Erro ao atualizar estoque de '+flavor+': '+(e?.message||'tente novamente.'));}};
   window.renderProductsAdmin=()=>{
     const b=$('manage');if(!b)return;
     const a=(window.products||[]).filter(x=>x.active!==false);
