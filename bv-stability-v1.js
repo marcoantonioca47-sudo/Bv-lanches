@@ -181,7 +181,7 @@
     if($('pageTitle'))$('pageTitle').textContent=labels[p]||p;
     document.querySelectorAll('.sideNav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
     if(innerWidth<=850)$('sidebar')?.classList.remove('open');
-    if(p==='cardapio'){if(!window.BV_CAT){const active=document.querySelector('#page-cardapio .menuCategoryTabs button.active');window.BV_CAT=active?.dataset.menuCategory||'Lanches'}window.renderProducts();await window.BV_REFRESH_PRODUCTS?.();window.renderProducts();}
+    if(p==='cardapio'){if(!window.BV_CAT){const active=document.querySelector('#page-cardapio .menuCategoryTabs button.active');window.BV_CAT=active?.dataset.menuCategory||'Lanches'}await window.BV_REFRESH_PRODUCTS?.();}
     if(p==='pedido'){window.initPaymentSelection?.();window.renderCart();setTimeout(window.loadProfile,50)}
     if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();window.startTrackingStatusPolling?.();}
     if(p==='dashboard')window.renderDashboard();
