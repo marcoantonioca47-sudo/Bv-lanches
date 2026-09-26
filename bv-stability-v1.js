@@ -63,7 +63,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.328';
+  window.BV_STABILITY_VERSION='2026.09.26.330';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -183,11 +183,13 @@
       const addonPos={bacon:'0% 0%',ovo:'25% 0%',cheddar:'50% 0%',requeijao:'75% 0%',bife:'100% 0%',calabresa:'0% 100%',milho:'25% 100%',batata:'50% 100%',mussarela:'75% 100%',presunto:'100% 100%'};
       const media=(p.image_url?'<img src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>');
       const isRefrigerante=String(p.category||'')==='Bebidas'&&/coca|refri|refrigerante/i.test(String(p.name||''));
+      const isRefri2L=norm(p.name)==='refri 2l';
       const stock=Math.max(0,Number(p.stock)||0);
-      const outOfStock=isRefrigerante&&stock<=0;
-      const stockHtml=isRefrigerante?'<div class="catalogStock '+(outOfStock?'out':'')+'"><span>ESTOQUE</span><strong>'+stock+'</strong>'+(outOfStock?'<em>ESGOTADO</em>':'<small>disponível</small>')+'</div>':'';
+      const gs=Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::guaraná']??0),ls=Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::laranja']??0);
+      const outOfStock=isRefri2L?(gs<=0&&ls<=0):(isRefrigerante&&stock<=0);
+      const stockHtml=isRefri2L?'<div class="catalogStock"><span>ESTOQUE</span><strong>G '+gs+' · L '+ls+'</strong><small>por sabor</small></div>':(isRefrigerante?'<div class="catalogStock '+(outOfStock?'out':'')+'"><span>ESTOQUE</span><strong>'+stock+'</strong>'+(outOfStock?'<em>ESGOTADO</em>':'<small>disponível</small>')+'</div>':'');
       const priceHtml='<b>'+money(p.price)+'</b>';
-      const addButton=outOfStock?'<button type="button" disabled class="addDisabled">Esgotado</button>':'<button type="button" onclick="addToCart(\''+esc(p.id)+'\')">+ Adicionar</button>';
+      const addButton=outOfStock?'<button type="button" disabled class="addDisabled">Esgotado</button>':'<button type="button" onclick="'+(isRefri2L?'BV_OPEN_FLAVOR_PICKER(\''+esc(p.id)+'\')':'addToCart(\''+esc(p.id)+'\')')+'">+ Adicionar</button>';
       return '<article class="productCard product '+(outOfStock?'productOutOfStock':'')+'">'+(promo?'<div class="promoBadge">🔥 PROMOÇÃO</div>':'')+'<div class="productImage">'+media+'</div><div class="productInfo"><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||'')+'</p>'+stockHtml+'<div class="productBottom">'+priceHtml+addButton+'</div></div></article>';
     }).join(''):'<div class="panel"><p class="muted">Nenhum produto disponível nesta categoria.</p></div>';
   };
@@ -675,7 +677,7 @@ window.BV_SELECT_FLAVOR=flavor=>{const id=$('bvFlavorModal')?.dataset.productId;
     }
   };
   window.BV_REFRESH_FLAVOR_STOCKS=async()=>{if(!sb)return false;const p=(window.products||[]).find(x=>norm(x?.name)==='refri 2l');if(!p){window.BV_FLAVOR_STOCKS={};return false}const r=await sb.from('product_flavor_stock').select('product_id,flavor,stock').eq('product_id',p.id);if(r.error){console.error('[BV FLAVOR STOCK]',r.error);return false}window.BV_FLAVOR_STOCKS={};(r.data||[]).forEach(x=>window.BV_FLAVOR_STOCKS[String(x.product_id)+'::'+norm(x.flavor)]=Math.max(0,Number(x.stock)||0));return true};
-  window.adjustProductFlavorStock=async(productId,flavor,delta)=>{if(!['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase()))return toast('Acesso restrito ao administrador.');const r=await sb.rpc('adjust_product_flavor_stock',{p_product_id:productId,p_flavor:flavor,p_delta:Number(delta)||0});if(r.error)return toast('Erro ao atualizar estoque de '+flavor+': '+r.error.message);await window.BV_REFRESH_FLAVOR_STOCKS();window.renderProductsAdmin?.();};
+  window.adjustProductFlavorStock=async(productId,flavor,delta)=>{if(!['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase()))return toast('Acesso restrito ao administrador.');const r=await sb.rpc('adjust_product_flavor_stock',{p_product_id:productId,p_flavor:flavor,p_delta:Number(delta)||0});if(r.error)return toast('Erro ao atualizar estoque de '+flavor+': '+r.error.message);const total=Object.entries(window.BV_FLAVOR_STOCKS||{}).filter(([k])=>k.startsWith(String(productId)+'::')).reduce((s,[k,v])=>s+Number(v||0),0)+(Number(delta)||0);await window.BV_REFRESH_FLAVOR_STOCKS();const rr=await sb.from('product_flavor_stock').select('stock').eq('product_id',productId);const sum=(rr.data||[]).reduce((s,x)=>s+Number(x.stock||0),0);await sb.from('products').update({stock:sum}).eq('id',productId);const p=(window.products||[]).find(x=>String(x.id)===String(productId));if(p)p.stock=sum;try{localStorage.setItem('bv_products',JSON.stringify(window.products||[]))}catch(e){}window.renderProductsAdmin?.();window.renderProducts?.();};
   window.renderProductsAdmin=()=>{
     const b=$('manage');if(!b)return;
     const a=(window.products||[]).filter(x=>x.active!==false);
@@ -684,7 +686,9 @@ window.BV_SELECT_FLAVOR=flavor=>{const id=$('bvFlavorModal')?.dataset.productId;
       const media=x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
       const isRefrigerante=String(x.category||'')==='Bebidas';
       const stock=Math.max(0,Number(x.stock)||0);
-      const stockHtml=isRefrigerante?'<div class="adminStockBox"><span>ESTOQUE</span><div class="adminStockControls"><button type="button" class="stockMinus" aria-label="Diminuir estoque" onclick="adjustProductStock(\''+esc(x.id)+'\',-1)">−</button><strong>'+stock+'</strong><button type="button" class="stockPlus" aria-label="Aumentar estoque" onclick="adjustProductStock(\''+esc(x.id)+'\',1)">+</button></div></div>':'';
+      const isRefri2L=norm(x.name)==='refri 2l';
+      const flavorBox=isRefri2L?'<div class="adminStockBox" style="display:block"><span style="display:block;margin-bottom:8px">ESTOQUE POR SABOR</span><div class="adminStockControls" style="justify-content:space-between"><b>🥤 Guaraná</b><button type="button" class="stockMinus" onclick="adjustProductFlavorStock(\''+esc(x.id)+'\',\'Guaraná\',-1)">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::guaraná']??0)+'</strong><button type="button" class="stockPlus" onclick="adjustProductFlavorStock(\''+esc(x.id)+'\',\'Guaraná\',1)">+</button></div><div class="adminStockControls" style="justify-content:space-between;margin-top:8px"><b>🍊 Laranja</b><button type="button" class="stockMinus" onclick="adjustProductFlavorStock(\''+esc(x.id)+'\',\'Laranja\',-1)">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::laranja']??0)+'</strong><button type="button" class="stockPlus" onclick="adjustProductFlavorStock(\''+esc(x.id)+'\',\'Laranja\',1)">+</button></div></div>':'';
+      const stockHtml=isRefri2L?flavorBox:(isRefrigerante?'<div class="adminStockBox"><span>ESTOQUE</span><div class="adminStockControls"><button type="button" class="stockMinus" aria-label="Diminuir estoque" onclick="adjustProductStock(\''+esc(x.id)+'\',-1)">−</button><strong>'+stock+'</strong><button type="button" class="stockPlus" aria-label="Aumentar estoque" onclick="adjustProductStock(\''+esc(x.id)+'\',1)">+</button></div></div>':'');
       return '<article class="productCard adminProductCard"><div class="productImage">'+media+'</div><div class="productInfo"><small class="eyebrow">'+esc(x.category||'Lanches')+'</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p>'+stockHtml+'<div class="productBottom"><b>'+money(x.price)+'</b><button type="button" onclick="removeProduct(\''+esc(x.id)+'\')">Excluir produto</button></div></div></article>';
     }).join('')||'<div class="emptyState"><span>📦</span><b>Nenhum produto cadastrado.</b><small>Cadastre um produto para começar seu cardápio.</small></div>';
   };
