@@ -69,7 +69,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.357';
+  window.BV_STABILITY_VERSION='2026.09.26.358';
   window.BV_PIX_QR_TIMER=null;
   window.BV_PIX_QR_INFLIGHT=null;
   window.ensurePixQr=async(order)=>{
@@ -559,7 +559,7 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     const o=(window.orders||[]).find(x=>String(x.id)===String(id));
     if(!o)return toast('Pedido não encontrado. Atualize a lista e tente novamente.');
     if(String(o.rawStatus||'').toLowerCase()==='cancelado')return toast('Este pedido já está cancelado.');
-    if(!confirm('Cancelar este pedido?'))return;
+    if(!await window.BV_CONFIRM_CANCEL_ORDER?.(o))return;
     const r=await sb.rpc('cancel_bv_order',{p_order_id:id});
     if(r.error)return toast('Não foi possível cancelar o pedido: '+r.error.message);
     window.orders=(window.orders||[]).filter(x=>String(x.id)!==String(id));
