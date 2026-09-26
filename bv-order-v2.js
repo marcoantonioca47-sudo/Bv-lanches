@@ -125,14 +125,18 @@
         .filter(item => item?.flavor && !item?.isPromotion)
         .map(item => ({
           product_id: String(item.productId || String(item.id).split('::')[0]),
-          flavor: String(item.flavor)
+          flavor: String(item.flavor),
+          quantity: Math.max(1, Math.floor(Number(item.q)||1))
         }));
       if(variants.length && typeof sb.rpc === 'function'){
-        const vr = await sb.rpc('set_bv_order_item_variants', {
+        const vr = await sb.rpc('finalize_bv_order_flavors', {
           p_order_id: orderId,
           p_variants: variants
         });
-        if(vr.error) console.warn('[BV ORDER V2] Não foi possível gravar o sabor:', vr.error);
+        if(vr.error){
+          console.error('[BV ORDER V2] Falha ao reservar estoque por sabor:', vr.error);
+          throw new Error('O estoque do sabor escolhido mudou. Volte ao cardápio, atualize e tente novamente.');
+        }
       }
 
       localStorage.setItem('bv_last_order', JSON.stringify({id:orderId,phone}));
