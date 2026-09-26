@@ -599,9 +599,9 @@
     if(!p)return toast('Produto não encontrado.');
     const current=Math.max(0,Number(p.stock)||0), next=Math.max(0,current+Number(delta||0));
     if(next===current)return;
-    const r=await sb.from('products').update({stock:next}).eq('id',id);
+    const r=await sb.rpc('adjust_product_stock',{p_product_id:id,p_delta:Number(delta)||0});
     if(r.error)return toast('Erro ao atualizar estoque: '+r.error.message);
-    p.stock=next;
+    p.stock=Number(r.data)||0;
     try{localStorage.setItem('bv_products',JSON.stringify(window.products||[]))}catch(e){}
     window.renderProductsAdmin?.();
     window.renderProducts?.();
