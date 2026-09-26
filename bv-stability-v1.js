@@ -115,7 +115,7 @@
   };
   window.toggleSidebar=()=>{$('sidebar')?.classList.toggle('open')};
   window.openAdmin=p=>{if(!window.admin())return toast('Acesso restrito ao administrador.');window.showPage(p||'dashboard')};
-  window.showPage=(p,internal=false)=>{
+  window.showPage=async(p,internal=false)=>{
     const role=String(window.BV_ROLE||'').toLowerCase();
     if(role==='motoboy' && !['pedidos','taxa-entrega'].includes(String(p))) p='pedidos';
     if(!internal){window.BV_HAS_NAVIGATED=true;savePage(p)}
@@ -124,13 +124,14 @@
     if($('pageTitle'))$('pageTitle').textContent=labels[p]||p;
     document.querySelectorAll('.sideNav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
     if(innerWidth<=850)$('sidebar')?.classList.remove('open');
-    if(p==='cardapio'){window.renderProducts();window.BV_REFRESH_PRODUCTS?.();}
+    if(p==='cardapio'){await window.BV_REFRESH_PRODUCTS?.();window.renderProducts();}
     if(p==='pedido'){window.initPaymentSelection?.();window.renderCart();setTimeout(window.loadProfile,50)}
     if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();window.startTrackingStatusPolling?.();}
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
     if(p==='taxa-entrega')window.renderMotoFeeOrders?.()
-    if(p==='produtos'){window.BV_REFRESH_PRODUCTS?.();window.renderProductsAdmin?.();}if(p==='promocoes'){window.BV_REFRESH_PROMOTIONS?.();window.renderPromotionsAdmin?.();}
+    if(p==='produtos'){await window.BV_REFRESH_PRODUCTS?.();window.renderProductsAdmin?.();}
+    if(p==='promocoes'){await window.BV_REFRESH_PROMOTIONS?.();window.renderPromotionsAdmin?.();}
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.()}
   };
 
