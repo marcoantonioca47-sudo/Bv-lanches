@@ -186,5 +186,5 @@ window.renderProductsAdmin=async()=>{
 if(!$('bvMiniFlavorStyle')){
  const st=document.createElement('style');st.id='bvMiniFlavorStyle';st.textContent='.flavorStockGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.adminMiniFlavorBox{display:block!important}.adminMiniFlavorBox .adminStockControls b{font-size:12px;min-width:92px}.bvFlavorOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.bvFlavorOptions button{min-height:50px}.bvFlavorOptions button small{display:block;margin-top:3px;opacity:.7}@media(max-width:600px){.flavorStockGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.bvFlavorOptions{grid-template-columns:1fr 1fr}.adminMiniFlavorBox .adminStockControls b{min-width:82px;font-size:11px}}</style>';document.head.appendChild(st);
 }
-window.BV_REFRI_FLAVORS_VERSION='2026.09.26.981';
+window.BV_REFRI_FLAVORS_VERSION='2026.09.26.982';
 })();
