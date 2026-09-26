@@ -133,7 +133,7 @@
       const becameAvailable=available && oldStatus!==status;
       if((payload.eventType==='INSERT'&&available)|| (payload.eventType==='UPDATE'&&becameAvailable)){
         motoVisualNotify(o);
-        window.renderMotoOrders?.({silent:true});
+        clearTimeout(window.BV_MOTO_RT_TIMER);window.BV_MOTO_RT_TIMER=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1200);
       }
     }).subscribe((status,err)=>{if(err)console.warn('[MOTO REALTIME]',err);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){try{client.removeChannel(window.BV_MOTO_ORDER_CHANNEL)}catch(e){}window.BV_MOTO_ORDER_CHANNEL=null;setTimeout(subscribeMotoNewOrders,3000)}});
     installMotoNotifyButton();
