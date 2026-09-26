@@ -19,7 +19,9 @@
 
   function refreshMoto(){
     clearTimeout(motoTimer);
-    motoTimer=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1500);
+    motoTimer=setTimeout(()=>{
+      if (isMotoPedidos()) window.renderMotoOrders?.({silent:true});
+    },1500);
   }
 
   async function refreshNow(reason) {
@@ -70,7 +72,9 @@
     // Reserva de segurança caso o Realtime fique indisponível no navegador.
     clearInterval(fallbackTimer);
     fallbackTimer = setInterval(() => {
-      if (document.visibilityState === 'visible') refreshNow('fallback');
+      if (document.visibilityState !== 'visible') return;
+      if (isMotoPedidos()) return; // o módulo dedicado do motoboy controla sua própria atualização
+      refreshNow('fallback');
     }, 30000);
   }
 
@@ -92,5 +96,5 @@
     boot();
   }
 
-  window.BV_REALTIME_VERSION = '2026.09.26.600';
+  window.BV_REALTIME_VERSION = '2026.09.26.700';
 })();
