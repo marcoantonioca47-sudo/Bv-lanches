@@ -537,3 +537,35 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
     height:190px!important;
   }
 }
+
+
+/* BV LANCHES — renderização nítida e proporcional dos adicionais */
+#page-cardapio #products .productCard.product .productImage{
+  width:100%!important;
+  height:190px!important;
+  min-height:190px!important;
+  overflow:hidden!important;
+  display:grid!important;
+  place-items:center!important;
+  background:#111!important;
+  border-radius:18px 18px 0 0!important;
+}
+#page-cardapio #products .productCard.product .productImage img{
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  display:block!important;
+  image-rendering:auto!important;
+}
+#page-cardapio #products .productCard.product .productInfo{
+  min-width:0!important;
+}
+@media(max-width:600px){
+  #page-cardapio #products .productCard.product .productImage{
+    height:170px!important;
+    min-height:170px!important;
+  }
+}
