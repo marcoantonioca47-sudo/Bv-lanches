@@ -167,8 +167,9 @@
       const activeName=String(active?.id||'').replace(/^page-/,'');
       if(active && !motoAllowed.has(activeName)) active.classList.remove('activePage');
     }
-    if($('loggedUserName'))$('loggedUserName').textContent=window.BV_USER_NAME||'';
+    window.renderLoggedUser?.();
   };
+  window.renderLoggedUser=()=>{const el=$('loggedUserName');if(!el)return;const name=String(window.BV_USER_NAME||'').trim();el.textContent=name?name:'Usuário';el.title=name||'Usuário logado';el.style.display='inline-flex';};
   window.toggleSidebar=()=>{$('sidebar')?.classList.toggle('open')};
   window.openAdmin=p=>{if(!window.admin())return toast('Acesso restrito ao administrador.');window.showPage(p||'dashboard')};
   window.showPage=async(p,internal=false)=>{
