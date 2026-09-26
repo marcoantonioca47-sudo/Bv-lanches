@@ -39,6 +39,11 @@
     .adminStockControls .stockPlus{background:rgba(229,9,20,.18);border-color:rgba(229,9,20,.45)}
     .adminStockControls strong{min-width:42px;text-align:center;font-size:20px}
 
+    #orders .bvProductionTime{display:block;margin-top:4px;font-size:10px;color:#8d919b}
+    #orders .bvProductionAddress{margin-top:12px;padding:12px 13px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+    #orders .bvProductionAddress b{display:block;margin-top:4px;font-size:13px;line-height:1.45}
+    #orders .bvPreparingOrdersSection .bvProductionSectionHead{background:rgba(255,255,255,.045)}
+    #orders .bvPreparingOrdersSection .bvProductionSectionHead strong{background:#2b2e36}
     #orders .bvProductionSection{margin:0 0 22px}
     #orders .bvProductionSectionHead{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
     #orders .bvProductionSectionHead>div{display:flex;flex-direction:column;gap:4px}
@@ -64,7 +69,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.352';
+  window.BV_STABILITY_VERSION='2026.09.26.353';
 
   if(!$('bvTrackingCardStyle')){const st=document.createElement('style');st.id='bvTrackingCardStyle';st.textContent='.trackingCardFixed{padding:18px!important;overflow:hidden}.trackingCardFixed .trackingCardTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.08)}.trackingCardFixed .trackingCardTop small,.trackingCardFixed .trackingCardSection>small{font-size:9px;font-weight:950;letter-spacing:.12em;color:#ff5b64}.trackingCardFixed .trackingCardTop h3{margin:4px 0 0;font-size:25px}.trackingStatusPill{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:950;white-space:nowrap;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1)}.trackingStatusPill.recebido{color:#ffd166}.trackingStatusPill.em-preparo,.trackingStatusPill.em-producao{color:#ffb86b}.trackingStatusPill.saiu-entrega{color:#72b7ff}.trackingStatusPill.entregue{color:#65e6a1}.trackingStatusPill.cancelado{color:#ff737d}.trackingProgress{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:18px 0}.trackingProgressStep{text-align:center;opacity:.38}.trackingProgressStep.done{opacity:1}.trackingProgressStep span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;margin:0 auto 6px;background:#20242a;border:1px solid #30343b;font-size:11px}.trackingProgressStep.done span{background:#e50914;border-color:#e50914;color:#fff}.trackingProgressStep small{font-size:9px;font-weight:800}.trackingItems{margin-top:7px}.trackingCardTotal{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.08)}.trackingCardTotal strong{font-size:20px}.trackingPayment{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:12px}.trackingPix{margin-top:14px;padding:14px;border-radius:14px;text-align:center}.trackingPix.waiting{border:1px solid rgba(0,200,120,.22);background:rgba(0,120,80,.08)}.trackingPix.paid{border:1px solid rgba(0,200,120,.25);background:rgba(0,160,90,.12)}.trackingPix b,.trackingPix small{display:block}.trackingPix small{margin-top:4px}.trackingPix img{width:min(220px,70vw);display:block;margin:12px auto;border-radius:12px;background:#fff;padding:7px}.trackingPix button{width:100%;margin-top:8px;padding:11px;border:0;border-radius:10px;background:#e50914;color:#fff;font-weight:900}@media(max-width:760px){.trackingGrid{grid-template-columns:1fr}.trackingCardFixed .trackingCardTop{gap:8px}.trackingStatusPill{font-size:10px;max-width:48%;white-space:normal;text-align:center}.trackingProgressStep small{font-size:8px}}';document.head.appendChild(st)}  const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
@@ -442,66 +447,39 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   window.orderLabel=o=>Number(o?.orderNumber)>0?String(Math.trunc(o.orderNumber)).padStart(3,'0'):String(o?.id||'').slice(-5);
   window.renderAdmin=()=>{
     const b=$('orders');if(!b)return;
-    // Garante que a lista administrativa seja carregada mesmo quando a tela
-    // for aberta antes da primeira sincronização do banco.
     if((!Array.isArray(window.orders)||window.orders.length===0)&&typeof window.BV_REFRESH_ORDERS==='function'&&!window.BV_ADMIN_REFRESHING){
-      window.BV_ADMIN_REFRESHING=true;
-      Promise.resolve(window.BV_REFRESH_ORDERS()).finally(()=>{window.BV_ADMIN_REFRESHING=false;});
-      return;
+      window.BV_ADMIN_REFRESHING=true;Promise.resolve(window.BV_REFRESH_ORDERS()).finally(()=>{window.BV_ADMIN_REFRESHING=false;});return;
     }
     const q=norm($('orderSearch')?.value||''),sf=$('orderStatusFilter')?.value||'',pf=$('orderPaymentFilter')?.value||'',df=$('orderDateFilter')?.value||'',now=Date.now();
     const filtered=(window.orders||[]).filter(o=>{
-      if(['entregue','cancelado'].includes(String(o.rawStatus||'').toLowerCase()))return false;
+      const raw=String(o.rawStatus||'').trim().toLowerCase();
+      if(['entregue','cancelado'].includes(raw))return false;
       const text=norm([o.customer,o.phone,o.address?.rua,o.address?.bairro,window.orderLabel(o),o.id].join(' '));
-      if(q&&!text.includes(q))return false;
-      const rawStatus=String(o.rawStatus||'').toLowerCase();
-      if(sf&&rawStatus!==String(sf).toLowerCase())return false;
-      if(pf&&o.payment!==pf)return false;
-      if(df){
-        const t=new Date(o.created_at).getTime();
-        if(df==='today'){const d=new Date();d.setHours(0,0,0,0);if(t<d.getTime())return false}
-        else if(now-t>Number(df)*86400000)return false
-      }
+      if(q&&!text.includes(q))return false;if(sf&&raw!==String(sf).toLowerCase())return false;if(pf&&o.payment!==pf)return false;
+      if(df){const t=new Date(o.created_at).getTime();if(df==='today'){const d=new Date();d.setHours(0,0,0,0);if(t<d.getTime())return false}else if(now-t>Number(df)*86400000)return false}
       return true;
     });
-    // Os cards administrativos continuam mostrando todos os pedidos ativos.
-    // O filtro de "somente novos" pertence exclusivamente ao painel de produção (bvKitchen).
-    const novos=filtered;
+    const productionRows=filtered.filter(o=>['recebido','em_preparo'].includes(String(o.rawStatus||'').trim().toLowerCase()));
     const card=o=>{
-      const raw=String(o.rawStatus||'').toLowerCase();
-      const isNew=raw==='recebido';
-      const pm=String(o.payment||'').toLowerCase();
+      const raw=String(o.rawStatus||'').trim().toLowerCase(),isNew=raw==='recebido',pm=String(o.payment||'').toLowerCase();
       const paymentBadge=pm.includes('dinheiro')?'💵 Dinheiro'+(Number(o.changeFor)>0?' · Troco para '+money(o.changeFor):''):pm.includes('cart')?'💳 Cartão':pm.includes('pix')?'🟦 PIX':'';
-      const statusText=isNew?'NOVO PEDIDO':String(o.status||'Pedido').toUpperCase();
-      const address=[o.address?.rua,o.address?.bairro].filter(Boolean).join(' · ');
-      return '<article class="orderCard bvDeliveryCard '+(isNew?'bvNewOrderCard':'bvProductionOrderCard')+'">'+
-        (isNew?'<div class="bvNewOrderRibbon">🔔 NOVO PEDIDO</div>':'')+
-        '<div class="orderHead"><div><small>PEDIDO</small><b>#'+esc(window.orderLabel(o))+'</b></div><span class="statusBadge '+(isNew?'bvNewStatusBadge':'')+'">'+esc(statusText)+'</span></div>'+
-        '<div class="orderBody">'+
-          '<div class="bvOrderCustomer"><b>'+esc(o.customer||'Cliente')+'</b><span>'+esc(o.phone||'Telefone não informado')+'</span></div>'+
-          '<div class="bvOrderItems">'+window.orderItemsMarkup(o.items)+'</div>'+
-          '<div class="bvDeliveryBox"><div class="bvDeliveryTitle">📍 ENTREGA</div><div class="bvAddressMain">'+esc(o.address?.rua||'Endereço não informado')+'</div>'+(o.address?.bairro?'<div class="bvAddressSub">Bairro: '+esc(o.address.bairro)+'</div>':'')+(o.address?.numero?'<div class="bvAddressSub">Nº '+esc(o.address.numero)+'</div>':'')+'</div>'+
-          (paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':'')+
-        '</div>'+
-        '<div class="orderFoot"><div><small>TOTAL</small><strong>'+money(o.total)+'</strong></div>'+
-        '<div class="bvOrderActions">'+
-        (isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':String(o.rawStatus||'').toLowerCase()==='em_preparo'?'<button type="button" class="bvStartOrderBtn bvReadyOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_producao\')">✓ PRONTO</button>':'<span class="bvProductionLocked">Status controlado pela produção/entrega</span>')+
-        '<button type="button" class="bvCancelOrderBtn" onclick="cancelOrder(\''+esc(o.id)+'\')">Cancelar pedido</button></div>'+
-        '</div></article>';
+      const created=o.created_at?new Date(o.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+      const address=[o.address?.rua,o.address?.numero,o.address?.bairro].filter(Boolean).join(' · ');
+      const action=isNew?'<button type="button" class="bvStartOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_preparo\')">▶ INICIAR PREPARO</button>':'<button type="button" class="bvStartOrderBtn bvReadyOrderBtn" onclick="statusOrder(\''+esc(o.id)+'\',\'em_producao\')">✓ PEDIDO PRONTO</button>';
+      return '<article class="orderCard bvProductionOrderCard '+(isNew?'bvNewOrderCard':'')+'">'+(isNew?'<div class="bvNewOrderRibbon">🔔 NOVO PEDIDO</div>':'')+
+        '<div class="orderHead"><div><small>PEDIDO</small><b>#'+esc(window.orderLabel(o))+'</b><small class="bvProductionTime">Recebido às '+esc(created)+'</small></div><span class="statusBadge '+(isNew?'bvNewStatusBadge':'')+'">'+(isNew?'NOVO PEDIDO':'EM PREPARO')+'</span></div>'+
+        '<div class="orderBody"><div class="bvOrderCustomer"><b>'+esc(o.customer||'Cliente')+'</b><span>'+esc(o.phone||'Telefone não informado')+'</span></div>'+
+        '<div class="bvOrderItems">'+window.orderItemsMarkup(o.items)+'</div><div class="bvProductionAddress"><div class="bvDeliveryTitle">📍 ENTREGA</div><b>'+esc(address||'Endereço não informado')+'</b></div>'+
+        (paymentBadge?'<div class="orderPaymentBadge">'+paymentBadge+'</div>':'')+'</div>'+
+        '<div class="orderFoot"><div><small>TOTAL</small><strong>'+money(o.total)+'</strong></div><div class="bvOrderActions">'+action+'<button type="button" class="bvCancelOrderBtn" onclick="cancelOrder(\''+esc(o.id)+'\')">Cancelar pedido</button></div></div></article>';
     };
-    const emPreparoCount=(window.orders||[]).filter(o=>{
-      const s=String(o.rawStatus||'').trim().toLowerCase();
-      return s==='em_preparo';
-    }).length;
-    const section=(title,sub,rows,cls,count=rows.length,always=false)=>{
-      if(!rows.length&&!always)return '';
-      return '<section class="bvProductionSection '+cls+'"><div class="bvProductionSectionHead"><div><span>'+title+'</span><small>'+sub+'</small></div><strong>'+count+'</strong></div>'+
-        (rows.length?'<div class="bvProductionGrid">'+rows.map(card).join('')+'</div>':'')+
-        '</section>';
+    const newRows=productionRows.filter(o=>String(o.rawStatus||'').toLowerCase()==='recebido'),prepRows=productionRows.filter(o=>String(o.rawStatus||'').toLowerCase()==='em_preparo');
+    const section=(title,sub,rows,cls)=>{
+      return '<section class="bvProductionSection '+cls+'"><div class="bvProductionSectionHead"><div><span>'+title+'</span><small>'+sub+'</small></div><strong>'+rows.length+'</strong></div>'+
+        (rows.length?'<div class="bvProductionGrid">'+rows.map(card).join('')+'</div>':'<div class="emptyState"><small>Nenhum pedido nesta etapa.</small></div>')+'</section>';
     };
-    b.innerHTML=section('🍳 PEDIDOS EM PREPARO','Quantidade de pedidos em preparo neste momento.',novos,'bvNewOrdersSection',emPreparoCount,true)+
-      (!novos.length?'<div class="emptyState"><span>📋</span><b>Nenhum pedido novo</b><small>Novos pedidos aparecerão automaticamente aqui.</small></div>':'');
-    if(novos.length)b.scrollIntoView({block:'nearest',behavior:'smooth'});
+    b.innerHTML=section('🔔 NOVOS PEDIDOS','Pedidos aguardando início do preparo.',newRows,'bvNewOrdersSection')+
+      section('🍳 EM PREPARO','Pedidos que já estão sendo preparados.',prepRows,'bvPreparingOrdersSection');
   };
   window.cancelOrder=async(id)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
