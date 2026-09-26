@@ -153,11 +153,21 @@ window.renderProducts=async()=>{
     if(!box){box=document.createElement('div');box.className='catalogStock flavorStock';const info=card.querySelector('.productInfo');info?.insertBefore(box,info.querySelector('.productBottom'))}
     box.innerHTML='<span>ESTOQUE POR SABOR</span><div class="flavorStockGrid">'+stocks.map(x=>'<div class="flavorStockItem"><span>'+x.f.emoji+' '+x.f.label+'</span><strong>'+x.n+'</strong></div>').join('')+'</div>';
     const bottom=card.querySelector('.productBottom');const oldBtn=bottom?.querySelector('button');if(oldBtn){oldBtn.disabled=false;oldBtn.classList.remove('addDisabled');oldBtn.textContent='+ Escolher sabor';oldBtn.onclick=()=>window.BV_OPEN_FLAVOR_PICKER?.(p)}
-    card.classList.toggle('productOutOfStock',stocks.every(x=>x.n<=0));\n    hideMiniGeneralStock();
+    card.classList.toggle('productOutOfStock',stocks.every(x=>x.n<=0));
+    hideMiniGeneralStock();
   });
 };
 
-const hideMiniGeneralStock=()=>{\n  document.querySelectorAll('#products .productCard,#manage .adminProductCard').forEach(card=>{\n    const title=norm(card.querySelector('h3')?.textContent);\n    if(title!=='refri mini')return;\n    card.querySelectorAll('.catalogStock:not(.flavorStock),.adminStockBox:not(.adminMiniFlavorBox),[class*="stockControl"]:not(.adminMiniFlavorBox)').forEach(el=>el.style.display='none');\n    card.querySelectorAll('input[name*="stock"],input[id*="stock"]').forEach(el=>{const row=el.closest('.formRow,.field,.adminStockBox,.productInfo'); if(row&&!row.querySelector('.adminMiniFlavorBox'))row.style.display='none'});\n  });\n};\n\nconst oldAdmin=window.renderProductsAdmin;
+const hideMiniGeneralStock=()=>{
+  document.querySelectorAll('#products .productCard,#manage .adminProductCard').forEach(card=>{
+    const title=norm(card.querySelector('h3')?.textContent);
+    if(title!=='refri mini')return;
+    card.querySelectorAll('.catalogStock:not(.flavorStock),.adminStockBox:not(.adminMiniFlavorBox),[class*="stockControl"]:not(.adminMiniFlavorBox)').forEach(el=>el.style.display='none');
+    card.querySelectorAll('input[name*="stock"],input[id*="stock"]').forEach(el=>{const row=el.closest('.formRow,.field,.adminStockBox,.productInfo'); if(row&&!row.querySelector('.adminMiniFlavorBox'))row.style.display='none'});
+  });
+};
+
+const oldAdmin=window.renderProductsAdmin;
 window.renderProductsAdmin=async()=>{
   if(typeof oldAdmin!=='function')return;
   await oldAdmin();
