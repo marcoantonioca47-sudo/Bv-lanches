@@ -16,34 +16,72 @@ const key=(id,fl)=>id+'::'+norm(fl);
 const stockOf=(id,fl)=>Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[key(id,fl)]??0));
 
 async function loadMiniStocks(){
- const b=db(), p=(window.products||[]).find(mini);
- if(!b||!p)return false;
+ const b=db(), products=window.products||[];
+ const miniProduct=products.find(mini);
+ const refri2=products.find(p=>norm(p?.name)==='refri 2l');
+ if(!b)return false;
  try{
-  const r=await b.from('product_flavor_stock').select('flavor,stock').eq('product_id',p.id);
+  const ids=[miniProduct?.id,refri2?.id].filter(Boolean);
+  if(!ids.length)return false;
+  const r=await b.from('product_flavor_stock').select('product_id,flavor,stock').in('product_id',ids);
   if(r.error)throw r.error;
   const s={...(window.BV_FLAVOR_STOCKS||{})};
-  MINI.forEach(f=>s[key(p.id,f.key)]=0);
-  (r.data||[]).forEach(x=>{const f=MINI.find(y=>norm(y.label)===norm(x.flavor));if(f)s[key(p.id,f.key)]=Math.max(0,Number(x.stock)||0)});
-  window.BV_FLAVOR_STOCKS=s;return true;
- }catch(e){console.error(e);say('Não foi possível carregar os estoques dos sabores.');return false}
+  if(miniProduct)MINI.forEach(f=>s[key(miniProduct.id,f.key)]=0);
+  if(refri2){
+    s[key(refri2.id,'guarana')]=0;
+    s[key(refri2.id,'laranja')]=0;
+  }
+  (r.data||[]).forEach(x=>{
+    const flavor=norm(x.flavor);
+    if(miniProduct){
+      const f=MINI.find(y=>norm(y.label)===flavor);
+      if(f)s[key(miniProduct.id,f.key)]=Math.max(0,Number(x.stock)||0);
+    }
+    if(refri2 && (flavor==='guarana'||flavor==='laranja')){
+      s[key(refri2.id,flavor)]=Math.max(0,Number(x.stock)||0);
+    }
+  });
+  window.BV_FLAVOR_STOCKS=s;
+  return true;
+ }catch(e){console.error('[BV FLAVOR STOCKS]',e);say('Não foi possível carregar os estoques dos sabores.');return false}
 }
 window.BV_REFRESH_FLAVOR_STOCKS=loadMiniStocks;
 
 window.adjustProductFlavorStock=async(id,flavor,delta)=>{
- const p=(window.products||[]).find(x=>String(x.id)===String(id)); if(!mini(p))return null;
- const f=MINI.find(x=>norm(x.label)===norm(flavor)); if(!f)return null;
- const b=db(); if(!b)return null;
+ const p=(window.products||[]).find(x=>String(x.id)===String(id));
+ const b=db();
+ if(!p||!b)return null;
+ const role=String(window.BV_ROLE||'').trim().toLowerCase();
+ if(!['administrador','admin'].includes(role)){say('Acesso restrito ao administrador.');return null;}
+ const flavorNorm=norm(flavor);
+ const isMini=mini(p);
+ const is2L=norm(p.name)==='refri 2l';
+ const allowed=isMini?MINI.map(x=>norm(x.label)):['guarana','laranja'];
+ if(!allowed.includes(flavorNorm)){say('Sabor inválido.');return null;}
+ const canonical=isMini?(MINI.find(x=>norm(x.label)===flavorNorm)?.label||flavor):(flavorNorm==='guarana'?'Guaraná':'Laranja');
  try{
-  const r=await b.rpc('adjust_product_flavor_stock',{p_product_id:id,p_flavor:f.label,p_delta:Number(delta)||0});
+  const r=await b.rpc('adjust_product_flavor_stock',{p_product_id:id,p_flavor:canonical,p_delta:Number(delta)||0});
   if(r.error)throw r.error;
   const n=Math.max(0,Number(r.data)||0);
   window.BV_FLAVOR_STOCKS=window.BV_FLAVOR_STOCKS||{};
-  window.BV_FLAVOR_STOCKS[key(id,f.key)]=n;
-  renderAdminMini();
-  say(f.label+' atualizado: '+n);
+  window.BV_FLAVOR_STOCKS[key(id,flavorNorm)]=n;
+  if(isMini)renderAdminMini();
+  else if(is2L){
+    const cards=document.querySelectorAll('#manage .adminProductCard');
+    cards.forEach(card=>{
+      if(norm(card.querySelector('h3')?.textContent)!=='refri 2l')return;
+      const rows=card.querySelectorAll('.adminStockControls');
+      const idx=flavorNorm==='guarana'?0:1;
+      const row=rows[idx];
+      if(row)row.querySelector('strong').textContent=String(n);
+    });
+    window.renderProducts?.();
+  }
+  say(canonical+' atualizado: '+n);
   return n;
- }catch(e){console.error('[REFRI MINI STOCK]',e);say('Erro ao atualizar '+f.label+'.');return null}
+ }catch(e){console.error('[BV FLAVOR STOCK]',e);say('Erro ao atualizar '+canonical+'.');return null}
 };
+
 
 function renderAdminMini(){
  const p=(window.products||[]).find(mini);if(!p)return;
@@ -99,5 +137,5 @@ window.renderProducts=async()=>{if(typeof oldRender==='function')await oldRender
 
 const st=document.createElement('style');st.id='bvMiniV2Style';st.textContent='.bvMiniOnly,.bvMiniCatalog{margin-top:10px;padding:10px;border-radius:12px;background:rgba(0,0,0,.28)}.bvMiniRow{display:grid;grid-template-columns:1fr 38px 42px 38px;align-items:center;gap:6px;margin-top:7px}.bvMiniRow button{min-height:34px;border:0;border-radius:8px;font-size:18px;font-weight:800;cursor:pointer;background:var(--primary,#e11);color:#fff;padding:0 12px;transition:transform .08s,filter .08s}.bvMiniRow button:active{transform:scale(.94);filter:brightness(.9)}.bvMiniRow button:disabled{opacity:.65}.bvMiniRow strong{text-align:center}.bvMiniCatalog{display:grid;grid-template-columns:1fr 1fr;gap:5px}.bvMiniCatalog b{grid-column:1/-1}.bvMiniPicker{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:99999;padding:18px}.bvMiniPicker.show{display:flex}.bvMiniPickerBox{width:min(420px,100%);padding:20px;border-radius:18px;background:#171717;color:#fff}.bvMiniClose{float:right;border:0;background:none;color:#fff;font-size:28px}.bvMiniChoices{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bvMiniChoices button{padding:14px;border:0;border-radius:12px;font-weight:800}.bvMiniChoices small{display:block;margin-top:4px;opacity:.7}@media(max-width:600px){.bvMiniChoices{grid-template-columns:1fr 1fr}}';
 document.head.appendChild(st);
-window.BV_REFRI_FLAVORS_VERSION='2026.09.26.1001';
+window.BV_REFRI_FLAVORS_VERSION='2026.09.26.1002';
 })();
