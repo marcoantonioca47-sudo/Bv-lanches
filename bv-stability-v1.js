@@ -329,9 +329,10 @@
         '<button type="button" class="bvCancelOrderBtn" onclick="cancelOrder(\''+esc(o.id)+'\')">Cancelar pedido</button></div>'+
         '</div></article>';
     };
-    const section=(title,sub,rows,cls)=>rows.length?
-      '<section class="bvProductionSection '+cls+'"><div class="bvProductionSectionHead"><div><span>'+title+'</span><small>'+sub+'</small></div><strong>'+rows.length+'</strong></div><div class="bvProductionGrid">'+rows.map(card).join('')+'</div></section>':'';
-    b.innerHTML=section('🔔 NOVOS PEDIDOS','Aguardando o administrador iniciar o preparo.',novos,'bvNewOrdersSection')+
+    const emPreparoCount=filtered.filter(o=>String(o.rawStatus||'').toLowerCase()==='em_preparo').length;
+    const section=(title,sub,rows,cls,count=rows.length)=>rows.length?
+      '<section class="bvProductionSection '+cls+'"><div class="bvProductionSectionHead"><div><span>'+title+'</span><small>'+sub+'</small></div><strong>'+count+'</strong></div><div class="bvProductionGrid">'+rows.map(card).join('')+'</div></section>':'';
+    b.innerHTML=section('🍳 PEDIDOS EM PREPARO','Quantidade de pedidos que estão em preparo neste momento.',novos,'bvNewOrdersSection',emPreparoCount)+
       (!novos.length?'<div class="emptyState"><span>📋</span><b>Nenhum pedido novo</b><small>Novos pedidos aparecerão automaticamente aqui.</small></div>':'');
     if(novos.length)b.scrollIntoView({block:'nearest',behavior:'smooth'});
   };
