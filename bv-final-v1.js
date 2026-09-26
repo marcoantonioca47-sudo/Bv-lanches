@@ -1,5 +1,5 @@
 (()=>{const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),toast=m=>window.toast?.(m);
-<style id="bv-admin-change-v1">.adminChangeFor{margin-top:8px;padding:9px 11px;border-radius:10px;background:rgba(229,9,20,.08);border:1px solid rgba(229,9,20,.22);font-size:12px;font-weight:800}.adminChangeFor strong{color:#ff5b64;font-size:14px}</style>\nconst statusLabels={recebido:'Novo',em_preparo:'Em preparo',em_producao:'Em produção',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
+const statusLabels={recebido:'Novo',em_preparo:'Em preparo',em_producao:'Em produção',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
 window.BV_FINAL_VERSION='2026.09.26.506';
 window.admin=()=>['administrador','admin'].includes(window.BV_ROLE);
 window.toggleSidebar=()=>{$('sidebar')?.classList.toggle('open')};
