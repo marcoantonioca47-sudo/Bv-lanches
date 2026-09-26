@@ -620,3 +620,31 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
   }
 }
 
+
+/* BV LANCHES — novo padrão de fotos dos adicionais: alta resolução e preenchimento perfeito */
+#page-cardapio #products .productCard.product .productImage,
+#page-produtos #manage .productCard.adminProductCard .productImage{
+  width:100%!important;
+  aspect-ratio:1 / 1!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  display:block!important;
+  background:#111!important;
+  border-radius:14px!important;
+}
+#page-cardapio #products .productCard.product .productImage img,
+#page-produtos #manage .productCard.adminProductCard .productImage img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+}
