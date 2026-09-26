@@ -8,10 +8,10 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.25.273';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.26.501';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.25.273';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.501';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -293,24 +293,10 @@
       const ir = await client.from('order_items').select('order_id,product_id,product_name,quantity').in('order_id',rows.map(x=>x.id));
       if (!ir.error) (ir.data||[]).forEach(i => (items[i.order_id] ||= []).push(i));
     }
-    return {rows,items};
+    let products={};\n    if (rows.length) {\n      const ids=[...new Set((Object.values(items).flat()||[]).map(i=>i.product_id).filter(Boolean))];\n      if(ids.length){ const pr=await client.from('products').select('id,name,category').in('id',ids); if(!pr.error)(pr.data||[]).forEach(p=>products[p.id]=p); }\n    }\n    return {rows,items,products};
   }
 
-  function card(o,items) {
-    const label = o.status === 'saiu_entrega' ? 'Saiu para entrega' : o.status === 'em_producao' ? 'Pronto' : 'Em preparo';
-    const list = items.length ? items.map(i => esc(i.quantity)+'x '+esc(i.product_name)).join(', ') : 'Itens do pedido';
-    const address = [o.address,o.neighborhood].filter(Boolean).map(esc).join(' · ') || 'Endereço não informado';
-    const pm=String(o.payment_method||'').toLowerCase();
-    const paymentBadge=pm.includes('dinheiro')?'💵 Dinheiro'+(Number(o.change_for)>0?' · Troco para '+money(o.change_for):''):pm.includes('cart')?'💳 Cartão':'';
-    return '<article class="motoSingleCard">'+
-      '<div class="motoCardTop"><div><small>PEDIDO</small><strong>#'+esc(o.order_number || String(o.id).slice(0,6))+'</strong></div><span>'+label+'</span></div>'+
-      '<div class="motoCardBody"><h3>'+esc(o.customer_name || 'Cliente')+'</h3><p>'+list+'</p>'+
-      (paymentBadge?'<div class="motoPaymentBadge">'+paymentBadge+'</div>':'')+
-      '<div class="motoDeliveryBox"><div><small>📍 ENTREGA</small><b>'+address+'</b></div><div><small>📱 CLIENTE</small><b>'+esc(o.phone || 'Não informado')+'</b></div></div></div>'+
-      '<div class="motoFee"><span>Taxa de entrega</span><strong>'+money(o.delivery_fee)+'</strong></div>'+
-      actionButton(o)+'</article>';
-  }
-
+  function card(o,items,products) {\n    const label = o.status === 'saiu_entrega' ? 'Saiu para entrega' : o.status === 'em_producao' ? 'Pronto' : 'Em preparo';\n    const groups={Lanches:[],Bebidas:[],Adicionais:[]};\n    (items||[]).forEach(i=>{\n      const p=products?.[i.product_id]||{};\n      const raw=String(p.category||'').trim().toLowerCase();\n      const category=raw.includes('beb')?'Bebidas':raw.includes('adicion')?'Adicionais':'Lanches';\n      groups[category].push(i);\n    });\n    const groupHtml=Object.entries(groups).filter(([,arr])=>arr.length).map(([name,arr])=>'<div class="motoItemsGroup"><strong>'+name+'</strong><div>'+arr.map(i=>'<div class="motoItemLine"><span>'+esc(i.quantity)+'x</span><b>'+esc(i.product_name)+'</b></div>').join('')+'</div></div>').join('');\n    const address = [o.address,o.neighborhood].filter(Boolean).map(esc).join(' · ') || 'Endereço não informado';\n    const pm=String(o.payment_method||'').toLowerCase();\n    const paymentBadge=pm.includes('dinheiro')?'💵 Dinheiro'+(Number(o.change_for)>0?' · Troco para '+money(o.change_for):''):pm.includes('cart')?'💳 Cartão':pm.includes('pix')?'🔷 Pix':'';\n    return '<article class="motoSingleCard">'+\n      '<div class="motoCardTop"><div><small>PEDIDO</small><strong>#'+esc(o.order_number || String(o.id).slice(0,6))+'</strong></div><span>'+label+'</span></div>'+\n      '<div class="motoCardBody"><h3>'+esc(o.customer_name || 'Cliente')+'</h3><div class="motoItems">'+(groupHtml||'<small>Itens do pedido não encontrados.</small>')+'</div>'+\n      (paymentBadge?'<div class="motoPaymentBadge">'+paymentBadge+'</div>':'')+\n      '<div class="motoDeliveryBox"><div><small>📍 ENTREGA</small><b>'+address+'</b></div><div><small>📱 CLIENTE</small><b>'+esc(o.phone || 'Não informado')+'</b></div></div></div>'+\n      '<div class="motoFee"><span>Taxa de entrega</span><strong>'+money(o.delivery_fee)+'</strong></div>'+\n      actionButton(o)+'</article>';\n  }
   function filterMotoCards(value) {
     if (!isMoto()) return;
     const term=String(value||'').trim().toLowerCase();
@@ -328,13 +314,13 @@
     if (!silent && !existing) box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
 
     try {
-      const {rows,items} = await getOrders();
+      const {rows,items,products} = await getOrders();
       window.motoCheckNewOrders?.(rows);
       if (!rows.length) {
         box.innerHTML='<div class="motoEmpty"><span>🏍️</span><b>Nenhum pedido disponível</b><small>Pedidos em preparo e prontos aparecerão aqui.</small></div>';
         return;
       }
-      box.innerHTML=rows.map(o=>card(o,items[o.id]||[])).join('');
+      box.innerHTML=rows.map(o=>card(o,items[o.id]||[],products)).join('');
       const search=document.getElementById('orderSearch');
       if (search) filterMotoCards(search.value);
     } catch(e) {
