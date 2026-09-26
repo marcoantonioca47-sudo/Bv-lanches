@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.25.283';
+  window.BV_ORDER_V2 = '2026.09.26.502';
 
   window.finish = async function(){
     const sb = getSB();
@@ -96,6 +96,9 @@
         storedPay.includes('dinheiro') ? 'dinheiro' :
         storedPay.includes('cart') ? 'cartao' : 'pix';
       const paymentLabel = payment === 'dinheiro' ? 'Dinheiro' : payment === 'cartao' ? 'Cartão' : 'Pix';
+      const changeRaw = payment === 'dinheiro' ? String($('troco')?.value || '').replace(',', '.') : '';
+      const changeFor = payment === 'dinheiro' && changeRaw ? Math.max(0, Number(changeRaw) || 0) : null;
+      if(payment === 'dinheiro' && (!changeFor || changeFor <= 0)) throw new Error('Informe o valor do troco para.');
       localStorage.setItem('bv_payment', paymentLabel);
       const address = delivery
         ? street + ', ' + num + (comp ? ' — ' + comp : '')
@@ -129,7 +132,8 @@
         p_payment_method: payment,
         p_coupon: String($('coupon')?.value || '').trim().toUpperCase(),
         p_items: items,
-        p_variants: variants
+        p_variants: variants,
+        p_change_for: changeFor
       };
 
       const {data:orderId,error:rpcError} = await sb.rpc('create_bv_order', payload);
