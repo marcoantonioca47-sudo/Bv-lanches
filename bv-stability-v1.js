@@ -130,7 +130,7 @@
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
     if(p==='taxa-entrega')window.renderMotoFeeOrders?.()
-    if(p==='produtos')window.renderProductsAdmin?.();if(p==='promocoes')window.renderPromotionsAdmin?.();
+    if(p==='produtos'){window.BV_REFRESH_PRODUCTS?.();window.renderProductsAdmin?.();}if(p==='promocoes'){window.BV_REFRESH_PROMOTIONS?.();window.renderPromotionsAdmin?.();}
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.()}
   };
 
@@ -457,7 +457,7 @@
   window.promotions=[];window.promotionItems={};
   window.BV_REFRESH_PROMOTIONS=async()=>{if(!sb)return;const r=await sb.from('promotions').select('*').order('created_at',{ascending:false});if(r.error)return toast('Erro ao carregar promoções: '+r.error.message);window.promotions=r.data||[];const ids=window.promotions.map(x=>x.id);window.promotionItems={};if(ids.length){const z=await sb.from('promotion_items').select('promotion_id,product_id,quantity').in('promotion_id',ids);if(!z.error)(z.data||[]).forEach(i=>{(window.promotionItems[i.promotion_id]??=[]).push(i)})}
     const productIds=[...new Set(Object.values(window.promotionItems).flat().map(i=>i.product_id).filter(Boolean).concat(window.promotions.map(x=>x.product_id).filter(Boolean)))];
-    if(productIds.length){const pr=await sb.from('products').select('id,stock,active').in('id',productIds);if(!pr.error){const stockById={};(pr.data||[]).forEach(p=>stockById[String(p.id)]=Number(p.stock)||0);const disableIds=[];window.promotions.forEach(p=>{if(!p.active)return;const rows=window.promotionItems[p.id]?.length?window.promotionItems[p.id]:(p.product_id?[{product_id:p.product_id,quantity:1}]:[]);if(rows.some(i=>{const prod=(pr.data||[]).find(x=>String(x.id)===String(i.product_id));const cat=String(window.products?.find(x=>String(x.id)===String(i.product_id))?.category||'').trim().toLowerCase();return cat==='bebidas'&&((stockById[String(i.product_id)]??0)<=0)}))disableIds.push(p.id)});if(disableIds.length){await Promise.all(disableIds.map(id=>sb.from('promotions').update({active:false}).eq('id',id)));window.promotions.forEach(p=>{if(disableIds.includes(p.id))p.active=false})}}}
+    if(productIds.length){const pr=await sb.from('products').select('id,name,stock,active,category').in('id',productIds);if(!pr.error){const stockById={};(pr.data||[]).forEach(p=>stockById[String(p.id)]=Number(p.stock)||0);const disableIds=[];window.promotions.forEach(p=>{if(!p.active)return;const rows=window.promotionItems[p.id]?.length?window.promotionItems[p.id]:(p.product_id?[{product_id:p.product_id,quantity:1}]:[]);if(rows.some(i=>{const prod=(pr.data||[]).find(x=>String(x.id)===String(i.product_id));const cat=norm((pr.data||[]).find(x=>String(x.id)===String(i.product_id))?.category||'');return cat==='bebidas'&&((stockById[String(i.product_id)]??0)<=0)}))disableIds.push(p.id)});if(disableIds.length){await Promise.all(disableIds.map(id=>sb.from('promotions').update({active:false}).eq('id',id)));window.promotions.forEach(p=>{if(disableIds.includes(p.id))p.active=false})}}}
     window.renderProducts();window.renderPromotionsAdmin?.();window.renderHomePromoBanner?.()};
   window.renderProducts=window.renderProducts;
   window.BV_PROMO_TIMER=null;
@@ -640,16 +640,34 @@
   window.removePromotion=async id=>{if(!confirm('Excluir esta promoção?'))return;const r=await sb.from('promotions').delete().eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PROMOTIONS();toast('Promoção excluída.')};
   window.adjustProductStock=async(id,delta)=>{
     if(!['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase()))return toast('Acesso restrito ao administrador.');
-    const p=(window.products||[]).find(x=>String(x.id)===String(id));
-    if(!p)return toast('Produto não encontrado.');
-    const current=Math.max(0,Number(p.stock)||0), next=Math.max(0,current+Number(delta||0));
-    if(next===current)return;
-    const r=await sb.rpc('adjust_product_stock',{p_product_id:id,p_delta:Number(delta)||0});
-    if(r.error)return toast('Erro ao atualizar estoque: '+r.error.message);
-    p.stock=Number(r.data)||0;
-    try{localStorage.setItem('bv_products',JSON.stringify(window.products||[]))}catch(e){}
-    window.renderProductsAdmin?.();
-    window.renderProducts?.();
+    if(!sb)return toast('Banco indisponível.');
+    const amount=Number(delta)||0;
+    if(!amount)return;
+    try{
+      const fresh=await sb.from('products').select('id,name,stock,active,category').eq('id',id).maybeSingle();
+      if(fresh.error)throw fresh.error;
+      if(!fresh.data)return toast('Produto não encontrado.');
+      const current=Math.max(0,Number(fresh.data.stock)||0),next=Math.max(0,current+amount);
+      if(next===current)return;
+      const r=await sb.rpc('adjust_product_stock',{p_product_id:id,p_delta:amount});
+      if(r.error)throw r.error;
+      const saved=Number(r.data)||0;
+      const verify=await sb.from('products').select('id,name,stock,active,category').eq('id',id).maybeSingle();
+      if(verify.error)throw verify.error;
+      if(!verify.data)return toast('Produto não encontrado após atualização.');
+      const dbStock=Number(verify.data.stock)||0;
+      if(dbStock!==saved)throw new Error('O estoque retornado pelo banco não coincide com o valor salvo.');
+      const idx=(window.products||[]).findIndex(x=>String(x.id)===String(id));
+      if(idx>=0)window.products[idx]={...window.products[idx],...verify.data};
+      else window.products.push(verify.data);
+      try{localStorage.setItem('bv_products',JSON.stringify(window.products||[]))}catch(e){}
+      window.renderProductsAdmin?.();
+      window.renderProducts?.();
+      await window.BV_REFRESH_PROMOTIONS?.();
+    }catch(e){
+      console.error('[BV STOCK SYNC]',e);
+      toast('Erro ao sincronizar estoque: '+(e?.message||'tente novamente.'));
+    }
   };
   window.renderProductsAdmin=()=>{
     const b=$('manage');if(!b)return;
