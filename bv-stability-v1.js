@@ -63,7 +63,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.337';
+  window.BV_STABILITY_VERSION='2026.09.26.339';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -171,7 +171,7 @@
   window.setMotoFeeSpecificDate=value=>{window.BV_MOTO_FEE_FILTER=value?'specific:'+value:'all';window.renderMotoFeeOrders()};
 
   window.setMenuCategory=(cat,b)=>{window.BV_MENU_CATEGORY=cat;document.querySelectorAll('#page-cardapio .menuCategoryTabs button').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_CAT=cat;window.renderProducts()};
-  window.renderProducts=()=>{const b=$('products');if(!b)return;if(window.BV_MENU_CATEGORY==='Promocoes'){const now=Date.now(),active=(window.promotions||[]).filter(x=>x.active&&(!x.starts_at||new Date(x.starts_at).getTime()<=now)&&(!x.ends_at||new Date(x.ends_at).getTime()>=now)),ps=window.products||[];b.innerHTML=active.length?active.map(x=>{const items=window.promotionItems?.[x.id]||[],legacy=x.product_id?[{product_id:x.product_id,quantity:1}]:[],list=(items.length?items:legacy).map(i=>{const p=ps.find(y=>String(y.id)===String(i.product_id));return (i.quantity||1)+'x '+(p?.name||'Produto')}).join(' • ');return '<article class="productCard promotionCatalogCard"><div class="productImage"><span>🏷️</span></div><div class="promoCatalogBody"><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'Oferta especial do BV Lanches')+'</p><div class="promotionCatalogItems">'+esc(list)+'</div><div class="promotionCatalogPrice"><del>'+money(x.original_price||0)+'</del><strong>'+money(x.promotional_price||0)+'</strong></div><button type="button" class="promoCatalogButton" onclick="addPromotionToCart(\''+esc(x.id)+'\')">Adicionar promoção</button></div></article>'}).join(''):'<div class="emptyState"><span>🏷️</span><b>Nenhuma promoção ativa.</b><small>As promoções aparecerão aqui enquanto estiverem ativas.</small></div>';return;}
+  window.renderProducts=async()=>{const b=$('products');if(!b)return;const refri=(window.products||[]).find(x=>norm(x?.name)==='refri 2l');if(refri)await window.BV_REFRESH_FLAVOR_STOCKS?.();if(window.BV_MENU_CATEGORY==='Promocoes'){const now=Date.now(),active=(window.promotions||[]).filter(x=>x.active&&(!x.starts_at||new Date(x.starts_at).getTime()<=now)&&(!x.ends_at||new Date(x.ends_at).getTime()>=now)),ps=window.products||[];b.innerHTML=active.length?active.map(x=>{const items=window.promotionItems?.[x.id]||[],legacy=x.product_id?[{product_id:x.product_id,quantity:1}]:[],list=(items.length?items:legacy).map(i=>{const p=ps.find(y=>String(y.id)===String(i.product_id));return (i.quantity||1)+'x '+(p?.name||'Produto')}).join(' • ');return '<article class="productCard promotionCatalogCard"><div class="productImage"><span>🏷️</span></div><div class="promoCatalogBody"><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'Oferta especial do BV Lanches')+'</p><div class="promotionCatalogItems">'+esc(list)+'</div><div class="promotionCatalogPrice"><del>'+money(x.original_price||0)+'</del><strong>'+money(x.promotional_price||0)+'</strong></div><button type="button" class="promoCatalogButton" onclick="addPromotionToCart(\''+esc(x.id)+'\')">Adicionar promoção</button></div></article>'}).join(''):'<div class="emptyState"><span>🏷️</span><b>Nenhuma promoção ativa.</b><small>As promoções aparecerão aqui enquanto estiverem ativas.</small></div>';return;}
     b.innerHTML='';
     const cat=window.BV_CAT||'Lanches';
     const a=(window.products||[]).filter(p=>p.active!==false&&String(p.category||'Lanches')===cat);
@@ -744,16 +744,17 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   window.BV_REFRESH_FLAVOR_STOCKS=async()=>{
     if(!sb)return false;
     const p=(window.products||[]).find(x=>norm(x?.name)==='refri 2l');
-    window.BV_FLAVOR_STOCKS={};
     if(!p)return false;
     try{
       const r=await sb.from('product_flavor_stock').select('product_id,flavor,stock').eq('product_id',p.id);
       if(r.error)throw r.error;
+      const next={};
       (r.data||[]).forEach(row=>{
         const flavor=norm(row.flavor);
         if(flavor==='guarana'||flavor==='laranja')
-          window.BV_FLAVOR_STOCKS[String(row.product_id)+'::'+flavor]=Math.max(0,Number(row.stock)||0);
+          next[String(row.product_id)+'::'+flavor]=Math.max(0,Number(row.stock)||0);
       });
+      window.BV_FLAVOR_STOCKS=next;
       return true;
     }catch(e){
       console.error('[BV REFRI 2L STOCK]',e);
