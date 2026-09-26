@@ -77,7 +77,6 @@ function patchDashboardItems(){
     return result;
   };
   window.BV_DASHBOARD_ITEMS_PATCH=true;
-  setTimeout(()=>window.renderDashboard?.(),0);
 }
 function patchShowPage(){if(window.BV_FINAL_SHOW_PAGE_PATCH)return;const old=window.showPage;if(typeof old!=='function')return;window.showPage=function(){const r=old.apply(this,arguments);updateCartFloat();return r};window.BV_FINAL_SHOW_PAGE_PATCH=true}
 function boot(){injectStatus();installSearch();cartFloat();restoreDraft();dashboardTools();patchRender();patchCart();patchLogout();patchShowPage();setOnline(navigator.onLine);document.querySelectorAll('#page-pedido input,#page-pedido textarea').forEach(e=>e.addEventListener('input',saveDraft));window.addEventListener('online',()=>setOnline(true));window.addEventListener('offline',()=>setOnline(false));updateCartFloat()}
