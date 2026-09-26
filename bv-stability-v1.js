@@ -110,7 +110,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.358';
+  window.BV_STABILITY_VERSION='2026.09.26.359';
   window.BV_PIX_QR_TIMER=null;
   window.BV_PIX_QR_INFLIGHT=null;
   window.ensurePixQr=async(order)=>{
@@ -763,7 +763,22 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
     if(productIds.length){const pr=await sb.from('products').select('id,name,stock,active,category').in('id',productIds);if(!pr.error){const stockById={};(pr.data||[]).forEach(p=>stockById[String(p.id)]=Number(p.stock)||0);const flavorIds=(pr.data||[]).filter(p=>norm(p.name)==='refri 2l').map(p=>String(p.id));let flavorStockById={};if(flavorIds.length){const fr=await sb.from('product_flavor_stock').select('product_id,flavor,stock').in('product_id',flavorIds);if(!fr.error)(fr.data||[]).forEach(x=>{const k=norm(x.flavor);if(k==='guarana'||k==='laranja')flavorStockById[String(x.product_id)+'::'+k]=(Number(flavorStockById[String(x.product_id)+'::'+k])||0)+(Number(x.stock)||0)})}const disableIds=[];window.promotions.forEach(p=>{if(!p.active)return;const rows=window.promotionItems[p.id]?.length?window.promotionItems[p.id]:(p.product_id?[{product_id:p.product_id,quantity:1}]:[]);if(rows.some(i=>{const prod=(pr.data||[]).find(x=>String(x.id)===String(i.product_id));const cat=norm(prod?.category||'');if(cat!=='bebidas')return false;if(norm(prod?.name)==='refri 2l')return ((flavorStockById[String(i.product_id)+'::guarana']||0)+(flavorStockById[String(i.product_id)+'::laranja']||0))<Math.max(1,Number(i.quantity)||1);return (stockById[String(i.product_id)]??0)<Math.max(1,Number(i.quantity)||1)}))disableIds.push(p.id)});if(disableIds.length){await Promise.all(disableIds.map(id=>sb.from('promotions').update({active:false}).eq('id',id)));window.promotions.forEach(p=>{if(disableIds.includes(p.id))p.active=false})}}}
     window.renderProducts();window.renderPromotionsAdmin?.();window.renderHomePromoBanner?.()};
   window.renderProducts=window.renderProducts;
-  window.BV_PROMO_TIMER=null;
+  window.BV_PROMOTIONS_REALTIME=null;
+  window.BV_PROMOTIONS_REFRESH_TIMER=null;
+  window.setupPromotionsRealtime=()=>{
+    if(!sb||window.BV_PROMOTIONS_REALTIME)return;
+    const schedule=()=>{
+      clearTimeout(window.BV_PROMOTIONS_REFRESH_TIMER);
+      window.BV_PROMOTIONS_REFRESH_TIMER=setTimeout(async()=>{
+        try{await window.BV_REFRESH_PROMOTIONS?.()}catch(e){console.warn('[BV PROMO REALTIME]',e)}
+      },120);
+    };
+    window.BV_PROMOTIONS_REALTIME=sb.channel('bv-promotions-live')
+      .on('postgres_changes',{event:'*',schema:'public',table:'promotions'},schedule)
+      .on('postgres_changes',{event:'*',schema:'public',table:'promotion_items'},schedule)
+      .subscribe(status=>console.log('[BV PROMOTIONS] Realtime:',status));
+  };
+
   window.renderHomePromoBanner=()=>{
     const box=$('homePromoBanner'),track=$('homePromoTrack'),dots=$('homePromoDots');if(!box||!track||!dots)return;
     const now=Date.now(),active=(window.promotions||[]).filter(x=>x.active&&(!x.starts_at||new Date(x.starts_at).getTime()<=now)&&(!x.ends_at||new Date(x.ends_at).getTime()>=now));
