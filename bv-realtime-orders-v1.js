@@ -9,14 +9,25 @@
   let fallbackTimer = null;
   let lastRefresh = 0;
   let refreshPending = false;
+  let motoTimer = null;
 
   const sb = () => window.BV_SUPABASE;
 
+  function isMotoPedidos(){
+    return String(window.BV_ROLE||'').toLowerCase()==='motoboy' && document.getElementById('page-pedidos')?.classList.contains('activePage');
+  }
+
+  function refreshMoto(){
+    clearTimeout(motoTimer);
+    motoTimer=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1500);
+  }
+
   async function refreshNow(reason) {
+    if (isMotoPedidos()) { refreshMoto(); return; }
     const fn = window.BV_REFRESH_ORDERS;
     if (typeof fn !== 'function') return;
     const now = Date.now();
-    if (now - lastRefresh < 1200) return;
+    if (now - lastRefresh < 2500) return;
     if (refreshPending) return;
 
     refreshPending = true;
@@ -81,5 +92,5 @@
     boot();
   }
 
-  window.BV_REALTIME_VERSION = '2026.09.26.505';
+  window.BV_REALTIME_VERSION = '2026.09.26.600';
 })();
