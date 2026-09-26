@@ -17,6 +17,8 @@
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
   window.BV_MOTO_NOTIFIED=window.BV_MOTO_NOTIFIED||new Set();
+  window.BV_MOTO_RENDER_PROMISE=null;
+  window.BV_MOTO_LAST_SIGNATURE='';
   window.enableMotoNotifications=()=>{
     let audioStarted=false;
     let notificationState='unsupported';
@@ -358,15 +360,20 @@
 
   window.renderMotoOrders = async function(options) {
     if (!isMoto()) return;
-    const box = $('orders');
-    if (!box) return;
-    const silent = options?.silent === true;
-    const existing = !!box.querySelector('.motoSingleCard,.motoEmpty');
-    if (!silent && !existing) box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
+    if (window.BV_MOTO_RENDER_PROMISE) return window.BV_MOTO_RENDER_PROMISE;
+    window.BV_MOTO_RENDER_PROMISE=(async()=>{
+      const box = $('orders');
+      if (!box) return;
+      const silent = options?.silent === true;
+      const existing = !!box.querySelector('.motoSingleCard,.motoEmpty');
+      if (!silent && !existing) box.innerHTML='<div class="motoLoading">⏳ Carregando pedidos...</div>';
 
     try {
       const {rows,items,products} = await getOrders();
       window.motoCheckNewOrders?.(rows);
+      const signature=rows.map(o=>String(o.id)+'|'+String(o.status)+'|'+String(o.motoboy_id||'')).join('§');
+      if (signature===window.BV_MOTO_LAST_SIGNATURE && box.querySelector('.motoSingleCard,.motoEmpty')) return;
+      window.BV_MOTO_LAST_SIGNATURE=signature;
       if (!rows.length) {
         box.innerHTML='<div class="motoEmpty"><span>🏍️</span><b>Nenhum pedido disponível</b><small>Pedidos em preparo e prontos aparecerão aqui.</small></div>';
         return;
@@ -378,7 +385,11 @@
       console.error('[MOTO PEDIDOS]',e);
       box.innerHTML='<div class="motoEmpty"><span>⚠️</span><b>Erro ao carregar pedidos</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" id="motoRetry">Tentar novamente</button></div>';
       $('motoRetry')?.addEventListener('click',()=>window.renderMotoOrders());
+    } finally {
+      window.BV_MOTO_RENDER_PROMISE=null;
     }
+  })();
+  return window.BV_MOTO_RENDER_PROMISE;
   };
 
   async function doAction(id,action,button) {
