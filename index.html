@@ -431,12 +431,18 @@ window.renderDeliveryFees=async function(){
 @media(max-width:600px){#page-taxa-entrega .publicFeeGrid{grid-template-columns:1fr}#page-taxa-entrega .publicFeeCard{min-height:66px}}
 </style>
 <script>window.BV_SITE_VERSION='2026.09.26.1003';try{if(window.caches&&caches.keys)caches.keys().then(keys=>keys.filter(k=>!String(k).includes('bv-lanches-pwa-v4')).forEach(k=>caches.delete(k))).catch(()=>{})}catch(e){}</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js?v=20260926.1003"></script><script src="bv-auth-v2.js?v=20260926.1003"></script><script src="bv-register-v1.js?v=20260926.1003"></script><script src="bv-stability-v1.js?v=20260926.1016"></script><script src="bv-order-v2.js?v=20260926.1003"></script><script src="bv-updates-v1.js?v=20260926.1003"></script><script src="bv-icons-v1.js?v=20260926.1003"></script><script src="bv-icon-styles-v1.js?v=20260926.1003"></script><link rel="stylesheet" href="bv-home-mobile-fix-v1.css?v=20260926.1003">
-<script src="bv-pwa-v1.js?v=20260926.1003"></script><script src="bv-ultimate-v1.js?v=20260926.1003"></script><script src="bv-motoboy-v3.js?v=20260926.1003"></script><script src="bv-admin-fees-fix-v1.js?v=20260926.1003"></script><script src="bv-realtime-orders-v1.js?v=20260926.1003"></script><script src="bv-cleanup-v1.js?v=20260926.1003"></script><script src="bv-promotions-dedupe-v1.js?v=20260926.1003"></script><script src="bv-refri-flavors-v1.js?v=20260926.1013"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js?v=20260926.1003"></script><script src="bv-auth-v2.js?v=20260926.1003"></script><script src="bv-register-v1.js?v=20260926.1003"></script><script src="bv-stability-v1.js?v=20260926.1020"></script><script src="bv-order-v2.js?v=20260926.1003"></script><script src="bv-updates-v1.js?v=20260926.1003"></script><script src="bv-icons-v1.js?v=20260926.1003"></script><script src="bv-icon-styles-v1.js?v=20260926.1003"></script><link rel="stylesheet" href="bv-home-mobile-fix-v1.css?v=20260926.1003">
+<script src="bv-pwa-v1.js?v=20260926.1003"></script><script src="bv-ultimate-v1.js?v=20260926.1003"></script><script src="bv-motoboy-v3.js?v=20260926.1003"></script><script src="bv-admin-fees-fix-v1.js?v=20260926.1003"></script><script src="bv-realtime-orders-v1.js?v=20260926.1003"></script><script src="bv-cleanup-v1.js?v=20260926.1003"></script><script src="bv-promotions-dedupe-v1.js?v=20260926.1003"></script><script src="bv-refri-flavors-v1.js?v=20260926.1020"></script>
 <script>
-/* BV — imagens reais por nome dos cards de bebidas */
+/* BV — imagens definitivas dos cards de bebidas */
 (function(){
   const BV_DRINK_IMAGES = {
+    'coca cola 2 litros':'https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG',
+    'coca-cola 2 litros':'https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG',
+    'coca cola 2l':'https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG',
+    'coca-cola 2l':'https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG',
+    'refri 2l':'assets/refri-2l-sem-marca.svg',
+    'refri 2 litros':'assets/refri-2l-sem-marca.svg',
     'coca':'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=900&q=85',
     'coca cola':'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=900&q=85',
     'pepsi':'https://images.unsplash.com/photo-1629203849820-fdd70d49c38e?auto=format&fit=crop&w=900&q=85',
@@ -444,44 +450,34 @@ window.renderDeliveryFees=async function(){
     'guarana antarctica':'https://images.unsplash.com/photo-1624517452488-04869289c4ca?auto=format&fit=crop&w=900&q=85',
     'laranja':'https://images.unsplash.com/photo-1625772299848-391b6a9f7b4d?auto=format&fit=crop&w=900&q=85',
     'fanta':'https://images.unsplash.com/photo-1625772299848-391b6a9f7b4d?auto=format&fit=crop&w=900&q=85',
-    'refri mini':'https://images.unsplash.com/photo-1629203849820-fdd70d49c38e?auto=format&fit=crop&w=900&q=85',
-    'coca cola 2 litros':'https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG',
-    'coca-cola 2 litros':'https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG',
-    'coca cola 2l':'https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG',
-    'coca-cola 2l':'https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG',
-    'refri 2l':'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=900&q=85'
+    'refri mini':'https://images.unsplash.com/photo-1629203849820-fdd70d49c38e?auto=format&fit=crop&w=900&q=85'
   };
   const norm=s=>String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   function drinkImage(name){
     const n=norm(name);
-    for(const k of Object.keys(BV_DRINK_IMAGES)) if(n===k || n.includes(k)) return BV_DRINK_IMAGES[k];
+    if(/^coca\s*-?\s*cola\s*2\s*(l|litros?)$/.test(n))return BV_DRINK_IMAGES['coca cola 2l'];
+    if(/^refri\s*2\s*(l|litros?)$/.test(n))return BV_DRINK_IMAGES['refri 2l'];
+    if(BV_DRINK_IMAGES[n])return BV_DRINK_IMAGES[n];
     return '';
   }
   function applyDrinkImages(root){
     const scope=root||document;
     scope.querySelectorAll('#products .productCard, #products .product, #manage .productCard, #manage .manageProduct, #manage .adminProductCard').forEach(card=>{
-      const category=norm(card.querySelector('.categoryBadge')?.textContent || card.dataset.category || '');
-      const name=card.querySelector('h3')?.textContent || '';
-      if(category!=='bebidas' && !drinkImage(name)) return;
+      const name=card.querySelector('h3')?.textContent||'';
       const src=drinkImage(name);
-      if(!src) return;
+      if(!src)return;
       let box=card.querySelector('.bvDrinkImage');
       if(!box){
         box=document.createElement('div');
         box.className='bvDrinkImage';
         const old=card.querySelector('.photo,.productImage');
-        if(old) old.replaceWith(box);
-        else card.insertBefore(box,card.firstChild);
+        if(old)old.replaceWith(box);else card.insertBefore(box,card.firstChild);
       }
-      box.innerHTML='<img loading="lazy" decoding="async" src="'+src+'" alt="'+String(name).replace(/"/g,'&quot;')+'">';
+      box.innerHTML='<img loading="eager" decoding="async" src="'+src+'" alt="'+String(name).replace(/"/g,'&quot;')+'">';
     });
   }
   const style=document.createElement('style');
-  style.textContent=
-    '.bvDrinkImage{width:100%;height:170px;overflow:hidden;background:linear-gradient(145deg,#20242b,#0d0f12);border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center}\n'+
-    '.bvDrinkImage img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s ease}\n'+
-    '#products .productCard:hover .bvDrinkImage img,#products .product:hover .bvDrinkImage img,#manage .productCard:hover .bvDrinkImage img{transform:scale(1.035)}\n'+
-    '@media(max-width:600px){.bvDrinkImage{height:180px}}';
+  style.textContent='.bvDrinkImage{width:100%;height:170px;overflow:hidden;background:linear-gradient(145deg,#20242b,#0d0f12);border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center}.bvDrinkImage img{width:100%;height:100%;object-fit:contain;display:block;transition:transform .25s ease}#products .productCard:hover .bvDrinkImage img,#products .product:hover .bvDrinkImage img,#manage .productCard:hover .bvDrinkImage img{transform:scale(1.035)}@media(max-width:600px){.bvDrinkImage{height:180px}}';
   document.head.appendChild(style);
   const old=window.renderProducts;
   if(typeof old==='function'){
@@ -502,5 +498,4 @@ window.renderDeliveryFees=async function(){
   document.addEventListener('DOMContentLoaded',()=>setTimeout(applyDrinkImages,150));
   setTimeout(applyDrinkImages,700);
   window.BV_APPLY_DRINK_IMAGES=applyDrinkImages;
-})();
-</script></body></html>
+})();</script></body></html>
