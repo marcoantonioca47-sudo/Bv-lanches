@@ -1,15 +1,20 @@
-const CACHE_NAME='bv-lanches-pwa-v12';
+const CACHE_NAME='bv-lanches-pwa-v14';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',event=>event.waitUntil(
-  caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
-    .then(()=>self.clients.claim())
+  caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())
 ));
-self.addEventListener('notificationclick',event=>{\n  event.notification.close();\n  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{\n    const target=list.find(c=>c.url.includes(self.location.origin));\n    return target?target.focus():clients.openWindow('./');\n  }));\n});\nself.addEventListener('fetch',event=>{
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{
+    const target=list.find(c=>c.url.includes(self.location.origin));
+    return target?target.focus():clients.openWindow('./');
+  }));
+});
+self.addEventListener('fetch',event=>{
   const req=event.request;
   if(req.method!=='GET') return;
   const url=new URL(req.url);
   if(url.origin!==self.location.origin) return;
-
   if(req.mode==='navigate'){
     event.respondWith(
       fetch(req,{cache:'no-store'}).then(res=>{
@@ -20,7 +25,6 @@ self.addEventListener('notificationclick',event=>{\n  event.notification.close()
     );
     return;
   }
-
   if(/\.(?:js|css|svg|png|jpg|jpeg|webp|ico|woff2?)$/i.test(url.pathname)){
     event.respondWith(
       fetch(req,{cache:'no-store'}).then(res=>{
