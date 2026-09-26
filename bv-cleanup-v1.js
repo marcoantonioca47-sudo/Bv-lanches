@@ -1,6 +1,6 @@
 /* BV LANCHES — CONTROLE DE ACESSO MOTOBOY v2 */
 (()=>{'use strict';
-const VERSION='2026.09.26.600';window.BV_ACCESS_VERSION=VERSION;
+const VERSION='2026.09.26.700';window.BV_ACCESS_VERSION=VERSION;
 const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
 const roleNorm=v=>{const r=norm(v);if(['motoboy','moto boy','moto'].includes(r))return'motoboy';if(['administrador','admin','administrador geral'].includes(r))return'administrador';return r||'usuario'};
 const isMoto=()=>roleNorm(window.BV_ROLE)==='motoboy',allowed=new Set(['pedidos','taxa-entrega']),$=id=>document.getElementById(id);
