@@ -16,7 +16,7 @@
     const fn = window.BV_REFRESH_ORDERS;
     if (typeof fn !== 'function') return;
     const now = Date.now();
-    if (now - lastRefresh < 250) return;
+    if (now - lastRefresh < 1200) return;
     if (refreshPending) return;
 
     refreshPending = true;
@@ -60,7 +60,7 @@
     clearInterval(fallbackTimer);
     fallbackTimer = setInterval(() => {
       if (document.visibilityState === 'visible') refreshNow('fallback');
-    }, 10000);
+    }, 30000);
   }
 
   function boot() {
@@ -72,7 +72,7 @@
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') refreshNow('visibility');
+    if (document.visibilityState === 'visible' && Date.now() - lastRefresh > 3000) refreshNow('visibility');
   });
 
   if (document.readyState === 'loading') {
@@ -81,5 +81,5 @@
     boot();
   }
 
-  window.BV_REALTIME_VERSION = '2026.09.25.4';
+  window.BV_REALTIME_VERSION = '2026.09.26.505';
 })();
