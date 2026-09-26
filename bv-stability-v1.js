@@ -716,13 +716,22 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   window.deleteBairroFee=async n=>{if(!confirm('Excluir a taxa de '+n+'?'))return;const r=await sb.from('neighborhood_fees').delete().eq('name',n);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.refreshDeliveryFees();toast('Bairro excluído.')};
   window.BV_STORE_OPEN=true;
 window.renderStoreStatus=async function(){
-  const wrap=document.getElementById('storeStatusControl'),label=document.getElementById('storeStatusLabel'),btn=document.getElementById('storeStatusBtn');
-  if(!wrap||!label||!btn)return;
   const open=window.BV_STORE_OPEN!==false;
-  wrap.classList.toggle('open',open);wrap.classList.toggle('closed',!open);
-  label.textContent=open?'🟢 Loja aberta':'🔴 Loja fechada';
-  btn.textContent=open?'Fechar loja':'Abrir loja';
+  const wrap=document.getElementById('storeStatusControl'),label=document.getElementById('storeStatusLabel'),btn=document.getElementById('storeStatusBtn');
+  if(wrap&&label&&btn){
+    wrap.classList.toggle('open',open);wrap.classList.toggle('closed',!open);
+    label.textContent=open?'🟢 Loja aberta':'🔴 Loja fechada';
+    btn.textContent=open?'Fechar loja':'Abrir loja';
+  }
   const topStore=document.querySelector('.adminState');if(topStore)topStore.textContent=open?'Loja aberta':'Loja fechada';
+  const homeCard=document.querySelector('.storeStatusHomeCard');
+  const homeIcon=document.getElementById('homeStoreStatusIcon');
+  const homeText=document.getElementById('homeStoreStatusText');
+  if(homeCard&&homeIcon&&homeText){
+    homeCard.classList.toggle('open',open);homeCard.classList.toggle('closed',!open);
+    homeIcon.textContent=open?'🟢':'🔴';
+    homeText.textContent=open?'A loja está aberta e recebendo pedidos.':'A loja está fechada no momento.';
+  }
 };
 window.toggleStoreStatus=async function(){
   if(!sb)return toast('Sistema ainda carregando. Tente novamente.');
