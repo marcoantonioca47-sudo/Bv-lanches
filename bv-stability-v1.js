@@ -63,7 +63,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.339';
+  window.BV_STABILITY_VERSION='2026.09.26.340';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -221,7 +221,29 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   };
   window.BV_OPEN_FLAVOR_PICKER=async p=>{
     if(!p)return;
-    await window.BV_REFRESH_FLAVOR_STOCKS?.();
+    let stocks={guarana:0,laranja:0};
+    try{
+      if(sb){
+        const r=await sb.from('product_flavor_stock')
+          .select('flavor,stock')
+          .eq('product_id',p.id);
+        if(r.error)throw r.error;
+        (r.data||[]).forEach(row=>{
+          const k=norm(row.flavor);
+          if(k==='guarana'||k==='laranja')stocks[k]=Math.max(0,Number(row.stock)||0);
+        });
+        window.BV_FLAVOR_STOCKS={
+          ...(window.BV_FLAVOR_STOCKS||{}),
+          [String(p.id)+'::guarana']:stocks.guarana,
+          [String(p.id)+'::laranja']:stocks.laranja
+        };
+      }
+    }catch(e){
+      console.error('[BV REFRI 2L PICKER]',e);
+      await window.BV_REFRESH_FLAVOR_STOCKS?.();
+      stocks.guarana=Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::guarana']??0));
+      stocks.laranja=Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::laranja']??0));
+    }
     let m=$('bvFlavorModal');
     if(!m){
       m=document.createElement('div');
@@ -235,8 +257,6 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     m.dataset.productId=String(p.id);
     const box=m.querySelector('.bvFlavorOptions');
     if(!box)return;
-    const gs=Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::guarana']??0));
-    const ls=Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::laranja']??0));
     box.innerHTML='';
     const addOption=(label,emoji,flavor,stock)=>{
       const b=document.createElement('button');
@@ -246,8 +266,8 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
       b.addEventListener('click',()=>window.BV_SELECT_FLAVOR(flavor));
       box.appendChild(b);
     };
-    addOption('Guaraná','🥤','Guaraná',gs);
-    addOption('Laranja','🍊','Laranja',ls);
+    addOption('Guaraná','🥤','Guaraná',stocks.guarana);
+    addOption('Laranja','🍊','Laranja',stocks.laranja);
     m.classList.add('show');
   };
   window.BV_CLOSE_FLAVOR_PICKER=()=>{
