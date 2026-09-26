@@ -21,7 +21,7 @@
     else alert(text);
   }
 
-  window.BV_ORDER_V2 = '2026.09.26.503';
+  window.BV_ORDER_V2 = '2026.09.26.504';
 
   window.finish = async function(){
     const sb = getSB();
@@ -47,8 +47,16 @@
       const bairro = String($('bairro')?.value || '').trim();
       const comp = String($('comp')?.value || '').trim();
 
-      if(!name) throw new Error('Informe seu nome.');
-      if(!phone) throw new Error('Informe seu WhatsApp.');
+      if(!name){
+        if(typeof window.bvModal==='function') window.bvModal({type:'info',icon:'👤',kicker:'DADOS DO CLIENTE',title:'Informe seu nome',message:'Digite seu <strong>nome</strong> para continuar com o pedido.',button:'Entendi'});
+        else msg('Informe seu nome.');
+        return;
+      }
+      if(!phone){
+        if(typeof window.bvModal==='function') window.bvModal({type:'info',icon:'📱',kicker:'CONTATO PARA ENTREGA',title:'Informe seu WhatsApp',message:'Informe seu <strong>WhatsApp</strong> para que possamos entrar em contato sobre o pedido e a entrega.',button:'Entendi'});
+        else msg('Informe seu WhatsApp.');
+        return;
+      }
       if(delivery && (!street || !num || !bairro)){
         const missing=[];
         if(!street) missing.push('rua');
