@@ -7,7 +7,22 @@
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   const toast=m=>{const x=$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}};
-  window.bvModal=(opts={},onClose)=>{
+  if(!document.getElementById('bvSystemModalInlineStyle')){const st=document.createElement('style');st.id='bvSystemModalInlineStyle';st.textContent=`
+#bvSystemModal,#bvCancelConfirmModal{position:fixed!important;inset:0!important;z-index:2147483647!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:14px!important;background:rgba(0,0,0,.78)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;opacity:0!important;visibility:hidden!important;transition:opacity .18s ease,visibility .18s ease!important}
+#bvSystemModal.show,#bvCancelConfirmModal.show{opacity:1!important;visibility:visible!important}
+#bvSystemModal .bvSystemModalCard,#bvCancelConfirmModal .bvSystemModalCard{width:min(430px,100%)!important;margin:auto!important;overflow:hidden!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:20px!important;background:linear-gradient(145deg,#191c22,#0c0e11)!important;color:#fff!important;box-shadow:0 30px 100px rgba(0,0,0,.7)!important;transform:translateY(8px) scale(.98)!important;transition:transform .18s ease!important}
+#bvSystemModal.show .bvSystemModalCard,#bvCancelConfirmModal.show .bvSystemModalCard{transform:translateY(0) scale(1)!important}
+#bvSystemModal .bvSystemModalTop,#bvCancelConfirmModal .bvSystemModalTop{display:flex!important;align-items:center!important;gap:13px!important;padding:19px!important;border-bottom:1px solid rgba(255,255,255,.07)!important}
+#bvSystemModal .bvSystemModalIcon,#bvCancelConfirmModal .bvSystemModalIcon{width:46px!important;height:46px!important;flex:0 0 46px!important;display:grid!important;place-items:center!important;border-radius:14px!important;background:rgba(229,9,20,.14)!important;border:1px solid rgba(229,9,20,.35)!important;color:#ff5961!important;font-size:20px!important;font-weight:950!important}
+#bvSystemModal .bvSystemModalKicker,#bvCancelConfirmModal .bvSystemModalKicker{display:block!important;color:#ff5961!important;font-size:9px!important;font-weight:950!important;letter-spacing:1.4px!important}
+#bvSystemModal .bvSystemModalTitle,#bvCancelConfirmModal .bvSystemModalTitle{margin:4px 0 0!important;color:#fff!important;font-size:20px!important;font-weight:950!important}
+#bvSystemModal .bvSystemModalBody,#bvCancelConfirmModal .bvSystemModalBody{padding:18px 19px!important;color:#b9bec6!important;font-size:14px!important;line-height:1.55!important}
+#bvSystemModal .bvSystemModalBody strong,#bvCancelConfirmModal .bvSystemModalBody strong{color:#fff!important}
+#bvSystemModal .bvSystemModalActions,#bvCancelConfirmModal .bvSystemModalActions{display:flex!important;gap:9px!important;padding:0 19px 19px!important}
+#bvSystemModal .bvSystemModalBtn,#bvCancelConfirmModal .bvCancelConfirmBtn{flex:1!important;min-height:44px!important;border:1px solid #ff2530!important;border-radius:11px!important;background:linear-gradient(135deg,#ff2530,#b90008)!important;color:#fff!important;font-weight:900!important;box-shadow:0 10px 25px rgba(229,9,20,.18)!important}
+#bvCancelConfirmModal .bvCancelKeepBtn{flex:1!important;min-height:44px!important;border:1px solid #343a44!important;border-radius:11px!important;background:#20242a!important;color:#fff!important;font-weight:900!important}
+@media(max-width:600px){#bvSystemModal,#bvCancelConfirmModal{padding:12px!important}#bvSystemModal .bvSystemModalCard,#bvCancelConfirmModal .bvSystemModalCard{border-radius:18px!important}#bvSystemModal .bvSystemModalActions,#bvCancelConfirmModal .bvSystemModalActions{flex-direction:column!important;padding:0 16px 16px!important}#bvSystemModal .bvSystemModalBtn,#bvCancelConfirmModal .bvCancelConfirmBtn,#bvCancelConfirmModal .bvCancelKeepBtn{width:100%!important}}
+`;document.head.appendChild(st)};window.bvModal=(opts={},onClose)=>{
     const old=document.getElementById('bvSystemModal');if(old)old.remove();
     const type=opts.type==='success'?'success':'info';
     const wrap=document.createElement('div');wrap.id='bvSystemModal';wrap.className='bvSystemModal '+type;
