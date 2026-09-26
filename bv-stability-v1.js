@@ -241,7 +241,7 @@
       const isRefrigerante=String(p.category||'')==='Bebidas'&&/coca|refri|refrigerante/i.test(String(p.name||''));
       const isRefri2L=norm(p.name)==='refri 2l';
       const isCoca2L=/^coca[- ]?cola\s*2\s*(litros?|l)$/i.test(String(p.name||''));
-      const coca2LImage='https://upload.wikimedia.org/wikipedia/commons/3/32/Une_bouteille_de_Coca-Cola_2_Litres.JPG';
+      const coca2LImage='https://andinacocacola.vtexassets.com/arquivos/ids/158758-800-auto?aspect=true&height=auto&v=639156020671730000&width=800';
       const media=(isCoca2L?'<img src="'+coca2LImage+'" alt="'+esc(p.name)+'" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+'<span style="display:none">'+fallback+'</span>':(p.image_url?'<img src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>'));
       const stock=Math.max(0,Number(p.stock)||0);
       const gs=Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::guarana']??0),ls=Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::laranja']??0);
