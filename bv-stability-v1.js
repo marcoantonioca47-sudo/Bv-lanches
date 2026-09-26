@@ -241,10 +241,11 @@
       const media=(p.image_url?'<img src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>');
       const isRefrigerante=String(p.category||'')==='Bebidas'&&/coca|refri|refrigerante/i.test(String(p.name||''));
       const isRefri2L=norm(p.name)==='refri 2l';
+       const isCoca2L=/^coca[- ]?cola\s*2\s*(litros?|l)$/i.test(String(p.name||''));
       const stock=Math.max(0,Number(p.stock)||0);
       const gs=Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::guarana']??0),ls=Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::laranja']??0);
       const outOfStock=isRefri2L?(gs<=0&&ls<=0):(isRefrigerante&&stock<=0);
-      const stockHtml=isRefri2L?'':(isRefrigerante?'<div class="catalogStock '+(outOfStock?'out':'')+'"><span>ESTOQUE</span><strong>'+stock+'</strong>'+(outOfStock?'<em>ESGOTADO</em>':'<small>disponível</small>')+'</div>':'');
+      const stockHtml=(isRefri2L||isCoca2L)?'':(isRefrigerante?'<div class="catalogStock '+(outOfStock?'out':'')+'"><span>ESTOQUE</span><strong>'+stock+'</strong>'+(outOfStock?'<em>ESGOTADO</em>':'<small>disponível</small>')+'</div>':'');
       const priceHtml='<b>'+money(p.price)+'</b>';
       const addButton=outOfStock?'<button type="button" disabled class="addDisabled">Esgotado</button>':'<button type="button" onclick="'+(isRefri2L?'BV_OPEN_FLAVOR_PICKER(\''+esc(p.id)+'\')':'addToCart(\''+esc(p.id)+'\')')+'">+ Adicionar</button>';
       return '<article class="productCard product '+(outOfStock?'productOutOfStock':'')+'">'+(promo?'<div class="promoBadge">🔥 PROMOÇÃO</div>':'')+'<div class="productImage">'+media+'</div><div class="productInfo"><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||'')+'</p>'+stockHtml+'<div class="productBottom">'+priceHtml+addButton+'</div></div></article>';
