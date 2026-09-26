@@ -19,6 +19,8 @@
   window.BV_MOTO_NOTIFIED=window.BV_MOTO_NOTIFIED||new Set();
   window.BV_MOTO_RENDER_PROMISE=null;
   window.BV_MOTO_LAST_SIGNATURE='';
+  window.BV_MOTO_LAST_RENDER_AT=0;
+  window.BV_MOTO_RENDER_MIN_MS=2500;
   window.enableMotoNotifications=()=>{
     let audioStarted=false;
     let notificationState='unsupported';
