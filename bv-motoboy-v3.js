@@ -4,14 +4,15 @@
 
   const $ = id => document.getElementById(id);
   const db = () => window.BV_SUPABASE || window.sb;
-  const isMoto = () => String(window.BV_ROLE || '').toLowerCase() === 'motoboy';
+  const normalizeRole = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  const isMoto = () => normalizeRole(window.BV_ROLE) === 'motoboy';
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.26.503';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.26.513';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.512';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.513';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -148,7 +149,7 @@
       if (authError || !user) throw new Error('Sessão expirada. Entre novamente.');
       const { data:profile, error:profileError } = await client.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
       if (profileError) throw profileError;
-      if (!profile || String(profile.role||'').trim().toLowerCase() !== 'motoboy') {
+      if (!profile || normalizeRole(profile.role) !== 'motoboy') {
         return window.toast?.('Esta conta não está cadastrada como motoboy.');
       }
       window.BV_ROLE='motoboy';
@@ -173,7 +174,7 @@
       if (!user) return false;
       const { data: profile } = await client.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
       if (!profile) return false;
-      window.BV_ROLE = String(profile.role || '').trim().toLowerCase();
+      window.BV_ROLE = normalizeRole(profile.role);
       window.BV_USER_NAME = profile.name || user.email || '';
       window.applyAccess?.();
       return window.BV_ROLE === 'motoboy';
