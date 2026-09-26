@@ -221,28 +221,33 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   };
   window.BV_OPEN_FLAVOR_PICKER=async p=>{
     if(!p)return;
+    if(!Array.isArray(window.cart))window.cart=[];
+    let productId=String(p.id);
     let stocks={guarana:0,laranja:0};
     try{
-      if(sb){
-        const r=await sb.from('product_flavor_stock')
-          .select('flavor,stock')
-          .eq('product_id',p.id);
-        if(r.error)throw r.error;
-        (r.data||[]).forEach(row=>{
-          const k=norm(row.flavor);
-          if(k==='guarana'||k==='laranja')stocks[k]=Math.max(0,Number(row.stock)||0);
-        });
-        window.BV_FLAVOR_STOCKS={
-          ...(window.BV_FLAVOR_STOCKS||{}),
-          [String(p.id)+'::guarana']:stocks.guarana,
-          [String(p.id)+'::laranja']:stocks.laranja
-        };
-      }
+      if(!sb)throw new Error('Banco de dados indisponível.');
+      // Resolve o ID diretamente no banco para não depender de produto/cache antigo.
+      const pr=await sb.from('products').select('id,name').ilike('name','Refri 2L').limit(1).maybeSingle();
+      if(pr.error)throw pr.error;
+      if(pr.data?.id)productId=String(pr.data.id);
+      const r=await sb.from('product_flavor_stock').select('flavor,stock').eq('product_id',productId);
+      if(r.error)throw r.error;
+      (r.data||[]).forEach(row=>{
+        const k=norm(row.flavor);
+        if(k==='guarana'||k==='laranja')stocks[k]=Math.max(0,Number(row.stock)||0);
+      });
+      window.BV_FLAVOR_STOCKS={
+        ...(window.BV_FLAVOR_STOCKS||{}),
+        [productId+'::guarana']:stocks.guarana,
+        [productId+'::laranja']:stocks.laranja
+      };
+      // Mantém o produto usado no carrinho com o ID real do banco.
+      p={...p,id:productId};
     }catch(e){
       console.error('[BV REFRI 2L PICKER]',e);
-      await window.BV_REFRESH_FLAVOR_STOCKS?.();
-      stocks.guarana=Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::guarana']??0));
-      stocks.laranja=Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::laranja']??0));
+      const cached=window.BV_FLAVOR_STOCKS||{};
+      stocks.guarana=Math.max(0,Number(cached[productId+'::guarana']??cached[String(p.id)+'::guarana']??0));
+      stocks.laranja=Math.max(0,Number(cached[productId+'::laranja']??cached[String(p.id)+'::laranja']??0));
     }
     let m=$('bvFlavorModal');
     if(!m){
@@ -254,7 +259,9 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
       m.querySelector('.bvFlavorClose')?.addEventListener('click',()=>window.BV_CLOSE_FLAVOR_PICKER());
       m.addEventListener('click',e=>{if(e.target===m)window.BV_CLOSE_FLAVOR_PICKER()});
     }
-    m.dataset.productId=String(p.id);
+    m.dataset.productId=productId;
+    m.dataset.guaranaStock=String(stocks.guarana);
+    m.dataset.laranjaStock=String(stocks.laranja);
     const box=m.querySelector('.bvFlavorOptions');
     if(!box)return;
     box.innerHTML='';
@@ -274,14 +281,20 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     $('bvFlavorModal')?.classList.remove('show');
   };
   window.BV_SELECT_FLAVOR=async flavor=>{
-    const id=$('bvFlavorModal')?.dataset.productId;
-    const p=(window.products||[]).find(x=>String(x.id)===String(id));
-    if(!p)return;
+    const m=$('bvFlavorModal');
+    const id=m?.dataset.productId;
+    if(!m||!id)return;
     const key=norm(flavor);
     if(!['guarana','laranja'].includes(key))return toast('Sabor inválido.');
-    await window.BV_REFRESH_FLAVOR_STOCKS?.();
-    const stock=Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::'+key]??0));
+    const stock=Math.max(0,Number(m.dataset[key+'Stock']||0));
     if(stock<=0)return toast('Este sabor está esgotado.');
+    const p0=(window.products||[]).find(x=>norm(x?.name)==='refri 2l');
+    if(!p0)return toast('Produto Refri 2L não encontrado.');
+    const p={...p0,id:String(id),name:'Refri 2L'};
+    if(!Array.isArray(window.cart))window.cart=[];
+    const cartId=String(id)+'::'+key;
+    const existing=window.cart.find(x=>String(x.id)===cartId);
+    if((Number(existing?.q)||0)>=stock)return toast('Quantidade máxima disponível: '+stock+'.');
     window.BV_CLOSE_FLAVOR_PICKER();
     window.BV_ADD_PRODUCT_TO_CART(p,key==='guarana'?'Guaraná':'Laranja');
   };
