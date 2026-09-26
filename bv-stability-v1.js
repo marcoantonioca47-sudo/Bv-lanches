@@ -722,6 +722,7 @@ window.renderStoreStatus=async function(){
   wrap.classList.toggle('open',open);wrap.classList.toggle('closed',!open);
   label.textContent=open?'🟢 Loja aberta':'🔴 Loja fechada';
   btn.textContent=open?'Fechar loja':'Abrir loja';
+  const topStore=document.querySelector('.adminState');if(topStore)topStore.textContent=open?'Loja aberta':'Loja fechada';
 };
 window.toggleStoreStatus=async function(){
   const next=window.BV_STORE_OPEN===false;
@@ -1394,7 +1395,7 @@ window.BV_TRACKING_REALTIME=null;
     // Atualização de dados sem bloquear a abertura do aplicativo.
     Promise.all([
       sb.from('products').select('*').order('created_at'),
-      sb.from('settings').select('fee,whatsapp').eq('id',1).maybeSingle()
+      sb.from('settings').select('fee,whatsapp,store_open').eq('id',1).maybeSingle()
     ]).then(async([pr,st])=>{
       if(!pr.error && Array.isArray(pr.data)){
         window.products=pr.data;
@@ -1405,6 +1406,9 @@ window.BV_TRACKING_REALTIME=null;
         window.renderProducts();
       }
       window.BV_DEFAULT_FEE=st?.data?Number(st.data.fee)||0:5;
+      window.BV_STORE_OPEN=st?.data?.store_open!==false;
+      window.renderStoreStatus?.();
+      const topStore=document.querySelector('.adminState');if(topStore)topStore.textContent=window.BV_STORE_OPEN?'Loja aberta':'Loja fechada';
       if($('feeCfg'))$('feeCfg').value=window.BV_DEFAULT_FEE;
       if($('waCfg'))$('waCfg').value=st?.data?.whatsapp||'';
       await Promise.allSettled([window.BV_REFRESH_ORDERS?.(),window.loadProfile?.()]);
