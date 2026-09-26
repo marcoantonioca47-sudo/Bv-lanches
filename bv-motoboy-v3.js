@@ -11,7 +11,7 @@
   window.BV_MOTO_SCREEN_VERSION = '2026.09.26.503';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
-  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.511';
+  window.BV_MOTO_NOTIFY_VERSION='2026.09.26.512';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
@@ -186,14 +186,25 @@
   window.applyMotoPageChrome = function applyMotoPageChrome() {
     if (!isMoto()) return;
     const page = document.getElementById('page-pedidos');
-    if (!page) return;
-    const eyebrow = page.querySelector('.adminTop .eyebrow');
-    const title = page.querySelector('.adminTop h2');
-    const desc = page.querySelector('.adminTop p');
-    if (eyebrow) eyebrow.textContent = 'ÁREA DO MOTOBOY';
-    if (title) title.textContent = 'Pedidos';
-    if (desc) desc.textContent = 'Pedidos disponíveis para coleta e entregas atribuídas a você.';
-    page.classList.remove('adminPage');
+    if (page) {
+      const eyebrow = page.querySelector('.adminTop .eyebrow');
+      const title = page.querySelector('.adminTop h2');
+      const desc = page.querySelector('.adminTop p');
+      if (eyebrow) eyebrow.textContent = 'ÁREA DO MOTOBOY';
+      if (title) title.textContent = 'Pedidos';
+      if (desc) desc.textContent = 'Pedidos disponíveis para coleta e entregas atribuídas a você.';
+      page.classList.remove('adminPage');
+    }
+    const feePage=document.getElementById('page-taxa-entrega');
+    if(feePage){
+      const eyebrow=feePage.querySelector('#deliveryFeeEyebrow');
+      const title=feePage.querySelector('h2');
+      const desc=feePage.querySelector('#deliveryFeeDescription');
+      if(eyebrow) eyebrow.textContent='ÁREA DO MOTOBOY';
+      if(title) title.textContent='Taxa de entrega';
+      if(desc) desc.textContent='Consulte as taxas das suas entregas realizadas.';
+      feePage.classList.remove('adminPage');
+    }
     document.getElementById('motoDeliveryPanel')?.style.setProperty('display','none','important');
     document.getElementById('adminOrderFilters')?.style.setProperty('display','none','important');
     // Remove qualquer painel legado de produção que ainda possa existir em cache/HTML antigo.
@@ -204,6 +215,7 @@
 
   function applyMenu() {
     if (!isMoto()) return;
+    const allowed = new Set(['pedidos','taxa-entrega']);
     // Na aba Pedidos do motoboy, manter somente a pesquisa.
     const filterBox = document.getElementById('adminOrderFilters');
     if (filterBox) {
