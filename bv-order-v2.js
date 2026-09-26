@@ -112,7 +112,7 @@
       const paymentLabel = payment === 'dinheiro' ? 'Dinheiro' : payment === 'cartao' ? 'Cartão' : 'Pix';
       const changeRaw = payment === 'dinheiro' ? String($('troco')?.value || '').replace(',', '.') : '';
       const changeFor = payment === 'dinheiro' && changeRaw ? Math.max(0, Number(changeRaw) || 0) : null;
-      if(payment === 'dinheiro' && (!changeFor || changeFor <= 0)) throw new Error('Informe o valor do troco para.');
+      if(payment === 'dinheiro' && (!changeFor || changeFor <= 0)) { if(typeof window.bvModal==='function'){ window.bvModal({type:'info',icon:'💵',kicker:'PAGAMENTO EM DINHEIRO',title:'Informe o troco',message:'Digite o valor em dinheiro que você vai entregar para que possamos calcular o <strong>troco correto</strong>.',button:'Entendi'}); } else { msg('Informe o valor do troco para.'); } return; }
       localStorage.setItem('bv_payment', paymentLabel);
       const address = delivery
         ? street + ', ' + num + (comp ? ' — ' + comp : '')
