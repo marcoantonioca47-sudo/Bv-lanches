@@ -38,6 +38,32 @@
     setTimeout(()=>wrap.querySelector('.bvSystemModalBtn')?.focus(),80);
     return {close};
   };
+  window.BV_CONFIRM_CANCEL_ORDER=window.BV_CONFIRM_CANCEL_ORDER||function(o){
+    return new Promise(resolve=>{
+      const old=document.getElementById('bvCancelConfirmModal');if(old)old.remove();
+      const wrap=document.createElement('div');wrap.id='bvCancelConfirmModal';wrap.className='show';
+      wrap.innerHTML='<div class="bvSystemModalCard" role="dialog" aria-modal="true"><div class="bvSystemModalTop"><div class="bvSystemModalIcon">⚠️</div><div><span class="bvSystemModalKicker">CANCELAMENTO DE PEDIDO</span><h3 class="bvSystemModalTitle">Cancelar pedido?</h3></div></div><div class="bvSystemModalBody">Tem certeza que deseja cancelar o pedido <strong>#'+esc(o?.order_number||'')+'</strong>? Esta ação não poderá ser desfeita.</div><div class="bvSystemModalActions"><button type="button" class="bvCancelKeepBtn">Voltar</button><button type="button" class="bvCancelConfirmBtn">Cancelar pedido</button></div></div>';
+      document.body.appendChild(wrap);
+      let done=false;const finish=v=>{if(done)return;done=true;wrap.classList.remove('show');setTimeout(()=>wrap.remove(),180);resolve(v)};
+      wrap.querySelector('.bvCancelKeepBtn')?.addEventListener('click',()=>finish(false));
+      wrap.querySelector('.bvCancelConfirmBtn')?.addEventListener('click',()=>finish(true));
+      wrap.addEventListener('click',e=>{if(e.target===wrap)finish(false)});
+      requestAnimationFrame(()=>wrap.classList.add('show'));
+    });
+  };
+  window.BV_CONFIRM_DELETE_PROMOTION=window.BV_CONFIRM_DELETE_PROMOTION||function(p){
+    return new Promise(resolve=>{
+      const old=document.getElementById('bvCancelConfirmModal');if(old)old.remove();
+      const wrap=document.createElement('div');wrap.id='bvCancelConfirmModal';wrap.className='show';
+      wrap.innerHTML='<div class="bvSystemModalCard" role="dialog" aria-modal="true"><div class="bvSystemModalTop"><div class="bvSystemModalIcon">🗑️</div><div><span class="bvSystemModalKicker">EXCLUSÃO DE PROMOÇÃO</span><h3 class="bvSystemModalTitle">Excluir promoção?</h3></div></div><div class="bvSystemModalBody">Tem certeza que deseja excluir a promoção <strong>'+esc(p?.name||'esta promoção')+'</strong>? Esta ação não poderá ser desfeita.</div><div class="bvSystemModalActions"><button type="button" class="bvCancelKeepBtn">Voltar</button><button type="button" class="bvCancelConfirmBtn">Excluir promoção</button></div></div>';
+      document.body.appendChild(wrap);
+      let done=false;const finish=v=>{if(done)return;done=true;wrap.classList.remove('show');setTimeout(()=>wrap.remove(),180);resolve(v)};
+      wrap.querySelector('.bvCancelKeepBtn')?.addEventListener('click',()=>finish(false));
+      wrap.querySelector('.bvCancelConfirmBtn')?.addEventListener('click',()=>finish(true));
+      wrap.addEventListener('click',e=>{if(e.target===wrap)finish(false)});
+      requestAnimationFrame(()=>wrap.classList.add('show'));
+    });
+  };
   if(!$('bvDeliveryCardStyle')){
     const st=document.createElement('style');st.id='bvDeliveryCardStyle';st.textContent='.bvDeliveryCard .orderBody{display:grid;gap:10px}.bvOrderCustomer{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.bvOrderCustomer b{font-size:18px}.bvOrderCustomer span{font-size:12px;opacity:.7;text-align:right}.bvOrderItems{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035)}.bvOrderItems small,.bvDeliveryTitle{font-size:10px;font-weight:900;letter-spacing:.12em;opacity:.65}.bvOrderItems p{margin:5px 0 0;line-height:1.45}.bvDeliveryBox{padding:13px 14px;border-radius:14px;background:rgba(229,9,20,.06);border:1px solid rgba(229,9,20,.18)}.bvAddressMain{margin-top:5px;font-weight:850;line-height:1.35}.bvAddressSub{margin-top:3px;font-size:13px;opacity:.75}.orderPaymentBadge{margin-top:0!important}.bvDeliveryCard .orderFoot{display:flex;align-items:end;justify-content:space-between;gap:12px}.bvDeliveryCard .orderFoot>div{display:flex;flex-direction:column;gap:3px}.bvDeliveryCard .orderFoot small{font-size:10px;letter-spacing:.1em;opacity:.65}.bvDeliveryCard .orderFoot strong{font-size:21px}@media(max-width:600px){.bvOrderCustomer{display:block}.bvOrderCustomer span{display:block;text-align:left;margin-top:3px}.bvDeliveryCard .orderFoot{align-items:stretch;flex-direction:column}.bvDeliveryCard .orderFoot select{width:100%}}';document.head.appendChild(st);
   }
@@ -897,7 +923,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
     await window.BV_REFRESH_PROMOTIONS();
     toast(v?'Promoção ativada.':'Promoção desativada.');
   };
-  window.removePromotion=async id=>{if(!confirm('Excluir esta promoção?'))return;const r=await sb.from('promotions').delete().eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PROMOTIONS();toast('Promoção excluída.')};
+  window.removePromotion=async id=>{const promo=(window.promotions||[]).find(x=>String(x.id)===String(id));if(!await window.BV_CONFIRM_DELETE_PROMOTION?.(promo))return;const r=await sb.from('promotions').delete().eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PROMOTIONS();toast('Promoção excluída.')};
   window.adjustProductStock=async(id,delta)=>{
     if(!['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase()))return toast('Acesso restrito ao administrador.');
     if(!sb)return toast('Banco indisponível.');
