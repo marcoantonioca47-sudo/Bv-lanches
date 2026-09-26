@@ -9,7 +9,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.26.700';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.26.920';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
   window.BV_MOTO_NOTIFY_VERSION='2026.09.26.700';
@@ -360,7 +360,14 @@
 
   window.renderMotoOrders = async function(options) {
     if (!isMoto()) return;
+    const now=Date.now();
+    const force=options?.force===true;
+    if (!force && window.BV_MOTO_RENDER_PROMISE) return window.BV_MOTO_RENDER_PROMISE;
+    if (!force && window.BV_MOTO_LAST_RENDER_AT && (now-window.BV_MOTO_LAST_RENDER_AT)<window.BV_MOTO_RENDER_MIN_MS) {
+      return;
+    }
     if (window.BV_MOTO_RENDER_PROMISE) return window.BV_MOTO_RENDER_PROMISE;
+    window.BV_MOTO_LAST_RENDER_AT=now;
     window.BV_MOTO_RENDER_PROMISE=(async()=>{
       const box = $('orders');
       if (!box) return;
