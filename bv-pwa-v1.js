@@ -57,7 +57,7 @@
     });
     window.addEventListener('load',async()=>{
       try{
-        const reg=await navigator.serviceWorker.register('./service-worker.js?v=20260926.982',{scope:'./'});
+        const reg=await navigator.serviceWorker.register('./service-worker.js?v=20260926.983',{scope:'./'});
         await reg.update();
         hadController=hadController||!!navigator.serviceWorker.controller;
         if(updateTimer)clearInterval(updateTimer);
