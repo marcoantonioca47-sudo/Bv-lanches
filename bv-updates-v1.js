@@ -60,6 +60,14 @@ function watch(){
           );
           playOrderSound();
         }
+      }else if(!isAdmin){
+        if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega'&&String(localStorage.getItem('bv_track_id')||'')===String(o.id)){
+          addN(
+            '🛵 Pedido saiu para entrega',
+            'Seu pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' saiu para entrega.',
+            'delivery:'+o.id+':'+o.rawStatus
+          );
+        }
       }else if(isAdmin){
         if(!old[o.id]){
           addN(
