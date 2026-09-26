@@ -290,7 +290,7 @@
 
     const items = {};
     if (rows.length) {
-      const ir = await client.from('order_items').select('order_id,product_name,quantity').in('order_id',rows.map(x=>x.id));
+      const ir = await client.from('order_items').select('order_id,product_id,product_name,quantity').in('order_id',rows.map(x=>x.id));
       if (!ir.error) (ir.data||[]).forEach(i => (items[i.order_id] ||= []).push(i));
     }
     return {rows,items};
