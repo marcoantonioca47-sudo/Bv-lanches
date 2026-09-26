@@ -53,7 +53,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.283';
+  window.BV_STABILITY_VERSION='2026.09.25.286';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -324,8 +324,7 @@
     const section=(title,sub,rows,cls)=>rows.length?
       '<section class="bvProductionSection '+cls+'"><div class="bvProductionSectionHead"><div><span>'+title+'</span><small>'+sub+'</small></div><strong>'+rows.length+'</strong></div><div class="bvProductionGrid">'+rows.map(card).join('')+'</div></section>':'';
     b.innerHTML=section('🔔 NOVOS PEDIDOS','Aguardando o administrador iniciar o preparo.',novos,'bvNewOrdersSection')+
-      section('PRONTOS / ENTREGA','Os demais status são apenas acompanhados nesta tela.',andamento,'bvProductionSectionMuted')+
-      (!novos.length&&!andamento.length?'<div class="emptyState"><span>📋</span><b>Nenhum pedido encontrado</b><small>Novos pedidos aparecerão automaticamente aqui.</small></div>':'');
+      (!novos.length?'<div class="emptyState"><span>📋</span><b>Nenhum pedido novo</b><small>Novos pedidos aparecerão automaticamente aqui.</small></div>':'');
     if(novos.length)b.scrollIntoView({block:'nearest',behavior:'smooth'});
   };
   window.cancelOrder=async(id)=>{
