@@ -68,10 +68,15 @@
         if(item.isPromotion && item.promotionId){
           return { promotion_id: String(item.promotionId), quantity };
         }
-        let p = products.find(x => String(x.id) === String(item.productId || String(item.id).split('::')[0]));
+        const productId = String(item.productId || String(item.id).split('::')[0]);
+        let p = products.find(x => String(x.id) === productId);
         if(!p) p = products.find(x => norm(x.name) === norm(item.name));
         if(!p) throw new Error('O produto "' + String(item.name || item.id) + '" não está mais disponível.');
-        return { product_id: String(p.id), quantity };
+        return {
+          product_id: String(p.id),
+          quantity,
+          ...(item.flavor ? { flavor: String(item.flavor) } : {})
+        };
       });
 
       // A seleção visível na tela é a fonte oficial. O localStorage serve apenas como fallback.
@@ -113,6 +118,22 @@
         throw new Error(detail || 'O servidor recusou a criação do pedido.');
       }
       if(!orderId) throw new Error('O servidor não retornou o ID do pedido.');
+
+      // Persiste a opção de sabor escolhida para que administrador e motoboy
+      // recebam o mesmo nome exibido ao cliente (ex.: Refri 2L — Guaraná).
+      const variants = cart
+        .filter(item => item?.flavor && !item?.isPromotion)
+        .map(item => ({
+          product_id: String(item.productId || String(item.id).split('::')[0]),
+          flavor: String(item.flavor)
+        }));
+      if(variants.length && typeof sb.rpc === 'function'){
+        const vr = await sb.rpc('set_bv_order_item_variants', {
+          p_order_id: orderId,
+          p_variants: variants
+        });
+        if(vr.error) console.warn('[BV ORDER V2] Não foi possível gravar o sabor:', vr.error);
+      }
 
       localStorage.setItem('bv_last_order', JSON.stringify({id:orderId,phone}));
       localStorage.setItem('bv_track_id', orderId);
