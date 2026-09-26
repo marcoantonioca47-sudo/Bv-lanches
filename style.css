@@ -519,3 +519,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
 
 /* BV LANCHES — status dos cards do administrador: vermelho vitrificado */
 .orderCard .orderHead .statusBadge,.bvDeliveryCard .orderHead .statusBadge,.bvProductionOrderCard .orderHead .statusBadge,.bvNewStatusBadge{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:30px!important;padding:7px 12px!important;border-radius:999px!important;color:#fff!important;font-size:10px!important;font-weight:950!important;letter-spacing:.08em!important;text-transform:uppercase!important;white-space:nowrap!important;background:linear-gradient(145deg,rgba(255,48,58,.88),rgba(112,0,8,.78))!important;border:1px solid rgba(255,112,118,.78)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.30),inset 0 -8px 15px rgba(70,0,5,.22),0 6px 18px rgba(229,9,20,.28),0 0 18px rgba(229,9,20,.12)!important;text-shadow:0 1px 6px rgba(0,0,0,.45)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}.orderCard .orderHead .statusBadge:hover,.bvDeliveryCard .orderHead .statusBadge:hover{filter:brightness(1.08)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -8px 15px rgba(70,0,5,.18),0 8px 22px rgba(229,9,20,.36),0 0 24px rgba(229,9,20,.18)!important}@media(max-width:600px){.orderCard .orderHead .statusBadge,.bvDeliveryCard .orderHead .statusBadge,.bvProductionOrderCard .orderHead .statusBadge,.bvNewStatusBadge{min-height:28px!important;padding:6px 10px!important;font-size:9px!important}}
+
+
+/* BV LANCHES — fotos individuais dos adicionais */
+#page-cardapio #products .productImage img,
+#page-produtos #manage .productImage img{
+  display:block!important;
+  width:100%!important;
+  height:180px!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  border-radius:0!important;
+}
+@media(max-width:600px){
+  #page-cardapio #products .productImage img,
+  #page-produtos #manage .productImage img{
+    height:190px!important;
+  }
+}
