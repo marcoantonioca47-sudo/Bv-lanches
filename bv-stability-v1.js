@@ -1092,7 +1092,7 @@ window.BV_TRACKING_REALTIME=null;
           const d=new Date(x.created_at);
           const date=Number.isNaN(d.getTime())?'Data não disponível':d.toLocaleDateString('pt-BR');
           const time=Number.isNaN(d.getTime())?'':d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-          return '<button type="button" class="trackingOrderOption" data-order-id="'+esc(String(x.id))+'"><span class="trackingOrderMain"><span class="trackingOrderNumber">#'+esc(window.orderLabel(x))+'</span><span class="trackingOrderStatus">'+esc(x.status||'')+'</span><span class="trackingOrderItems">'+esc(x.items||'Itens do pedido')+'</span></span><span class="trackingOrderMeta"><strong>'+money(x.total)+'</strong><small>'+date+(time?' · '+time:'')+'</small><em>Ver pedido ›</em></span></button>'
+          return '<button type="button" class="trackingOrderOption" data-order-id="'+esc(String(x.id))+'"><span class="trackingOrderMain"><span class="trackingOrderNumber">#'+esc(window.orderLabel(x))+'</span><span class="trackingOrderStatus">'+esc(x.status||'')+'</span><span class="trackingOrderItems">'+window.orderItemsMarkup(x.items)+'</span></span><span class="trackingOrderMeta"><strong>'+money(x.total)+'</strong><small>'+date+(time?' · '+time:'')+'</small><em>Ver pedido ›</em></span></button>'
         }).join('')+
           '</div>';
         b.querySelectorAll('.trackingOrderOption').forEach(btn=>btn.addEventListener('click',()=>window.trackSpecificOrder(btn.dataset.orderId)));
