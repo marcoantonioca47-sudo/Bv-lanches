@@ -53,7 +53,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.25.287';
+  window.BV_STABILITY_VERSION='2026.09.25.289';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -282,6 +282,13 @@
   window.orderLabel=o=>Number(o?.orderNumber)>0?String(Math.trunc(o.orderNumber)).padStart(3,'0'):String(o?.id||'').slice(-5);
   window.renderAdmin=()=>{
     const b=$('orders');if(!b)return;
+    // Garante que a lista administrativa seja carregada mesmo quando a tela
+    // for aberta antes da primeira sincronização do banco.
+    if((!Array.isArray(window.orders)||window.orders.length===0)&&typeof window.BV_REFRESH_ORDERS==='function'&&!window.BV_ADMIN_REFRESHING){
+      window.BV_ADMIN_REFRESHING=true;
+      Promise.resolve(window.BV_REFRESH_ORDERS()).finally(()=>{window.BV_ADMIN_REFRESHING=false;});
+      return;
+    }
     const q=norm($('orderSearch')?.value||''),sf=$('orderStatusFilter')?.value||'',pf=$('orderPaymentFilter')?.value||'',df=$('orderDateFilter')?.value||'',now=Date.now();
     const filtered=(window.orders||[]).filter(o=>{
       if(['entregue','cancelado'].includes(String(o.rawStatus||'').toLowerCase()))return false;
