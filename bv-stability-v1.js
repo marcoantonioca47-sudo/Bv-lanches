@@ -69,7 +69,56 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.354';
+  window.BV_STABILITY_VERSION='2026.09.26.355';
+  window.BV_PIX_QR_TIMER=null;
+  window.BV_PIX_QR_INFLIGHT=null;
+  window.ensurePixQr=async(order)=>{
+    const o=order||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')));
+    if(!o||String(o.payment||'').toLowerCase()!=='pix'||String(o.paymentStatus||'').toLowerCase()==='pago')return false;
+    if(o.pixQrCode)return true;
+    if(window.BV_PIX_QR_INFLIGHT)return window.BV_PIX_QR_INFLIGHT;
+    const run=(async()=>{
+      try{
+        const sbx=sb||window.BV_SUPABASE;
+        if(!sbx)return false;
+        const r=await sbx.functions.invoke('criar-pix',{body:{order_id:o.id}});
+        if(r.error||r.data?.error){
+          console.warn('[BV PIX QR] geração falhou',r.error||r.data);
+          return false;
+        }
+        const d=r.data||{};
+        if(d.qr_code||d.qr_code_base64){
+          o.pixPaymentId=d.mercado_pago_order_id||d.pix_payment_id||o.pixPaymentId||null;
+          o.pixQrCode=d.qr_code||o.pixQrCode||'';
+          o.pixQrCodeBase64=d.qr_code_base64||o.pixQrCodeBase64||'';
+          o.pixExpiresAt=d.expires_at||o.pixExpiresAt||null;
+          return true;
+        }
+        return false;
+      }catch(e){
+        console.warn('[BV PIX QR]',e);
+        return false;
+      }finally{window.BV_PIX_QR_INFLIGHT=null}
+    })();
+    window.BV_PIX_QR_INFLIGHT=run;
+    return run;
+  };
+  window.startPixQrRecovery=order=>{
+    if(window.BV_PIX_QR_TIMER)clearTimeout(window.BV_PIX_QR_TIMER);
+    const tick=async()=>{
+      const o=order||(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')));
+      if(!o||String(o.payment||'').toLowerCase()!=='pix'||String(o.paymentStatus||'').toLowerCase()==='pago'||o.pixQrCode){window.BV_PIX_QR_TIMER=null;return}
+      const ok=await window.ensurePixQr(o);
+      if(ok){
+        window.BV_TRACKING_RENDER_SIG='';
+        window.renderTracking(o);
+        window.BV_PIX_QR_TIMER=null;
+        return;
+      }
+      window.BV_PIX_QR_TIMER=setTimeout(tick,4000);
+    };
+    window.BV_PIX_QR_TIMER=setTimeout(tick,800);
+  };
 
   if(!$('bvTrackingCardStyle')){const st=document.createElement('style');st.id='bvTrackingCardStyle';st.textContent='.trackingCardFixed{padding:18px!important;overflow:hidden}.trackingCardFixed .trackingCardTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.08)}.trackingCardFixed .trackingCardTop small,.trackingCardFixed .trackingCardSection>small{font-size:9px;font-weight:950;letter-spacing:.12em;color:#ff5b64}.trackingCardFixed .trackingCardTop h3{margin:4px 0 0;font-size:25px}.trackingStatusPill{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:950;white-space:nowrap;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1)}.trackingStatusPill.recebido{color:#ffd166}.trackingStatusPill.em-preparo,.trackingStatusPill.em-producao{color:#ffb86b}.trackingStatusPill.saiu-entrega{color:#72b7ff}.trackingStatusPill.entregue{color:#65e6a1}.trackingStatusPill.cancelado{color:#ff737d}.trackingProgress{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:18px 0}.trackingProgressStep{text-align:center;opacity:.38}.trackingProgressStep.done{opacity:1}.trackingProgressStep span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;margin:0 auto 6px;background:#20242a;border:1px solid #30343b;font-size:11px}.trackingProgressStep.done span{background:#e50914;border-color:#e50914;color:#fff}.trackingProgressStep small{font-size:9px;font-weight:800}.trackingItems{margin-top:7px}.trackingCardTotal{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.08)}.trackingCardTotal strong{font-size:20px}.trackingPayment{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:12px}.trackingPix{margin-top:14px;padding:14px;border-radius:14px;text-align:center}.trackingPix.waiting{border:1px solid rgba(0,200,120,.22);background:rgba(0,120,80,.08)}.trackingPix.paid{border:1px solid rgba(0,200,120,.25);background:rgba(0,160,90,.12)}.trackingPix b,.trackingPix small{display:block}.trackingPix small{margin-top:4px}.trackingPix img{width:min(220px,70vw);display:block;margin:12px auto;border-radius:12px;background:#fff;padding:7px}.trackingPix button{width:100%;margin-top:8px;padding:11px;border:0;border-radius:10px;background:#e50914;color:#fff;font-weight:900}@media(max-width:760px){.trackingGrid{grid-template-columns:1fr}.trackingCardFixed .trackingCardTop{gap:8px}.trackingStatusPill{font-size:10px;max-width:48%;white-space:normal;text-align:center}.trackingProgressStep small{font-size:8px}}';document.head.appendChild(st)}  const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
@@ -1002,7 +1051,7 @@ window.BV_TRACKING_REALTIME=null;
     const pixBox=isPix&&!paid?'<div class="trackingPix waiting"><b>PIX — aguardando pagamento</b><small>Pague pelo QR Code ou use o Pix Copia e Cola.</small>'+qr+(o.pixQrCode?'<button type="button" onclick="copyPixCode()">📋 Copiar Pix Copia e Cola</button>':'<small>QR Code ainda não disponível.</small>')+'</div>':(isPix&&paid?'<div class="trackingPix paid"><b>✅ PIX confirmado</b><small>Pagamento recebido. Pedido liberado para preparo.</small></div>':'');
     const payment=String(o.payment||o.payment_method||'').trim();
     b.innerHTML='<div class="trackingCard trackingCardFixed"><div class="trackingCardTop"><div><small>PEDIDO</small><h3>#'+esc(window.orderLabel(o))+'</h3></div><span class="trackingStatusPill '+esc(rawStatus.replace(/_/g,'-'))+'">'+esc(displayStatus)+'</span></div><div class="trackingProgress">'+progress+'</div><div class="trackingCardSection"><small>ITENS DO PEDIDO</small><div class="trackingItems">'+items+'</div><div class="trackingCardTotal"><span>Total</span><strong>'+money(o.total)+'</strong></div><div class="trackingPayment"><span>Pagamento</span><b>'+esc(payment||'Não informado')+(paid?' • Pago':'')+'</b></div></div>'+pixBox+'</div>';
-    window.startPixStatusPolling?.(o);
+    if(isPix&&!paid&&!o.pixQrCode)window.startPixQrRecovery(o); else if(o.pixQrCode&&window.BV_PIX_QR_TIMER){clearTimeout(window.BV_PIX_QR_TIMER);window.BV_PIX_QR_TIMER=null;}\n    window.startPixStatusPolling?.(o);
   };
   window.trackLastOrder=async()=>{try{await window.BV_REFRESH_ORDERS?.();const o=(window.orders||[])[0];if(!o)return toast('Você ainda não possui pedidos.');localStorage.setItem('bv_track_id',o.id);const input=$('trackId');if(input)input.value=window.orderLabel(o);window.renderTracking(o)}catch{toast('Não foi possível consultar seu último pedido.')}};
   window.trackSpecificOrder=async id=>{const o=(window.orders||[]).find(x=>String(x.id)===String(id));if(!o)return toast('Pedido não encontrado.');localStorage.setItem('bv_track_id',o.id);const input=$('trackId');if(input)input.value=window.orderLabel(o);window.renderTracking(o)};
