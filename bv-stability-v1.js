@@ -63,7 +63,7 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
-  window.BV_STABILITY_VERSION='2026.09.26.336';
+  window.BV_STABILITY_VERSION='2026.09.26.337';
   const firstLoginDone=()=>{try{return localStorage.getItem('bv_first_login_done')==='1'}catch(e){return false}};
   window.BV_HAS_NAVIGATED=false;
   const NAV_KEY='bv_current_page';
@@ -195,7 +195,7 @@
   };
   window.addPromotionToCart=async id=>{const promo=(window.promotions||[]).find(x=>String(x.id)===String(id));if(!promo)return toast('Promoção não encontrada.');const now=Date.now();if(!promo.active|| (promo.starts_at&&new Date(promo.starts_at).getTime()>now) || (promo.ends_at&&new Date(promo.ends_at).getTime()<now))return toast('Esta promoção não está mais ativa.');const items=window.promotionItems?.[promo.id]||[];const legacy=promo.product_id?[{product_id:promo.product_id,quantity:1}]:[];const rows=items.length?items:legacy;if(!rows.length)return toast('Esta promoção não possui itens.');const ps=window.products||[];const resolved=rows.map(i=>({p:ps.find(p=>String(p.id)===String(i.product_id)),q:Math.max(1,Number(i.quantity)||1)}));if(resolved.some(x=>!x.p))return toast('Não foi possível localizar todos os itens da promoção.');const key='promo:'+promo.id;const r=window.cart.find(x=>x.id===key);if(r)r.q=(Number(r.q)||0)+1;else window.cart.push({id:key,name:'🎁 '+promo.name,price:Number(promo.promotional_price)||0,q:1,isPromotion:true,promotionId:promo.id,promotionItems:resolved.map(x=>({id:x.p.id,name:x.p.name,quantity:x.q}))});saveCart();toast('Promoção adicionada ao pedido por '+money(promo.promotional_price)+'.');showPage('pedido')};
   const saveCart=()=>{localStorage.setItem('bv_cart',JSON.stringify(window.cart||[]));const n=(window.cart||[]).reduce((s,x)=>s+(Number(x.q)||0),0);if($('count'))$('count').textContent=n;if($('sideCount'))$('sideCount').textContent=n;window.renderCart()};
-  window.addToCart=id=>{const p=(window.products||[]).find(x=>String(x.id)===String(id));if(!p)return toast('Produto não encontrado.');const category=String(p.category||'Lanches');const isRefrigerante=category==='Bebidas'&&/coca|refri|refrigerante/i.test(String(p.name||''));const stock=Math.max(0,Number(p.stock)||0);if(isRefrigerante&&stock<=0)return toast('Este refrigerante está esgotado.');if(norm(p.name)==='refri 2l'){window.BV_OPEN_FLAVOR_PICKER?.(p);return}window.BV_ADD_PRODUCT_TO_CART?.(p,'')};
+  window.addToCart=id=>{const p=(window.products||[]).find(x=>String(x.id)===String(id));if(!p)return toast('Produto não encontrado.');if(norm(p.name)==='refri 2l'){window.BV_OPEN_FLAVOR_PICKER?.(p);return}const category=String(p.category||'Lanches');const isRefrigerante=category==='Bebidas'&&/coca|refri|refrigerante/i.test(String(p.name||''));const stock=Math.max(0,Number(p.stock)||0);if(isRefrigerante&&stock<=0)return toast('Este refrigerante está esgotado.');window.BV_ADD_PRODUCT_TO_CART?.(p,'')};
 window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     if(!p)return;
     const category=String(p.category||'Lanches');
@@ -265,7 +265,7 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     window.BV_CLOSE_FLAVOR_PICKER();
     window.BV_ADD_PRODUCT_TO_CART(p,key==='guarana'?'Guaraná':'Laranja');
   };
-  window.change=(id,d)=>{const r=window.cart.find(x=>String(x.id)===String(id));if(!r)return;const baseId=r.productId||String(r.id).split('::')[0];const p=(window.products||[]).find(x=>String(x.id)===String(baseId));const category=r.category||p?.category||'Lanches';const isRefrigerante=category==='Bebidas'&&/coca|refri|refrigerante/i.test(String(r.name||p?.name||''));const stock=Math.max(0,Number(p?.stock)||0);if(Number(d)>0&&isRefrigerante&&stock<=Number(r.q||0))return toast('Quantidade máxima disponível em estoque: '+stock+'.');r.q=(Number(r.q)||0)+Number(d||0);if(r.q<=0)window.cart=window.cart.filter(x=>String(x.id)!==String(id));saveCart()};
+  window.change=async(id,d)=>{const r=window.cart.find(x=>String(x.id)===String(id));if(!r)return;const baseId=r.productId||String(r.id).split('::')[0];const p=(window.products||[]).find(x=>String(x.id)===String(baseId));const category=r.category||p?.category||'Lanches';const isRefri2L=norm(p?.name)==='refri 2l';const isRefrigerante=category==='Bebidas'&&/coca|refri|refrigerante/i.test(String(r.name||p?.name||''));if(isRefri2L&&Number(d)>0){await window.BV_REFRESH_FLAVOR_STOCKS?.();const flavorKey=norm(r.flavor);if(!['guarana','laranja'].includes(flavorKey))return toast('Selecione o sabor novamente.');const stock=Math.max(0,Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::'+flavorKey]??0));if(Number(r.q||0)>=stock)return toast('Quantidade máxima disponível para '+(flavorKey==='guarana'?'Guaraná':'Laranja')+': '+stock+'.');}else if(Number(d)>0&&isRefrigerante){const stock=Math.max(0,Number(p?.stock)||0);if(stock<=Number(r.q||0))return toast('Quantidade máxima disponível em estoque: '+stock+'.');}r.q=(Number(r.q)||0)+Number(d||0);if(r.q<=0)window.cart=window.cart.filter(x=>String(x.id)!==String(id));saveCart()};
   window.removeFromCart=id=>{window.cart=window.cart.filter(x=>String(x.id)!==String(id));saveCart()};
   window.renderCart=()=>{
     const b=$('cart');if(!b)return;
@@ -784,7 +784,7 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
       return null;
     }
   };
-  window.renderProductsAdmin=()=>{
+  window.renderProductsAdmin=async()=>{await window.BV_REFRESH_FLAVOR_STOCKS?.();
     const b=$('manage');if(!b)return;
     const a=(window.products||[]).filter(x=>x.active!==false);
     b.innerHTML=a.map(x=>{
