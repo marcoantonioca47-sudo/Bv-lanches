@@ -68,7 +68,7 @@
         if(item.isPromotion && item.promotionId){
           return { promotion_id: String(item.promotionId), quantity };
         }
-        let p = products.find(x => String(x.id) === String(item.id));
+        let p = products.find(x => String(x.id) === String(item.productId || String(item.id).split('::')[0]));
         if(!p) p = products.find(x => norm(x.name) === norm(item.name));
         if(!p) throw new Error('O produto "' + String(item.name || item.id) + '" não está mais disponível.');
         return { product_id: String(p.id), quantity };
