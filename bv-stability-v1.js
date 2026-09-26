@@ -27,7 +27,14 @@
     const st=document.createElement('style');st.id='bvDeliveryCardStyle';st.textContent='.bvDeliveryCard .orderBody{display:grid;gap:10px}.bvOrderCustomer{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.bvOrderCustomer b{font-size:18px}.bvOrderCustomer span{font-size:12px;opacity:.7;text-align:right}.bvOrderItems{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035)}.bvOrderItems small,.bvDeliveryTitle{font-size:10px;font-weight:900;letter-spacing:.12em;opacity:.65}.bvOrderItems p{margin:5px 0 0;line-height:1.45}.bvDeliveryBox{padding:13px 14px;border-radius:14px;background:rgba(229,9,20,.06);border:1px solid rgba(229,9,20,.18)}.bvAddressMain{margin-top:5px;font-weight:850;line-height:1.35}.bvAddressSub{margin-top:3px;font-size:13px;opacity:.75}.orderPaymentBadge{margin-top:0!important}.bvDeliveryCard .orderFoot{display:flex;align-items:end;justify-content:space-between;gap:12px}.bvDeliveryCard .orderFoot>div{display:flex;flex-direction:column;gap:3px}.bvDeliveryCard .orderFoot small{font-size:10px;letter-spacing:.1em;opacity:.65}.bvDeliveryCard .orderFoot strong{font-size:21px}@media(max-width:600px){.bvOrderCustomer{display:block}.bvOrderCustomer span{display:block;text-align:left;margin-top:3px}.bvDeliveryCard .orderFoot{align-items:stretch;flex-direction:column}.bvDeliveryCard .orderFoot select{width:100%}}';document.head.appendChild(st);
   }
 
-  const prodStyle=document.createElement('style');prodStyle.textContent=`
+  const prodStyle=document.createElement('style');prodStyle.textContent=`    .adminStockBox{margin:12px 0 4px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .adminStockBox>span{font-size:10px;font-weight:900;letter-spacing:.12em;opacity:.7}
+    .adminStockControls{display:flex;align-items:center;gap:8px}
+    .adminStockControls button{width:38px;height:38px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.08);color:#fff;font-size:24px;font-weight:900;line-height:1;cursor:pointer}
+    .adminStockControls button:active{transform:scale(.94)}
+    .adminStockControls .stockPlus{background:rgba(229,9,20,.18);border-color:rgba(229,9,20,.45)}
+    .adminStockControls strong{min-width:42px;text-align:center;font-size:20px}
+
     #orders .bvProductionSection{margin:0 0 22px}
     #orders .bvProductionSectionHead{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
     #orders .bvProductionSectionHead>div{display:flex;flex-direction:column;gap:4px}
@@ -586,13 +593,27 @@
   window.addPromoItemRow=()=>{const box=$('promoItems');if(!box)return;const row=document.createElement('div');row.className='promoItemRow';row.innerHTML='<select class="promoItemProduct" required><option value="">Produto</option>'+((window.products||[]).filter(x=>x.active!==false).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' — '+money(p.price)+'</option>').join(''))+'</select><input class="promoItemQty" type="number" min="1" step="1" value="1" required><button type="button" onclick="this.closest(\'.promoItemRow\').remove()">×</button>';box.appendChild(row)};
   window.togglePromotion=async(id,v)=>{const r=await sb.from('promotions').update({active:!!v,updated_at:new Date().toISOString()}).eq('id',id);if(r.error)return toast('Erro: '+r.error.message);await window.BV_REFRESH_PROMOTIONS();toast(v?'Promoção ativada.':'Promoção desativada.')};
   window.removePromotion=async id=>{if(!confirm('Excluir esta promoção?'))return;const r=await sb.from('promotions').delete().eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PROMOTIONS();toast('Promoção excluída.')};
+  window.adjustProductStock=async(id,delta)=>{
+    if(!['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase()))return toast('Acesso restrito ao administrador.');
+    const p=(window.products||[]).find(x=>String(x.id)===String(id));
+    if(!p)return toast('Produto não encontrado.');
+    const current=Math.max(0,Number(p.stock)||0), next=Math.max(0,current+Number(delta||0));
+    if(next===current)return;
+    const r=await sb.from('products').update({stock:next}).eq('id',id);
+    if(r.error)return toast('Erro ao atualizar estoque: '+r.error.message);
+    p.stock=next;
+    try{localStorage.setItem('bv_products',JSON.stringify(window.products||[]))}catch(e){}
+    window.renderProductsAdmin?.();
+    window.renderProducts?.();
+  };
   window.renderProductsAdmin=()=>{
     const b=$('manage');if(!b)return;
     const a=(window.products||[]).filter(x=>x.active!==false);
     b.innerHTML=a.map(x=>{
       const fallback=x.category==='Bebidas'?'🥤':'🍔';
-      const media=x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
-      return '<article class="productCard adminProductCard"><div class="productImage">'+media+'</div><div class="productInfo"><small class="eyebrow">'+esc(x.category||'Lanches')+'</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p><div class="productBottom"><b>'+money(x.price)+'</b><button type="button" onclick="removeProduct(\''+esc(x.id)+'\')">Excluir produto</button></div></div></article>';
+      const media=x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\\'none\\';this.nextElementSibling.style.display=\\'grid\\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
+      const stock=Math.max(0,Number(x.stock)||0);
+      return '<article class="productCard adminProductCard"><div class="productImage">'+media+'</div><div class="productInfo"><small class="eyebrow">'+esc(x.category||'Lanches')+'</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p><div class="adminStockBox"><span>ESTOQUE</span><div class="adminStockControls"><button type="button" class="stockMinus" aria-label="Diminuir estoque" onclick="adjustProductStock(\\''+esc(x.id)+'\\',-1)">−</button><strong>'+stock+'</strong><button type="button" class="stockPlus" aria-label="Aumentar estoque" onclick="adjustProductStock(\\''+esc(x.id)+'\\',1)">+</button></div></div><div class="productBottom"><b>'+money(x.price)+'</b><button type="button" onclick="removeProduct(\\''+esc(x.id)+'\\')">Excluir produto</button></div></div></article>';
     }).join('')||'<div class="emptyState"><span>📦</span><b>Nenhum produto cadastrado.</b><small>Cadastre um produto para começar seu cardápio.</small></div>';
   };
   window.addProduct=async e=>{e.preventDefault();const role=String(window.BV_ROLE||'').trim().toLowerCase();if(!['administrador','admin'].includes(role))return toast('Acesso restrito ao administrador.');if(!sb)return toast('Banco de dados indisponível. Recarregue a página.');const form=e.target;const n=$('productName')?.value.trim()||'',raw=String($('productPrice')?.value||'').trim().replace(',','.'),p=Number(raw),cat=String($('productCategory')?.value||'').trim(),d=$('productDesc')?.value.trim()||'';if(!n)return toast('Informe o nome do produto.');if(raw===''||!Number.isFinite(p)||p<0)return toast('Informe um valor válido para o produto.');if(!['Lanches','Bebidas','Adicionais'].includes(cat))return toast('Selecione uma categoria válida.');const btn=form.querySelector('.formSave');if(btn){btn.disabled=true;btn.textContent='Cadastrando...'}try{const r=await sb.from('products').insert({name:n,price:p,category:cat,description:d,active:true}).select('id').single();if(r.error)throw r.error;form.reset();if($('productCategory'))$('productCategory').value='Lanches';window.closeProductForm();await window.BV_REFRESH_PRODUCTS();toast('Produto cadastrado com sucesso.')}catch(err){console.error('Cadastro de produto:',err);const msg=err?.message||'Verifique os dados e tente novamente.';toast('Erro ao cadastrar produto: '+msg)}finally{if(btn){btn.disabled=false;btn.textContent='✓ Cadastrar produto'}}};
