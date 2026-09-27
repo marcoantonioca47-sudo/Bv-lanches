@@ -1088,7 +1088,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
           id:found.id,status:found.rawStatus,payment:found.payment,paymentStatus:found.paymentStatus,
           motoboyId:found.motoboyId,changeFor:found.changeFor,total:found.total,
           pixPaymentId:found.pixPaymentId,pixQrCode:found.pixQrCode,pixQrCodeBase64:found.pixQrCodeBase64,
-          pixExpiresAt:found.pixExpiresAt
+          pixExpiresAt:found.pixExpiresAt,items:found.items
         });
         if(sig!==window.BV_TRACKING_RENDER_SIG){
           window.BV_TRACKING_RENDER_SIG=sig;
@@ -1137,7 +1137,7 @@ window.startTrackingStatusPolling=()=>{
           id:found.id,status:found.rawStatus,payment:found.payment,paymentStatus:found.paymentStatus,
           motoboyId:found.motoboyId,changeFor:found.changeFor,total:found.total,
           pixPaymentId:found.pixPaymentId,pixQrCode:found.pixQrCode,pixQrCodeBase64:found.pixQrCodeBase64,
-          pixExpiresAt:found.pixExpiresAt
+          pixExpiresAt:found.pixExpiresAt,items:found.items
         });
         if(sig!==window.BV_TRACKING_RENDER_SIG){
           window.BV_TRACKING_RENDER_SIG=sig;
