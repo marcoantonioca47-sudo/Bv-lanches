@@ -4,6 +4,11 @@
   let hadController=!!navigator.serviceWorker?.controller;
   let reloading=false;
   let updateTimer=null;
+  let waitingWorker=null;
+  function updateButton(){return document.getElementById('bvUpdateAppBtn')}
+  function showUpdate(){const b=updateButton();if(b){b.style.display='inline-flex';b.disabled=false}}
+  function hideUpdate(){const b=updateButton();if(b)b.style.display='none'}
+  function activateUpdate(){if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return} location.reload()}
 
   function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
   function button(){return document.getElementById('bvInstallAppBtn')}
@@ -24,6 +29,7 @@
 
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;show()});
   window.addEventListener('appinstalled',()=>{deferredPrompt=null;const b=button();if(b)b.style.display='none'});
+  window.bvUpdateApp=activateUpdate;
 
   window.bvInstallApp=async function(){
     if(deferredPrompt){
@@ -57,7 +63,9 @@
     });
     window.addEventListener('load',async()=>{
       try{
-        const reg=await navigator.serviceWorker.register('./service-worker.js?v=20260926.1005',{scope:'./'});
+        const reg=await navigator.serviceWorker.register('./service-worker.js?v=20260927.1400',{scope:'./'});
+        if(reg.waiting){waitingWorker=reg.waiting;showUpdate()}
+        reg.addEventListener('updatefound',()=>{const w=reg.installing;if(!w)return;w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){waitingWorker=w;showUpdate()}})});
         await reg.update();
         hadController=hadController||!!navigator.serviceWorker.controller;
         if(updateTimer)clearInterval(updateTimer);
