@@ -32,3 +32,15 @@
 .bvDeliveryRefusalReason>div{font-size:10px;font-weight:950;letter-spacing:.8px;color:#fbbf24;text-transform:uppercase;margin-bottom:5px}
 .bvDeliveryRefusalReason p{margin:0;color:#e7e7e7;font-size:12px;line-height:1.45}
 .bvDeliveryRefusalReason p b{color:#fff}
+
+
+/* Padronização visual — recusa de entrega / retorno ao preparo */
+.bvDeliveryRefusalReason{margin:12px 0 0;padding:13px 14px;border:1px solid rgba(255,77,77,.35);border-radius:14px;background:linear-gradient(135deg,rgba(120,0,0,.34),rgba(255,40,40,.10));box-shadow:0 8px 22px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.bvDeliveryRefusalReason>div{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:900;letter-spacing:.65px;color:#ff6b6b;text-transform:uppercase;margin-bottom:6px}
+.bvDeliveryRefusalReason p{margin:0;color:#fff;font-size:13px;line-height:1.45}.bvDeliveryRefusalReason p b{color:#ffd166}
+.motoDeliveryActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.motoDeliveryActions .motoActionBtn{min-height:46px;border-radius:13px!important;border:1px solid rgba(255,255,255,.12)!important;font-weight:900!important;letter-spacing:.15px;box-shadow:0 7px 18px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.10);transition:transform .16s ease,filter .16s ease,box-shadow .16s ease}
+.motoDeliveryActions .motoActionBtn:active{transform:scale(.98);filter:brightness(.96)}
+.motoDeliveryActions .motoDeliver{background:linear-gradient(135deg,#d91e36,#9f1025)!important;color:#fff!important}
+.motoDeliveryActions .motoRefuse{background:linear-gradient(135deg,#3a151b,#210b0f)!important;color:#ff8d8d!important;border-color:rgba(255,92,92,.38)!important}
+@media(max-width:560px){.motoDeliveryActions{grid-template-columns:1fr}.motoDeliveryActions .motoActionBtn{min-height:48px}.bvDeliveryRefusalReason{padding:12px}}
