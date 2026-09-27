@@ -1,4 +1,4 @@
-/* BV LANCHES — deduplicação de promoções v2 */
+/* BV LANCHES — deduplicação de promoções v3 */
 (()=>{
   'use strict';
   const key=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
@@ -58,12 +58,36 @@
     window.renderPromotionsAdmin?.();
     window.renderHomePromoBanner?.();
   };
-  window.BV_PROMOTIONS_DEDUPE_VERSION='2026.09.25.2';
+  let stockChannel=null;
+  const bindStockRealtime=()=>{
+    try{
+      const client=window.supabaseClient||window.supabase||window.client;
+      if(!client?.channel)return;
+      if(stockChannel)return;
+      stockChannel=client.channel('bv-promotions-stock-sync')
+        .on('postgres_changes',{event:'UPDATE',schema:'public',table:'products'},payload=>{
+          if(payload?.new?.stock===payload?.old?.stock)return;
+          const category=key(payload?.new?.category);
+          if(category!=='bebidas')return;
+          window.BV_REFRESH_PROMOTIONS?.().catch?.(()=>{});
+          setTimeout(rerender,150);
+        })
+        .on('postgres_changes',{event:'*',schema:'public',table:'product_flavor_stock'},()=>{
+          window.BV_REFRESH_PROMOTIONS?.().catch?.(()=>{});
+          setTimeout(rerender,150);
+        })
+        .subscribe();
+    }catch(e){console.warn('[BV PROMO STOCK REALTIME]',e)}
+  };
+  window.BV_PROMOTIONS_DEDUPE_VERSION='2026.09.27.2800';
   normalize();
   wrap('BV_REFRESH_PROMOTIONS',rerender);
   wrap('renderProducts',normalize);
   wrap('renderPromotionsAdmin',normalize);
   wrap('renderHomePromoBanner',normalize);
+  bindStockRealtime();
+  setTimeout(bindStockRealtime,500);
+  setTimeout(bindStockRealtime,1500);
   setTimeout(rerender,300);
   setTimeout(rerender,1200);
 })();
