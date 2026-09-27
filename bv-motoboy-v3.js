@@ -366,7 +366,7 @@
 
     const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,delivery_refused_reason,delivery_refused_at';
     const results = await Promise.all([
-      client.from('orders').select(fields).eq('status','em_preparo').is('delivery_refused_at',null).order('created_at',{ascending:false}),
+      client.from('orders').select(fields).eq('status','em_preparo').order('created_at',{ascending:false}),
       client.from('orders').select(fields).eq('status','em_producao').order('created_at',{ascending:false}),
       client.from('orders').select(fields).eq('status','saiu_entrega').eq('motoboy_id',user.id).order('created_at',{ascending:false})
     ]);
