@@ -34,6 +34,33 @@
     const b=document.getElementById('bvMotoNotifyBtn');
     if(b){b.textContent='🔔 Alertas ativos';b.dataset.enabled='1';b.style.display='none';}
   }
+  async function setupMotoPush(){
+    try{
+      if(!('serviceWorker' in navigator)||!('PushManager' in window)) return false;
+      if(!('Notification' in window)||Notification.permission!=='granted') return false;
+      const client=db(); if(!client) return false;
+      const {data:{user}}=await client.auth.getUser(); if(!user||!isMoto()) return false;
+      const keyRes=await fetch('https://eaqngkiegrkmhopaztgz.supabase.co/functions/v1/bv-push-order-ready',{cache:'no-store'});
+      if(!keyRes.ok) throw new Error('public key unavailable');
+      const {publicKey}=await keyRes.json(); if(!publicKey) throw new Error('public key missing');
+      const reg=await navigator.serviceWorker.ready;
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(publicKey)});
+      const json=sub.toJSON(), keys=json.keys||{}, endpoint=json.endpoint;
+      if(!endpoint||!keys.p256dh||!keys.auth) throw new Error('invalid push subscription');
+      const {error}=await client.from('push_subscriptions').upsert({user_id:user.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,user_agent:navigator.userAgent,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
+      if(error) throw error;
+      try{localStorage.setItem('bv_moto_push_ready','1')}catch(e){}
+      return true;
+    }catch(e){console.warn('[MOTO PUSH]',e);return false}
+  }
+  function base64UrlToUint8Array(base64String){
+    const padding='='.repeat((4-base64String.length%4)%4);
+    const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+    const raw=atob(base64),out=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+    return out;
+  }
   window.enableMotoNotifications=()=>{
     let audioStarted=false;
     let notificationState='unsupported';
@@ -90,7 +117,7 @@
       }
     }
 
-    if(notificationState==='granted' || notificationState==='unsupported') finalizeMotoAlerts();
+    if(notificationState==='granted' || notificationState==='unsupported'){finalizeMotoAlerts();if(notificationState==='granted')setupMotoPush();}
     else updateMotoNotifyButton(audioStarted,notificationState);
   };
 
@@ -112,7 +139,7 @@
   function motoBeep(){
     try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const ac=window.BV_MOTO_AUDIO_CTX||(window.BV_MOTO_AUDIO_CTX=new AC());if(ac.state==='suspended')return;const now=ac.currentTime;[0,0.18,0.36].forEach((t,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=i===1?1046:880;g.gain.setValueAtTime(0.0001,now+t);g.gain.exponentialRampToValueAtTime(0.18,now+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.13);o.connect(g);g.connect(ac.destination);o.start(now+t);o.stop(now+t+0.14)})}catch(e){console.warn('[MOTO BEEP]',e)}}
   function motoVisualNotify(o){
-    if(!o?.id)return;
+    if(!o?.id || String(o.status||'').toLowerCase()!=='em_producao')return;
     const notifyId=String(o.id);
     if(window.BV_MOTO_NOTIFIED.has(notifyId))return;
     window.BV_MOTO_NOTIFIED.add(notifyId);
