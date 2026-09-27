@@ -347,7 +347,7 @@
     }
 
     if(status==='saiu_entrega'){
-      return '<button type="button" class="motoActionBtn motoDeliver" data-order-id="'+esc(o.id)+'" data-action="entregar" onclick="event.preventDefault();event.stopPropagation();window.motoAction(this.dataset.orderId,this.dataset.action,this);return false;">✅ Confirmar entrega</button>';
+      return '<div class="motoDeliveryActions"><button type="button" class="motoActionBtn motoDeliver" data-order-id="'+esc(o.id)+'" data-action="entregar" onclick="event.preventDefault();event.stopPropagation();window.motoAction(this.dataset.orderId,this.dataset.action,this);return false;">✅ Confirmar entrega</button><button type="button" class="motoActionBtn motoRefuse" data-order-id="'+esc(o.id)+'" data-action="recusar" onclick="event.preventDefault();event.stopPropagation();window.motoAction(this.dataset.orderId,this.dataset.action,this);return false;">↩️ Entrega recusada</button></div>';
     }
 
     return '<div class="motoWaiting">⏳ Aguardando liberação</div>';
@@ -457,11 +457,24 @@
   return window.BV_MOTO_RENDER_PROMISE;
   };
 
-  async function doAction(id,action,button) {
+  async function askRefusalReason(){
+    const reason=window.prompt('Motivo da entrega recusada:');
+    if(reason===null)return null;
+    const value=String(reason).trim();
+    if(!value){window.toast?.('Informe o motivo da entrega recusada.');return null;}
+    return value;
+  }
+
+  async function doAction(id,action,button,refusalReason=null) {
     if (!isMoto()) return;
     const client=db();
     if (!client) return window.toast?.('Banco de dados indisponível.');
 
+    if(action==='recusar'){
+      const reason=await askRefusalReason();
+      if(!reason)return;
+      return doAction(id,'recusar',button,reason);
+    }
     const key=String(id)+':'+action;
     if (window.BV_MOTO_ACTIONS.has(key)) return;
     window.BV_MOTO_ACTIONS.add(key);
@@ -470,7 +483,7 @@
       button.disabled=true;
       button.dataset.busy='1';
       button.dataset.oldText=button.textContent;
-      button.textContent=action==='coletar'?'⏳ Coletando...':'⏳ Confirmando...';
+      button.textContent=action==='coletar'?'⏳ Coletando...':action==='recusar'?'⏳ Recusando...':'⏳ Confirmando...';
     }
 
     try {
@@ -494,7 +507,8 @@
 
       const rpc=await client.rpc('motoboy_collect_or_deliver',{
         p_order_id:id,
-        p_action:action
+        p_action:action,
+        p_refusal_reason:refusalReason
       });
       if (rpc.error) throw rpc.error;
       if (rpc.data !== true) throw new Error('O servidor não confirmou a coleta do pedido.');
@@ -509,6 +523,13 @@
           card.style.transform = 'translateY(-8px)';
           card.style.transition = 'opacity .18s ease, transform .18s ease';
           setTimeout(() => card.remove(), 180);
+        }
+      } else if (action === 'recusar') {
+        if (card) {
+          card.style.opacity='0';
+          card.style.transform='translateY(-8px)';
+          card.style.transition='opacity .18s ease, transform .18s ease';
+          setTimeout(()=>card.remove(),180);
         }
       } else if (card) {
         const badge = card.querySelector('.motoCardTop span');
@@ -527,7 +548,7 @@
       if ($('page-taxa-entrega')?.classList.contains('activePage')) {
         await window.renderMotoFeeOrders({silent:true});
       }
-      window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':'Entrega confirmada. Pedido removido da tela de pedidos.');
+      window.toast?.(action==='coletar'?'Pedido coletado. Saiu para entrega.':action==='recusar'?'Entrega recusada. O pedido voltou para Em preparo.':'Entrega confirmada. Pedido removido da tela de pedidos.');
     } catch(e) {
       console.error('[MOTO AÇÃO]',e);
       window.toast?.('Erro ao atualizar pedido: '+String(e?.message||'Tente novamente.').slice(0,180));
