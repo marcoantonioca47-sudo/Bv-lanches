@@ -100,11 +100,14 @@
         const current=Notification.permission;
         if(current==='granted'){
           notificationState='granted';
+          setupMotoPush();
+          finalizeMotoAlerts();
         }else if(current==='denied'){
           notificationState='denied';
         }else{
           Notification.requestPermission().then(state=>{
             notificationState=state;
+            if(state==='granted'){finalizeMotoAlerts();setupMotoPush();}
             updateMotoNotifyButton(audioStarted,notificationState);
           }).catch(e=>{
             console.warn('[MOTO NOTIFY PERMISSION]',e);
@@ -117,7 +120,8 @@
       }
     }
 
-    if(notificationState==='granted' || notificationState==='unsupported'){finalizeMotoAlerts();if(notificationState==='granted')setupMotoPush();}
+    if(notificationState==='granted'){finalizeMotoAlerts();setupMotoPush();}
+    else if(notificationState==='unsupported'){finalizeMotoAlerts();}
     else updateMotoNotifyButton(audioStarted,notificationState);
   };
 
