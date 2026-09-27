@@ -14,6 +14,7 @@
   // Notificação sonora + visual para novos pedidos do motoboy.
   window.BV_MOTO_NOTIFY_VERSION='2026.09.26.702';
   window.BV_MOTO_LAST_ORDER_IDS=window.BV_MOTO_LAST_ORDER_IDS||new Set();
+  window.BV_MOTO_LAST_ORDER_STATUS=window.BV_MOTO_LAST_ORDER_STATUS||new Map();
   window.BV_MOTO_AUDIO_CTX=null;
   window.BV_MOTO_AUDIO_READY=false;
   window.BV_MOTO_NOTIFIED=window.BV_MOTO_NOTIFIED||new Set();
@@ -115,10 +116,10 @@
     const notifyId=String(o.id);
     if(window.BV_MOTO_NOTIFIED.has(notifyId))return;
     window.BV_MOTO_NOTIFIED.add(notifyId);
-    const n=document.createElement('div');n.className='bvMotoIncoming';n.innerHTML='<div class="bvMotoIncomingIcon">🏍️</div><div><b>PEDIDO EM PREPARO</b><strong>Pedido #'+esc(o.order_number||'')+'</strong><small>'+esc(o.customer_name||'Cliente')+' · '+money(o.total)+'</small></div><button type="button" aria-label="Fechar">×</button>';
+    const n=document.createElement('div');n.className='bvMotoIncoming';n.innerHTML='<div class="bvMotoIncomingIcon">🏍️</div><div><b>PEDIDO PRONTO</b><strong>Pedido #'+esc(o.order_number||'')+'</strong><small>'+esc(o.customer_name||'Cliente')+' · '+money(o.total)+'</small></div><button type="button" aria-label="Fechar">×</button>';
     n.querySelector('button').onclick=()=>n.remove();document.body.appendChild(n);setTimeout(()=>n.remove(),12000);
     motoBeep();
-    if('Notification' in window && Notification.permission==='granted' && document.hidden){try{new Notification('BV Lanches — pedido em preparo',{body:'Pedido #'+(o.order_number||'')+' está em preparo e disponível para coleta.',tag:'bv-order-'+o.id})}catch(e){}}
+    if('Notification' in window && Notification.permission==='granted' && document.hidden){try{new Notification('BV Lanches — PEDIDO PRONTO',{body:'Pedido #'+(o.order_number||'')+' está pronto para coleta.',tag:'bv-order-ready-'+o.id})}catch(e){}}
   }
   function motoCheckNewOrders(rows){
     const current=new Set((rows||[]).map(o=>String(o.id)));
