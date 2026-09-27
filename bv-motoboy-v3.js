@@ -21,6 +21,18 @@
   window.BV_MOTO_LAST_SIGNATURE='';
   window.BV_MOTO_LAST_RENDER_AT=0;
   window.BV_MOTO_RENDER_MIN_MS=2500;
+  function motoAlertsAlreadyEnabled(){
+    try{
+      const saved=localStorage.getItem('bv_moto_alerts_enabled')==='1';
+      const granted=!('Notification' in window)||Notification.permission==='granted';
+      return saved&&granted;
+    }catch(e){return false}
+  }
+  function finalizeMotoAlerts(){
+    try{localStorage.setItem('bv_moto_alerts_enabled','1')}catch(e){}
+    const b=document.getElementById('bvMotoNotifyBtn');
+    if(b){b.textContent='🔔 Alertas ativos';b.dataset.enabled='1';b.style.display='none';}
+  }
   window.enableMotoNotifications=()=>{
     let audioStarted=false;
     let notificationState='unsupported';
@@ -77,8 +89,8 @@
       }
     }
 
-    try{localStorage.setItem('bv_moto_alerts_enabled','1')}catch(e){}
-    updateMotoNotifyButton(audioStarted,notificationState);
+    if(notificationState==='granted' || notificationState==='unsupported') finalizeMotoAlerts();
+    else updateMotoNotifyButton(audioStarted,notificationState);
   };
 
   function updateMotoNotifyButton(audioStarted,notificationState){
@@ -123,6 +135,7 @@
   function installMotoNotifyButton(){
     if(document.getElementById('bvMotoNotifyBtn'))return;
     const b=document.createElement('button');b.id='bvMotoNotifyBtn';b.type='button';b.className='bvMotoNotifyBtn';b.textContent='🔔 Ativar alertas';b.onclick=window.enableMotoNotifications;document.body.appendChild(b);
+    if(motoAlertsAlreadyEnabled()) b.style.display='none';
   }
   function subscribeMotoNewOrders(){
     if(!isMoto())return;const client=db();if(!client||window.BV_MOTO_ORDER_CHANNEL)return;
@@ -559,7 +572,7 @@
     // Sempre confirma o papel atual no Supabase antes de montar a área do motoboy.
     // Isso impede que um perfil antigo/cache de administrador abra a tela administrativa.
     const moto=await syncMotoRole();
-    if(moto){subscribeMotoNewOrders();installMotoNotifyButton();}
+    if(moto){subscribeMotoNewOrders();installMotoNotifyButton();if(motoAlertsAlreadyEnabled()) finalizeMotoAlerts();}
     applyMenu();
     injectStyle();
     bindClick();
