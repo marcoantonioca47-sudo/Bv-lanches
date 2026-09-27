@@ -108,11 +108,14 @@
   function injectButton(){
     if(!isAdmin()||document.getElementById('bvAdminNotifyBtn'))return;
     const bar=document.querySelector('#page-inicio .homeNotificationBar');
-    if(!bar)return;
+    const target=bar?.querySelector('.notifyBtn') || null;
+    const adminActions=document.querySelector('.activePage.adminPage .adminTopActions');
+    if(!bar && !adminActions)return;
     const b=document.createElement('button');b.id='bvAdminNotifyBtn';b.type='button';b.innerHTML='🔔 <span>Ativar alertas</span>';b.onclick=enable;
-    bar.querySelector('.notifyBtn')?.insertAdjacentElement('afterend',b);
+    if(target) target.insertAdjacentElement('afterend',b);
+    else adminActions.prepend(b);
     try{
-      if(Notification?.permission==='granted'&&localStorage.getItem('bv_admin_push_ready')==='1'){
+      if('Notification' in window && Notification.permission==='granted'&&localStorage.getItem('bv_admin_push_ready')==='1'){
         b.classList.add('active');b.innerHTML='🔔 <span>Alertas ativos</span>';
       }
     }catch(e){}
@@ -141,6 +144,6 @@
   });
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  window.BV_ADMIN_NOTIFY_VERSION='2026.09.27.2000';
+  window.BV_ADMIN_NOTIFY_VERSION='2026.09.27.2010';
   window.enableAdminNotifications=enable;
 })();
