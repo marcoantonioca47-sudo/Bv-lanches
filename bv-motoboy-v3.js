@@ -9,7 +9,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.26.920';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.27.2140';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
   window.BV_MOTO_NOTIFY_VERSION='2026.09.27.1900';
@@ -360,9 +360,9 @@
     const user = session?.data?.session?.user;
     if (!user) throw new Error('Sessão do motoboy não encontrada.');
 
-    const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for';
+    const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,delivery_refused_reason,delivery_refused_at';
     const results = await Promise.all([
-      client.from('orders').select(fields).eq('status','em_preparo').order('created_at',{ascending:false}),
+      client.from('orders').select(fields).eq('status','em_preparo').is('delivery_refused_at',null).order('created_at',{ascending:false}),
       client.from('orders').select(fields).eq('status','em_producao').order('created_at',{ascending:false}),
       client.from('orders').select(fields).eq('status','saiu_entrega').eq('motoboy_id',user.id).order('created_at',{ascending:false})
     ]);
