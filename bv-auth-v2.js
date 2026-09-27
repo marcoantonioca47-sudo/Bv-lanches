@@ -25,6 +25,25 @@
 
   const firstLoginDone = () => { try { return localStorage.getItem('bv_first_login_done') === '1'; } catch(e) { return false; } }
 
+  // Sincroniza SEMPRE o perfil/permissão diretamente do Supabase.
+  // O cache local serve apenas como apoio visual; nunca é usado como fonte de autorização.
+  window.BV_SYNC_PERMISSIONS = async function(userId, fallbackEmail='') {
+    if (!client || !userId) return {error:'Usuário não identificado.'};
+    const {data:profile,error} = await client.from('profiles').select('id,name,role').eq('id',userId).maybeSingle();
+    if (error) return {error:error.message};
+    if (!profile) return {error:'Sua conta existe, mas não possui um perfil cadastrado.'};
+    const role=String(profile.role||'usuario').trim().toLowerCase();
+    window.BV_ROLE=role;
+    window.BV_USER_NAME=profile.name || fallbackEmail || '';
+    try{
+      localStorage.removeItem('bv_profile_cache');
+      localStorage.setItem('bv_profile_cache',JSON.stringify({name:window.BV_USER_NAME,role,userId}));
+    }catch(e){}
+    window.applyAccess?.();
+    window.renderLoggedUser?.();
+    return {profile};
+  };
+
   window.BV_LOGIN = async (email, password) => {
     if (!client) return { error: 'Supabase não carregou. Recarregue a página.' };
     email = String(email || '').trim().toLowerCase();
@@ -35,22 +54,10 @@
     if (error) return { error: errorText(error) };
     if (!data?.user) return { error: 'O servidor não retornou o usuário.' };
 
-    const { data: profile, error: profileError } = await client
-      .from('profiles')
-      .select('id,name,role')
-      .eq('id', data.user.id)
-      .maybeSingle();
-
-    if (profileError) return { error: 'Login realizado, mas não foi possível carregar seu perfil: ' + profileError.message };
-    if (!profile) return { error: 'Sua conta existe, mas não possui um perfil cadastrado.' };
-
-    window.BV_ROLE = profile.role || 'usuario';
-    window.BV_USER_NAME = profile.name || data.user.email || ''; window.renderLoggedUser?.();
-    try {
-      localStorage.setItem('bv_first_login_done','1');
-      localStorage.setItem('bv_profile_cache',JSON.stringify({name:window.BV_USER_NAME,role:window.BV_ROLE,userId:data.user.id}));
-    } catch(e) {}
-    window.applyAccess?.();
+    // Novo login: a permissão vem novamente do banco, nunca do cache local.
+    const synced = await window.BV_SYNC_PERMISSIONS(data.user.id, data.user.email || email);
+    if (synced.error) return { error: 'Login realizado, mas não foi possível atualizar suas permissões: ' + synced.error };
+    try { localStorage.setItem('bv_first_login_done','1'); } catch(e) {}
     $('login')?.style.setProperty('display','none','important');
 
     try {
