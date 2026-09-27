@@ -339,6 +339,10 @@
     // 2) em_producao = pedido pronto. Somente aqui liberar "Coletar pedido".
     // 3) saiu_entrega = pedido já coletado. Liberar somente "Confirmar entrega".
     if(status==='em_preparo'){
+      const refused=String(o.delivery_refused_reason||'').trim();
+      if(refused){
+        return '<div class="motoWaiting motoRefusedReturn"><div>↩️ <b>Entrega recusada — voltou para Em preparo</b></div><small><b>Motivo:</b> '+esc(refused)+'</small></div>';
+      }
       return '<div class="motoWaiting">⏳ Em preparação — aguardando ficar pronto</div>';
     }
 
