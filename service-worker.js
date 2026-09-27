@@ -1,14 +1,22 @@
-const CACHE_NAME='bv-lanches-pwa-v24';
+const CACHE_NAME='bv-lanches-pwa-v25';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('message',event=>{if(event.data&&event.data.type==='SKIP_WAITING')self.skipWaiting();});
 self.addEventListener('activate',event=>event.waitUntil(
   caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())
 ));
+self.addEventListener('push',event=>{
+  let data={};
+  try{data=event.data?.json()||{}}catch(e){data={body:event.data?.text()||''}};
+  event.waitUntil(self.registration.showNotification(data.title||'BV Lanches',{
+    body:data.body||'Pedido pronto para coleta.',icon:'./icon-192.png',badge:'./icon-192.png',
+    tag:data.tag||'bv-order-ready',renotify:true,data:{url:data.url||'./?motoboy=pedidos'}
+  }));
+});
 self.addEventListener('notificationclick',event=>{
   event.notification.close();
   event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{
     const target=list.find(c=>c.url.includes(self.location.origin));
-    return target?target.focus():clients.openWindow('./');
+    if(target){target.focus();return target;}return clients.openWindow(event.notification?.data?.url||'./?motoboy=pedidos');
   }));
 });
 self.addEventListener('fetch',event=>{
