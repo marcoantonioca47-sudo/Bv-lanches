@@ -289,7 +289,7 @@
       const media=(isCoca2L?'<img src="'+coca2LImage+'" alt="'+esc(p.name)+'" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+'<span style="display:none">'+fallback+'</span>':isRefri2L?'<img src="'+genericRefri2LImage+'" alt="Garrafa PET de refrigerante 2 litros sem marca" loading="eager" decoding="async">'+'<span style="display:none">'+fallback+'</span>':(p.image_url?'<img src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>'));
       const stock=Math.max(0,Number(p.stock)||0);
       const gs=Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::guarana']??0),ls=Number(window.BV_FLAVOR_STOCKS?.[String(p.id)+'::laranja']??0);
-      const outOfStock=isRefri2L?(gs<=0&&ls<=0):(isRefrigerante&&stock<=0);
+      const outOfStock=isRefri2L?(gs<=0&&ls<=0):(String(p.category||'')==='Bebidas'&&stock<=0);
       const stockHtml=(isRefri2L||isCoca2L)?'':(isRefrigerante?'<div class="catalogStock '+(outOfStock?'out':'')+'"><span>ESTOQUE</span><strong>'+stock+'</strong>'+(outOfStock?'<em>ESGOTADO</em>':'<small>disponível</small>')+'</div>':'');
       const priceHtml='<b>'+money(p.price)+'</b>';
       const addButton=outOfStock?'<button type="button" disabled class="addDisabled">Esgotado</button>':'<button type="button" onclick="'+(isRefri2L?'BV_OPEN_FLAVOR_PICKER(\''+esc(p.id)+'\')':'addToCart(\''+esc(p.id)+'\')')+'">+ Adicionar</button>';
