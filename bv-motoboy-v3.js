@@ -154,13 +154,21 @@
   }
   function motoCheckNewOrders(rows){
     const current=new Set((rows||[]).map(o=>String(o.id)));
-    if(!window.BV_MOTO_INITIALIZED){window.BV_MOTO_LAST_ORDER_IDS=current;window.BV_MOTO_INITIALIZED=true;return;}
+    if(!window.BV_MOTO_INITIALIZED){
+      window.BV_MOTO_LAST_ORDER_IDS=current;
+      window.BV_MOTO_LAST_ORDER_STATUS=new Map((rows||[]).map(o=>[String(o.id),String(o.status||'').toLowerCase()]));
+      window.BV_MOTO_INITIALIZED=true;
+      return;
+    }
     for(const o of rows||[]){
-      if(!window.BV_MOTO_LAST_ORDER_IDS.has(String(o.id))&&!window.BV_MOTO_NOTIFIED.has(String(o.id))){
+      const id=String(o.id), status=String(o.status||'').toLowerCase();
+      const previous=window.BV_MOTO_LAST_ORDER_STATUS.get(id)||'';
+      if(status==='em_producao' && previous!=='em_producao' && !window.BV_MOTO_NOTIFIED.has(id)){
         motoVisualNotify(o);
       }
     }
     window.BV_MOTO_LAST_ORDER_IDS=current;
+    window.BV_MOTO_LAST_ORDER_STATUS=new Map((rows||[]).map(o=>[String(o.id),String(o.status||'').toLowerCase()]));
   }
   // Exposto globalmente para impedir erro de escopo em versões/cache antigos do Safari.
   window.motoCheckNewOrders=motoCheckNewOrders;
@@ -176,12 +184,12 @@
       if(!o.id)return;
       const status=String(o.status||'').toLowerCase();
       const oldStatus=String(payload.old?.status||'').toLowerCase();
-      const available=['em_preparo','em_producao'].includes(status);
-      const becameAvailable=available && oldStatus!==status;
       if(payload.eventType==='INSERT'){
-        if(becameAvailable) motoVisualNotify(o);
+        // Pedido novo nunca gera alerta. O alerta é exclusivo da liberação pelo administrador.
         clearTimeout(window.BV_MOTO_RT_TIMER);window.BV_MOTO_RT_TIMER=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1600);
       }else if(payload.eventType==='UPDATE'){
+        // Somente a mudança feita para "em_producao" (pronto) gera alerta.
+        if(status==='em_producao' && oldStatus!=='em_producao') motoVisualNotify(o);
         clearTimeout(window.BV_MOTO_RT_TIMER);window.BV_MOTO_RT_TIMER=setTimeout(()=>window.renderMotoOrders?.({silent:true}),1600);
       }
     }).subscribe((status,err)=>{if(err)console.warn('[MOTO REALTIME]',err);if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){try{client.removeChannel(window.BV_MOTO_ORDER_CHANNEL)}catch(e){}window.BV_MOTO_ORDER_CHANNEL=null;setTimeout(subscribeMotoNewOrders,3000)}});
