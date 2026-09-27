@@ -470,10 +470,10 @@
     const client=db();
     if (!client) return window.toast?.('Banco de dados indisponível.');
 
-    if(action==='recusar'){
+    if(action==='recusar' && !refusalReason){
       const reason=await askRefusalReason();
       if(!reason)return;
-      return doAction(id,'recusar',button,reason);
+      refusalReason=reason;
     }
     const key=String(id)+':'+action;
     if (window.BV_MOTO_ACTIONS.has(key)) return;
