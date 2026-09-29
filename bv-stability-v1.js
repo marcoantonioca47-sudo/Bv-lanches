@@ -258,7 +258,7 @@ window.renderSales=async()=>{
   const box=$('salesList'),summary=$('salesSummary');if(!box)return;
   box.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando vendas...</b></div>';
   try{
-    const r=await sb.from('orders').select('id,order_number,customer_name,phone,total,payment_method,payment_status,status,created_at,credit_due_at').order('created_at',{ascending:false}).limit(1000);
+    const r=await sb.from('orders').select('id,order_number,customer_name,phone,total,payment_method,payment_status,status,created_at,credit_due_at,cancellation_reason').order('created_at',{ascending:false}).limit(1000);
     if(r.error)throw r.error;
     let rows=r.data||[];
     const search=norm($('salesSearch')?.value||''), pay=norm($('salesPayment')?.value||''), st=norm($('salesStatus')?.value||''), period=$('salesPeriod')?.value||'';
@@ -277,7 +277,7 @@ window.renderSales=async()=>{
     const payNames={pix:'Pix',cartao:'Cartão',dinheiro:'Dinheiro',prazo:'Prazo'};
     const statusNames={recebido:'Novo',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Pronto',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
     box.innerHTML=rows.map(x=>{
-      const cancelled=norm(x.status)==='cancelado', payment=payNames[norm(x.payment_method)]||x.payment_method||'—';
+      const cancelled=norm(x.status)==='cancelado', payment=payNames[norm(x.payment_method)]||x.payment_method||'—'; const cancelReason=String(x.cancellation_reason||'').trim();
       const ps=norm(x.payment_status)==='pago'?'Pago':cancelled?'Cancelado':'Pendente';
       return '<article class="salesCard"><div class="salesHead"><div><b>'+esc(x.customer_name||'Cliente')+'</b><small>#'+esc(x.order_number||x.id?.slice(0,8)||'')+' · '+esc(x.phone||'Sem telefone')+'</small></div><strong>'+money(x.total)+'</strong><span class="salesBadge '+(cancelled?'cancelled':ps==='Pago'?'paid':'pending')+'">'+ps+'</span></div><div class="salesMeta"><div><small>Pagamento</small><b>'+esc(payment)+'</b></div><div><small>Status</small><b>'+esc(statusNames[norm(x.status)]||x.status||'—')+'</b></div><div><small>Data</small><b>'+new Date(x.created_at).toLocaleString('pt-BR')+'</b></div><div><small>Vencimento</small><b>'+((norm(x.payment_method)==='prazo'&&x.credit_due_at)?new Date(x.credit_due_at).toLocaleDateString('pt-BR'):'—')+'</b></div></div></article>';
     }).join('');
@@ -300,7 +300,7 @@ window.clearCreditSalesFilters=()=>{['creditSalesSearch','creditSalesStatus','cr
     if(!box)return;
     box.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando vendas a prazo...</b></div>';
     try{
-      const r=await sb.from('orders').select('id,order_number,user_id,customer_name,phone,total,payment_status,status,created_at,credit_due_at,address,neighborhood').eq('payment_method','prazo').order('created_at',{ascending:false});
+      const r=await sb.from('orders').select('id,order_number,user_id,customer_name,phone,total,payment_status,status,created_at,credit_due_at,address,neighborhood,cancellation_reason').eq('payment_method','prazo').order('created_at',{ascending:false});
       if(r.error)throw r.error;
       const rows=r.data||[], now=Date.now();
       const statusOf=o=>{
