@@ -479,6 +479,7 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   window.BV_CLOSE_PRODUCT_FORM=()=>{
     const panel=$('productFormPanel');
     if(!panel)return;
+    document.body.classList.remove('bv-product-form-lock');
     panel.classList.remove('show','open');
     panel.style.removeProperty('display');
   };
@@ -1061,12 +1062,14 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
     $('productFormTitle')&&($('productFormTitle').textContent='Editar produto');
     $('productFormSubtitle')&&($('productFormSubtitle').textContent='Altere nome, valor ou descrição e salve as mudanças.');
     $('productFormSave')&&($('productFormSave').textContent='✓ Salvar alterações');
+    document.body.classList.add('bv-product-form-lock');
     panel.classList.add('show','open');panel.style.setProperty('display','block','important');panel.style.setProperty('visibility','visible','important');panel.style.setProperty('opacity','1','important');
     panel.scrollIntoView({behavior:'smooth',block:'start'});
     setTimeout(()=>$('productName')?.focus({preventScroll:true}),220);
   };
 
   window.BV_RESET_PRODUCT_FORM=()=>{
+    document.body.classList.remove('bv-product-form-lock');
     $('productEditId')&&($('productEditId').value='');
     $('productName')&&($('productName').value='');
     $('productPrice')&&($('productPrice').value='');
@@ -1082,6 +1085,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
     window.BV_RESET_PRODUCT_FORM?.();
     const panel=$('productFormPanel');
     if(!panel)return toast('Formulário de produto não encontrado. Recarregue a página.');
+    document.body.classList.add('bv-product-form-lock');
     panel.classList.add('show','open');
     panel.style.setProperty('display','block','important');
     panel.style.setProperty('visibility','visible','important');
