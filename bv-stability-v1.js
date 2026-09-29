@@ -1163,7 +1163,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
         $('newProductFlavor')?.focus();
       }
     });
-    $('productCategory')?.addEventListener('change',()=>window.BV_RENDER_PRODUCT_FLAVORS?.(''));
+    document.addEventListener('change',e=>{if(e.target?.id==='productCategory')window.BV_RENDER_PRODUCT_FLAVORS?.('')});
   }
   window.addProduct=window.saveProduct;
   window.removeProduct=async id=>{if(!confirm('Excluir este produto do cardápio?'))return;const r=await sb.from('products').update({active:false}).eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PRODUCTS();toast('Produto removido.')};
