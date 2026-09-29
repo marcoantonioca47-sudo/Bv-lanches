@@ -252,7 +252,27 @@
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.();window.renderCreditRequests?.()}
   };
 
-  window.clearCreditSalesFilters=()=>{['creditSalesSearch','creditSalesStatus','creditSalesPeriod'].forEach(id=>{const el=$(id);if(el)el.value=''});window.renderCreditSales?.()};
+  window.clearSalesFilters=()=>{['salesSearch','salesPayment','salesPeriod'].forEach(id=>{const el=$(id);if(el)el.value=''});window.renderSales?.()};
+window.renderSales=async()=>{
+ if(!window.admin())return; const box=$('salesList'),sum=$('salesSummary'); if(!box)return;
+ box.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando vendas...</b></div>';
+ try{
+  const r=await sb.from('orders').select('id,order_number,customer_name,phone,total,payment_method,payment_status,status,created_at').order('created_at',{ascending:false});
+  if(r.error)throw r.error;
+  const rows=r.data||[],now=Date.now(),q=norm($('salesSearch')?.value||''),pm=norm($('salesPayment')?.value||''),period=$('salesPeriod')?.value||'';
+  const filtered=rows.filter(o=>{
+   const txt=norm([o.customer_name,o.phone,o.order_number,o.id].join(' ')); if(q&&!txt.includes(q))return false;
+   if(pm&&norm(o.payment_method)!==pm)return false;
+   if(period){const t=new Date(o.created_at).getTime();if(period==='today'){const d=new Date();d.setHours(0,0,0,0);if(t<d.getTime())return false}else if(now-t>Number(period)*86400000)return false}
+   return String(o.status||'').toLowerCase()!=='cancelado';
+  });
+  const revenue=filtered.reduce((s,o)=>s+Number(o.total||0),0),count=filtered.length,avg=count?revenue/count:0;
+  if(sum)sum.innerHTML='<div class="salesKpi"><small>Vendas</small><strong>'+count+'</strong></div><div class="salesKpi"><small>Faturamento</small><strong>'+money(revenue)+'</strong></div><div class="salesKpi"><small>Ticket médio</small><strong>'+money(avg)+'</strong></div>';
+  const payLabel={pix:'Pix',cartao:'Cartão',cartão:'Cartão',dinheiro:'Dinheiro',prazo:'Prazo'};
+  box.innerHTML=filtered.length?filtered.map(o=>'<article class="salesCard"><div><b>Pedido #'+esc(window.orderLabel(o))+'</b><small>'+esc(o.customer_name||'Cliente')+' · '+esc(o.phone||'')+'</small></div><strong>'+money(o.total)+'</strong><span class="salesPaymentBadge">'+esc(payLabel[norm(o.payment_method)]||o.payment_method||'—')+'</span><small>'+new Date(o.created_at).toLocaleString('pt-BR')+'</small></article>').join(''):'<div class="emptyState"><span>💰</span><b>Nenhuma venda encontrada.</b></div>';
+ }catch(e){console.error('[BV SALES]',e);box.innerHTML='<div class="emptyState"><b>Não foi possível carregar as vendas.</b></div>'}
+};
+window.clearCreditSalesFilters=()=>{['creditSalesSearch','creditSalesStatus','creditSalesPeriod'].forEach(id=>{const el=$(id);if(el)el.value=''});window.renderCreditSales?.()};
   window.markCreditSalePaid=async(id)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
     if(!id)return;
