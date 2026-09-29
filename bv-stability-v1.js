@@ -193,7 +193,7 @@
   const sb=window.BV_SUPABASE||(window.supabase&&window.BV_SUPABASE_CONFIG?supabase.createClient(window.BV_SUPABASE_CONFIG.url,window.BV_SUPABASE_CONFIG.publishableKey):null);
   if(sb)window.BV_SUPABASE=sb;
 
-  const labels={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',produtos:'Produtos',promocoes:'Promoções',cupons:'Cupons',config:'Configurações','taxa-entrega':'Taxa de entrega','a-prazo':'Vendas a prazo'};
+  const labels={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',vendas:'Vendas',produtos:'Produtos',promocoes:'Promoções',cupons:'Cupons',config:'Configurações','taxa-entrega':'Taxa de entrega','a-prazo':'Vendas a prazo'};
   const status={recebido:'Liberado',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Pronto',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
   const payLabel={pix:'Pix',dinheiro:'Dinheiro',cartao:'Cartão',prazo:'Prazo'};
 
@@ -246,13 +246,44 @@
     if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();window.startTrackingStatusPolling?.();}
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
-    if(p==='taxa-entrega'){if(['administrador','admin','motoboy'].includes(role))window.renderMotoFeeOrders?.();else window.renderDeliveryFees?.()}if(p==='a-prazo'){window.renderCreditSales?.();window.renderCreditRequests?.();}
+    if(p==='taxa-entrega'){if(['administrador','admin','motoboy'].includes(role))window.renderMotoFeeOrders?.();else window.renderDeliveryFees?.()}if(p==='vendas'){window.renderSales?.()}if(p==='a-prazo'){window.renderCreditSales?.();window.renderCreditRequests?.();}
     if(p==='produtos'){const el=$('page-produtos');if(!el)return;el.classList.add('activePage');const manage=$('manage');if(manage&&!manage.innerHTML.trim())manage.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando produtos...</b><small>Aguarde um instante.</small></div>';try{window.renderProductsAdmin?.()}catch(e){console.error('[BV PRODUTOS RENDER]',e)};Promise.resolve(window.BV_REFRESH_PRODUCTS?.()).then(()=>{try{window.renderProductsAdmin?.()}catch(e){console.error('[BV PRODUTOS FINAL]',e)}}).catch(e=>{console.error('[BV PRODUTOS SYNC]',e);try{window.renderProductsAdmin?.()}catch(_){}});}
     if(p==='promocoes'){await window.BV_REFRESH_PROMOTIONS?.();window.renderPromotionsAdmin?.();}
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.();window.renderCreditRequests?.()}
   };
 
-  window.clearCreditSalesFilters=()=>{['creditSalesSearch','creditSalesStatus','creditSalesPeriod'].forEach(id=>{const el=$(id);if(el)el.value=''});window.renderCreditSales?.()};
+  window.clearSalesFilters=()=>{['salesSearch','salesPayment','salesStatus','salesPeriod'].forEach(id=>{const el=$(id);if(el)el.value=''});window.renderSales?.()};
+window.renderSales=async()=>{
+  if(!window.admin())return;
+  const box=$('salesList'),summary=$('salesSummary');if(!box)return;
+  box.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando vendas...</b></div>';
+  try{
+    const r=await sb.from('orders').select('id,order_number,customer_name,phone,total,payment_method,payment_status,status,created_at,credit_due_at').order('created_at',{ascending:false}).limit(1000);
+    if(r.error)throw r.error;
+    let rows=r.data||[];
+    const search=norm($('salesSearch')?.value||''), pay=norm($('salesPayment')?.value||''), st=norm($('salesStatus')?.value||''), period=$('salesPeriod')?.value||'';
+    const now=Date.now();
+    if(search)rows=rows.filter(x=>norm([x.customer_name,x.order_number,x.phone].join(' ')).includes(search));
+    if(pay)rows=rows.filter(x=>norm(x.payment_method)===pay);
+    if(st)rows=rows.filter(x=>norm(x.payment_status)===st||(st==='cancelado'&&norm(x.status)==='cancelado'));
+    if(period){const days=period==='today'?1:Number(period)||0;const from=new Date();if(period==='today')from.setHours(0,0,0,0);else from.setTime(now-days*86400000);rows=rows.filter(x=>new Date(x.created_at).getTime()>=from.getTime())}
+    const active=rows.filter(x=>norm(x.status)!=='cancelado');
+    const total=active.reduce((s,x)=>s+Number(x.total||0),0);
+    const paid=active.filter(x=>norm(x.payment_status)==='pago').reduce((s,x)=>s+Number(x.total||0),0);
+    const pending=active.filter(x=>norm(x.payment_status)!=='pago').reduce((s,x)=>s+Number(x.total||0),0);
+    const prazo=active.filter(x=>norm(x.payment_method)==='prazo').reduce((s,x)=>s+Number(x.total||0),0);
+    if(summary)summary.innerHTML='<div class="salesKpi"><small>Vendas</small><strong>'+money(total)+'</strong><span>'+active.length+' pedidos</span></div><div class="salesKpi"><small>Recebido</small><strong>'+money(paid)+'</strong><span>pagamentos confirmados</span></div><div class="salesKpi"><small>Pendente</small><strong>'+money(pending)+'</strong><span>aguardando pagamento</span></div><div class="salesKpi"><small>A prazo</small><strong>'+money(prazo)+'</strong><span>vendas a prazo</span></div>';
+    if(!rows.length){box.innerHTML='<div class="emptyState"><span>💰</span><b>Nenhuma venda encontrada.</b><small>Altere os filtros para consultar outros períodos.</small></div>';return}
+    const payNames={pix:'Pix',cartao:'Cartão',dinheiro:'Dinheiro',prazo:'Prazo'};
+    const statusNames={recebido:'Novo',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Pronto',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
+    box.innerHTML=rows.map(x=>{
+      const cancelled=norm(x.status)==='cancelado', payment=payNames[norm(x.payment_method)]||x.payment_method||'—';
+      const ps=norm(x.payment_status)==='pago'?'Pago':cancelled?'Cancelado':'Pendente';
+      return '<article class="salesCard"><div class="salesHead"><div><b>'+esc(x.customer_name||'Cliente')+'</b><small>#'+esc(x.order_number||x.id?.slice(0,8)||'')+' · '+esc(x.phone||'Sem telefone')+'</small></div><strong>'+money(x.total)+'</strong><span class="salesBadge '+(cancelled?'cancelled':ps==='Pago'?'paid':'pending')+'">'+ps+'</span></div><div class="salesMeta"><div><small>Pagamento</small><b>'+esc(payment)+'</b></div><div><small>Status</small><b>'+esc(statusNames[norm(x.status)]||x.status||'—')+'</b></div><div><small>Data</small><b>'+new Date(x.created_at).toLocaleString('pt-BR')+'</b></div><div><small>Vencimento</small><b>'+((norm(x.payment_method)==='prazo'&&x.credit_due_at)?new Date(x.credit_due_at).toLocaleDateString('pt-BR'):'—')+'</b></div></div></article>';
+    }).join('');
+  }catch(e){console.error('[BV SALES]',e);box.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as vendas.</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderSales()">Tentar novamente</button></div>'}
+};
+window.clearCreditSalesFilters=()=>{['creditSalesSearch','creditSalesStatus','creditSalesPeriod'].forEach(id=>{const el=$(id);if(el)el.value=''});window.renderCreditSales?.()};
   window.markCreditSalePaid=async(id)=>{
     if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
     if(!id)return;
@@ -1739,7 +1770,7 @@ window.BV_TRACKING_REALTIME=null;
     }else if(!window.BV_HAS_NAVIGATED){
       // Restaura a última tela usada; se não houver uma salva, começa em Início.
       const saved=getSavedPage();
-      const allowed=['inicio','cardapio','pedido','acompanhar','dashboard','pedidos','produtos','promocoes','cupons','config','taxa-entrega','a-prazo'];
+      const allowed=['inicio','cardapio','pedido','acompanhar','dashboard','pedidos','vendas','produtos','promocoes','cupons','config','taxa-entrega','a-prazo'];
       const target=allowed.includes(saved)?saved:'inicio';
       window.showPage(target,true);
     }
