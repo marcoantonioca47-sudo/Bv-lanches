@@ -1091,8 +1091,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
     if(!fixed){
       fixed=document.createElement('button');
       fixed.id='bvProductSaveFixed';
-      fixed.type='submit';
-      fixed.setAttribute('form','productForm');
+      fixed.type='button';
       document.body.appendChild(fixed);
     }
     fixed.className='bvProductSaveFixed';
