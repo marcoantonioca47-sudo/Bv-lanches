@@ -111,6 +111,15 @@
       #orders .bvStartOrderBtn{min-height:58px;font-size:18px}
     }
   `;document.head.appendChild(prodStyle);
+  if(!document.getElementById('bvProductEditStyle')){const st=document.createElement('style');st.id='bvProductEditStyle';st.textContent=`
+#page-produtos .productAdminActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+#page-produtos .productAdminActions button{width:100%;min-height:40px;border-radius:10px;font-weight:900;cursor:pointer}
+#page-produtos .productAdminActions .productEditBtn{background:#20242a;border:1px solid #454b55;color:#fff}
+#page-produtos .productAdminActions .productEditBtn:hover{background:#303640;border-color:#e50914}
+#page-produtos .productAdminActions .productDeleteBtn{background:rgba(229,9,20,.10);border:1px solid rgba(229,9,20,.35);color:#ff6b72}
+#page-produtos .productAdminActions .productDeleteBtn:hover{background:#e50914;color:#fff}
+@media(max-width:600px){#page-produtos .productAdminActions{grid-template-columns:1fr}}
+`;document.head.appendChild(st);}
   window.BV_STABILITY_VERSION='2026.09.26.359';
   window.BV_PIX_QR_TIMER=null;
   window.BV_PIX_QR_INFLIGHT=null;
@@ -1049,16 +1058,97 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
     const a=(window.products||[]).filter(x=>x.active!==false);
     b.innerHTML=a.map(x=>{
       const fallback=x.category==='Bebidas'?'🥤':'🍔';
-      const media=x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
+      const media=x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\\'none\\';this.nextElementSibling.style.display=\\'grid\\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
       const isRefrigerante=String(x.category||'')==='Bebidas';
       const stock=Math.max(0,Number(x.stock)||0);
       const isRefri2L=norm(x.name)==='refri 2l';
-      const flavorBox=isRefri2L?'<div class="adminStockBox" style="display:block"><span style="display:block;margin-bottom:8px">ESTOQUE POR SABOR</span><div class="adminStockControls" style="justify-content:space-between"><b>🥤 Guaraná</b><button type="button" class="stockMinus" onclick="adjustProductFlavorStock(\''+esc(x.id)+'\',\'Guaraná\',-1)">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::guarana']??0)+'</strong><button type="button" class="stockPlus" onclick="adjustProductFlavorStock(\''+esc(x.id)+'\',\'Guaraná\',1)">+</button></div><div class="adminStockControls" style="justify-content:space-between;margin-top:8px"><b>🍊 Laranja</b><button type="button" class="stockMinus" onclick="adjustProductFlavorStock(\''+esc(x.id)+'\',\'Laranja\',-1)">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::laranja']??0)+'</strong><button type="button" class="stockPlus" onclick="adjustProductFlavorStock(\''+esc(x.id)+'\',\'Laranja\',1)">+</button></div></div>':'';
-      const stockHtml=isRefri2L?flavorBox:(isRefrigerante?'<div class="adminStockBox"><span>ESTOQUE</span><div class="adminStockControls"><button type="button" class="stockMinus" aria-label="Diminuir estoque" onclick="adjustProductStock(\''+esc(x.id)+'\',-1)">−</button><strong>'+stock+'</strong><button type="button" class="stockPlus" aria-label="Aumentar estoque" onclick="adjustProductStock(\''+esc(x.id)+'\',1)">+</button></div></div>':'');
-      return '<article class="productCard adminProductCard"><div class="productImage">'+media+'</div><div class="productInfo"><small class="eyebrow">'+esc(x.category||'Lanches')+'</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p>'+stockHtml+'<div class="productBottom"><b>'+money(x.price)+'</b><button type="button" onclick="removeProduct(\''+esc(x.id)+'\')">Excluir produto</button></div></div></article>';
+      const flavorBox=isRefri2L?'<div class="adminStockBox" style="display:block"><span style="display:block;margin-bottom:8px">ESTOQUE POR SABOR</span><div class="adminStockControls" style="justify-content:space-between"><b>🥤 Guaraná</b><button type="button" class="stockMinus" onclick="adjustProductFlavorStock(\\''+esc(x.id)+\\',\\'Guaraná\\',-1)">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::guarana']??0)+'</strong><button type="button" class="stockPlus" onclick="adjustProductFlavorStock(\\''+esc(x.id)+\\',\\'Guaraná\\',1)">+</button></div><div class="adminStockControls" style="justify-content:space-between;margin-top:8px"><b>🍊 Laranja</b><button type="button" class="stockMinus" onclick="adjustProductFlavorStock(\\''+esc(x.id)+\\',\\'Laranja\\',-1)">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::laranja']??0)+'</strong><button type="button" class="stockPlus" onclick="adjustProductFlavorStock(\\''+esc(x.id)+\\',\\'Laranja\\',1)">+</button></div></div>':'';
+      const stockHtml=isRefri2L?flavorBox:(isRefrigerante?'<div class="adminStockBox"><span>ESTOQUE</span><div class="adminStockControls"><button type="button" class="stockMinus" aria-label="Diminuir estoque" onclick="adjustProductStock(\\''+esc(x.id)+\\',-1)">−</button><strong>'+stock+'</strong><button type="button" class="stockPlus" aria-label="Aumentar estoque" onclick="adjustProductStock(\\''+esc(x.id)+\\',1)">+</button></div></div>':'');
+      return '<article class="productCard adminProductCard"><div class="productImage">'+media+'</div><div class="productInfo"><small class="eyebrow">'+esc(x.category||'Lanches')+'</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p>'+stockHtml+'<div class="productBottom"><b>'+money(x.price)+'</b><div class="productAdminActions"><button type="button" class="productEditBtn" onclick="editProduct(\\''+esc(x.id)+\\')">✎ Editar</button><button type="button" class="productDeleteBtn" onclick="removeProduct(\\''+esc(x.id)+\\')">Excluir produto</button></div></div></div></article>';
     }).join('')||'<div class="emptyState"><span>📦</span><b>Nenhum produto cadastrado.</b><small>Cadastre um produto para começar seu cardápio.</small></div>';
   };
-  window.addProduct=async e=>{e.preventDefault();const role=String(window.BV_ROLE||'').trim().toLowerCase();if(!['administrador','admin'].includes(role))return toast('Acesso restrito ao administrador.');if(!sb)return toast('Banco de dados indisponível. Recarregue a página.');const form=e.target;const n=$('productName')?.value.trim()||'',raw=String($('productPrice')?.value||'').trim().replace(',','.'),p=Number(raw),cat=String($('productCategory')?.value||'').trim(),d=$('productDesc')?.value.trim()||'';if(!n)return toast('Informe o nome do produto.');if(raw===''||!Number.isFinite(p)||p<0)return toast('Informe um valor válido para o produto.');if(!['Lanches','Bebidas','Adicionais'].includes(cat))return toast('Selecione uma categoria válida.');const btn=form.querySelector('.formSave');if(btn){btn.disabled=true;btn.textContent='Cadastrando...'}try{const r=await sb.from('products').insert({name:n,price:p,category:cat,description:d,active:true}).select('id').single();if(r.error)throw r.error;form.reset();if($('productCategory'))$('productCategory').value='Lanches';window.closeProductForm();await window.BV_REFRESH_PRODUCTS();toast('Produto cadastrado com sucesso.')}catch(err){console.error('Cadastro de produto:',err);const msg=err?.message||'Verifique os dados e tente novamente.';toast('Erro ao cadastrar produto: '+msg)}finally{if(btn){btn.disabled=false;btn.textContent='✓ Cadastrar produto'}}};
+  window.editProduct=async id=>{
+    const role=String(window.BV_ROLE||'').trim().toLowerCase();
+    if(!['administrador','admin'].includes(role))return toast('Acesso restrito ao administrador.');
+    const p=(window.products||[]).find(x=>String(x.id)===String(id));
+    if(!p)return toast('Produto não encontrado.');
+    const panel=$('productFormPanel');if(!panel)return toast('Formulário de produto não encontrado.');
+    $('productEditId')&&($('productEditId').value=String(p.id));
+    $('productName')&&($('productName').value=p.name||'');
+    $('productPrice')&&($('productPrice').value=Number(p.price||0).toFixed(2));
+    $('productCategory')&&($('productCategory').value=p.category||'Lanches');
+    $('productDesc')&&($('productDesc').value=p.description||'');
+    $('productFormKicker')&&($('productFormKicker').textContent='EDIÇÃO DE PRODUTO');
+    $('productFormTitle')&&($('productFormTitle').textContent='Editar produto');
+    $('productFormSubtitle')&&($('productFormSubtitle').textContent='Altere nome, valor ou descrição e salve as mudanças.');
+    $('productFormSave')&&($('productFormSave').textContent='✓ Salvar alterações');
+    panel.classList.add('show','open');panel.style.setProperty('display','block','important');panel.style.setProperty('visibility','visible','important');panel.style.setProperty('opacity','1','important');
+    panel.scrollIntoView({behavior:'smooth',block:'start'});
+    setTimeout(()=>$('productName')?.focus({preventScroll:true}),220);
+  };
+
+  window.BV_RESET_PRODUCT_FORM=()=>{
+    $('productEditId')&&($('productEditId').value='');
+    $('productName')&&($('productName').value='');
+    $('productPrice')&&($('productPrice').value='');
+    $('productCategory')&&($('productCategory').value='Lanches');
+    $('productDesc')&&($('productDesc').value='');
+    $('productFormKicker')&&($('productFormKicker').textContent='CADASTRO DE PRODUTO');
+    $('productFormTitle')&&($('productFormTitle').textContent='Novo produto');
+    $('productFormSubtitle')&&($('productFormSubtitle').textContent='Preencha os dados do produto para adicionar ao cardápio.');
+    $('productFormSave')&&($('productFormSave').textContent='✓ Cadastrar produto');
+  };
+
+  window.BV_OPEN_PRODUCT_FORM=()=>{
+    window.BV_RESET_PRODUCT_FORM?.();
+    const panel=$('productFormPanel');
+    if(!panel)return toast('Formulário de produto não encontrado. Recarregue a página.');
+    panel.classList.add('show','open');
+    panel.style.setProperty('display','block','important');
+    panel.style.setProperty('visibility','visible','important');
+    panel.style.setProperty('opacity','1','important');
+    requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+    setTimeout(()=>$('productName')?.focus({preventScroll:true}),180);
+  };
+
+  window.saveProduct=async e=>{
+    e.preventDefault();
+    const role=String(window.BV_ROLE||'').trim().toLowerCase();
+    if(!['administrador','admin'].includes(role))return toast('Acesso restrito ao administrador.');
+    if(!sb)return toast('Banco de dados indisponível. Recarregue a página.');
+    const form=e.target;
+    const id=String($('productEditId')?.value||'').trim();
+    const n=$('productName')?.value.trim()||'';
+    const raw=String($('productPrice')?.value||'').trim().replace(',','.');
+    const p=Number(raw);
+    const cat=String($('productCategory')?.value||'').trim();
+    const d=$('productDesc')?.value.trim()||'';
+    if(!n)return toast('Informe o nome do produto.');
+    if(raw===''||!Number.isFinite(p)||p<0)return toast('Informe um valor válido para o produto.');
+    if(!['Lanches','Bebidas','Adicionais'].includes(cat))return toast('Selecione uma categoria válida.');
+    const btn=$('productFormSave')||form.querySelector('.formSave');
+    if(btn){btn.disabled=true;btn.textContent=id?'Salvando...':'Cadastrando...'}
+    try{
+      let r;
+      if(id){
+        r=await sb.from('products').update({name:n,price:p,description:d}).eq('id',id);
+      }else{
+        r=await sb.from('products').insert({name:n,price:p,category:cat,description:d,active:true}).select('id').single();
+      }
+      if(r.error)throw r.error;
+      window.BV_RESET_PRODUCT_FORM?.();
+      window.closeProductForm();
+      await window.BV_REFRESH_PRODUCTS();
+      toast(id?'Produto atualizado com sucesso.':'Produto cadastrado com sucesso.');
+    }catch(err){
+      console.error(id?'Edição de produto:':'Cadastro de produto:',err);
+      toast((id?'Erro ao salvar produto: ':'Erro ao cadastrar produto: ')+(err?.message||'Verifique os dados e tente novamente.'));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent=id?'✓ Salvar alterações':'✓ Cadastrar produto'}
+    }
+  };
+
+  window.addProduct=window.saveProduct;
   window.removeProduct=async id=>{if(!confirm('Excluir este produto do cardápio?'))return;const r=await sb.from('products').update({active:false}).eq('id',id);if(r.error)return toast('Erro ao excluir: '+r.error.message);await window.BV_REFRESH_PRODUCTS();toast('Produto removido.')};
   window.BV_REFRESH_PRODUCTS=async()=>{if(!sb)return false;const r=await sb.from('products').select('*').order('created_at');if(r.error){console.error('[BV PRODUCTS]',r.error);let cached=[];try{cached=JSON.parse(localStorage.getItem('bv_products')||'[]')}catch(e){}if(!Array.isArray(window.products)||!window.products.length){if(Array.isArray(cached)&&cached.length)window.products=cached}toast('Não foi possível sincronizar o cardápio agora. Os produtos já carregados foram preservados.');window.renderProducts();window.renderProductsAdmin?.();return false}window.products=Array.isArray(r.data)?r.data:[];try{localStorage.setItem('bv_products',JSON.stringify(window.products))}catch(e){}await window.BV_REFRESH_FLAVOR_STOCKS?.();window.renderProducts();window.renderProductsAdmin?.();window.renderPromotionsAdmin?.();await window.BV_REFRESH_PROMOTIONS?.();return true};
   window.BV_REFRESH_PROMOTIONS?.();
