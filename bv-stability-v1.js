@@ -1655,12 +1655,12 @@ window.BV_TRACKING_REALTIME=null;
       const moneyCredit=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
       return '<div class="userPerm">'+
         '<div class="userIdentity"><span class="userAvatar">'+esc((x.name||x.email||'U').trim().charAt(0).toUpperCase())+'</span><div><b>'+esc(x.name||'Usuário')+'</b><small>'+esc(x.email||'')+' · '+esc(x.role==='administrador'?'Administrador':x.role==='motoboy'?'Motoboy':'Usuário')+'</small></div></div>'+
-        '<div class="permissionField"><label>Permissão</label><select onchange="changeUserRole(\\''+esc(x.id)+'\\',this.value)"><option value="usuario" '+(x.role==='usuario'?'selected':'')+'>Usuário</option><option value="motoboy" '+(x.role==='motoboy'?'selected':'')+'>Motoboy</option><option value="administrador" '+(x.role==='administrador'?'selected':'')+'>Administrador</option></select></div>'+
+        '<div class="permissionField"><label>Permissão</label><select onchange="changeUserRole(\''+esc(x.id)+'\',this.value)"><option value="usuario" '+(x.role==='usuario'?'selected':'')+'>Usuário</option><option value="motoboy" '+(x.role==='motoboy'?'selected':'')+'>Motoboy</option><option value="administrador" '+(x.role==='administrador'?'selected':'')+'>Administrador</option></select></div>'+
         '<div class="userCreditInline"><div class="permissionField"><label>Limite</label><select id="creditEnabled_'+esc(x.id)+'"><option value="false" '+(!x.credit_enabled?'selected':'')+'>Sem limite</option><option value="true" '+(x.credit_enabled?'selected':'')+'>Com limite</option></select></div>'+
         '<div class="permissionField"><label>Valor do limite</label><input id="creditLimit_'+esc(x.id)+'" type="number" min="0" step="0.01" value="'+limit.toFixed(2)+'" placeholder="R$ 0,00"></div>'+
-        '<button type="button" class="creditSaveBtn" onclick="saveUserCredit(\\''+esc(x.id)+'\\')">Salvar</button>'+
+        '<button type="button" class="creditSaveBtn" onclick="saveUserCredit(\''+esc(x.id)+'\')">Salvar</button>'+
         '<div class="creditBalance">Usado: <strong>'+moneyCredit(used)+'</strong> · Disponível: <strong>'+moneyCredit(available)+'</strong></div></div>'+
-        '<button type="button" class="userDelete" onclick="deleteUser(\\''+esc(x.id)+'\\')">Excluir</button>'+
+        '<button type="button" class="userDelete" onclick="deleteUser(\''+esc(x.id)+'\')">Excluir</button>'+
       '</div>';
     }).join('')||'<div class="emptyState"><span>👤</span><b>Nenhum usuário encontrado.</b><small>Cadastre um usuário ou altere a busca.</small></div>');
 };
