@@ -427,18 +427,20 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     const n=c.reduce((s,x)=>s+(Number(x.q)||0),0);if($('count'))$('count').textContent=n;if($('sideCount'))$('sideCount').textContent=n;
   };
   window.mode=(m,b)=>{document.querySelectorAll('#page-pedido .tabs button').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_MODE=m;$('address')&&($('address').style.display=m==='entrega'?'block':'none');window.refreshNeighborhoodFee()};
-  window.pay=(p,b)=>{
-    const label=String(p||'Pix');
+  window.saveUserCredit=async(id)=>{if(!window.admin()||!id)return;const enabled=$('creditEnabled_'+id)?.value==='true';const limit=Math.max(0,Number(String($('creditLimit_'+id)?.value||0).replace(',','.'))||0);if(enabled&&limit<=0)return toast('Informe um limite maior que R$ 0,00.');const r=await sb.from('profiles').update({credit_enabled:enabled,credit_limit:enabled?limit:0}).eq('id',id);if(r.error)return toast('Não foi possível salvar o limite: '+r.error.message);toast(enabled?'Venda a prazo liberada para este cliente.':'Venda a prazo bloqueada para este cliente.');await window.renderUsers?.()};
+window.BV_REFRESH_CREDIT_UI=async()=>{const btn=$('payPrazoBtn'),info=$('creditCheckoutInfo');if(!btn)return;let enabled=false,limit=0,used=0;try{const {data:{user}}=await sb.auth.getUser();if(user){const p=await sb.from('profiles').select('credit_enabled,credit_limit').eq('id',user.id).maybeSingle();if(!p.error&&p.data){enabled=!!p.data.credit_enabled;limit=Number(p.data.credit_limit||0)}const o=await sb.from('orders').select('total,status,payment_status').eq('user_id',user.id).eq('payment_method','prazo');if(!o.error)(o.data||[]).forEach(x=>{if(String(x.payment_status||'').toLowerCase()!=='pago'&&String(x.status||'').toLowerCase()!=='cancelado')used+=Number(x.total||0)})}}catch(e){console.warn('[BV CREDIT UI]',e)}const available=Math.max(0,limit-used);btn.style.display=enabled&&limit>0?'inline-flex':'none';btn.textContent='📒 Prazo · '+money(available);if(info){info.style.display=enabled?'block':'none';info.textContent=enabled?'Limite: '+money(limit)+' · Usado: '+money(used)+' · Disponível: '+money(available):''}if(!enabled&&String(window.BV_PAYMENT||'').toLowerCase()==='prazo'){window.BV_PAYMENT='Pix';const pix=document.querySelector('#page-pedido .pay button');if(pix)window.pay('Pix',pix)}};
+window.pay=(p,b)=>{
+    const label=String(p||'Pix');if(label.toLowerCase()==='prazo'&&!$('payPrazoBtn')?.offsetParent)return toast('Venda a prazo não está liberada para esta conta.');
     window.BV_PAYMENT=label;
     localStorage.setItem('bv_payment',label);
     document.querySelectorAll('#page-pedido .pay button').forEach(x=>x.classList.toggle('active',x===b));
-    $('troco')?.classList.toggle('hide',label!=='Dinheiro');
+    $('troco')?.classList.toggle('hide',label!=='Dinheiro'&&label!=='Prazo');
   };
   window.initPaymentSelection=()=>{
     // Estado do pagamento fica sincronizado com o botão visível.
     // Evita reaproveitar acidentalmente um método antigo do navegador.
     const current=String(window.BV_PAYMENT||'').toLowerCase();
-    if(current!=='pix'&&current!=='dinheiro'&&current!=='cartão'&&current!=='cartao'){
+    if(current!=='pix'&&current!=='dinheiro'&&current!=='cartão'&&current!=='cartao'&&current!=='prazo'){
       window.BV_PAYMENT='Pix';
     }
     const buttons=[...document.querySelectorAll('#page-pedido .pay button')];
@@ -446,7 +448,7 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     const active=buttons.find(x=>x.classList.contains('active'));
     if(active){
       const t=String(active.textContent||'').toLowerCase();
-      const label=t.includes('dinheiro')?'Dinheiro':t.includes('cart')?'Cartão':'Pix';
+      const label=t.includes('prazo')?'Prazo':t.includes('dinheiro')?'Dinheiro':t.includes('cart')?'Cartão':'Pix';
       window.BV_PAYMENT=label;
       localStorage.setItem('bv_payment',label);
       $('troco')?.classList.toggle('hide',label!=='Dinheiro');
@@ -1478,18 +1480,23 @@ window.BV_TRACKING_REALTIME=null;
   const r=await window.BV_ADMIN_USERS();
   if(r.error){b.innerHTML='<div class="userError">Não foi possível carregar os usuários: '+esc(r.error)+'</div>';return}
   const a=r.users||[],q=norm($('userSearch')?.value||'');
-  const filtered=a.filter(x=>norm(x.name||'').includes(q)||norm(x.email||'').includes(q));
-  if($('userCount'))$('userCount').textContent=a.length+' usuários';
+  let profiles=[];
+  try{const pr=await sb.from('profiles').select('id,name,role,credit_enabled,credit_limit').order('created_at',{ascending:true});if(!pr.error)profiles=pr.data||[]}catch(e){console.warn('[BV CREDIT PROFILES]',e)}
+  const byId={};profiles.forEach(p=>byId[String(p.id)]=p);
+  let creditOrders=[];
+  try{const cr=await sb.from('orders').select('user_id,total,status,payment_status,payment_method').eq('payment_method','prazo');if(!cr.error)creditOrders=cr.data||[]}catch(e){console.warn('[BV CREDIT ORDERS]',e)}
+  const usedBy={};creditOrders.forEach(o=>{if(String(o.payment_status||'').toLowerCase()==='pago'||String(o.status||'').toLowerCase()==='cancelado')return;const id=String(o.user_id||'');usedBy[id]=(usedBy[id]||0)+Number(o.total||0)});
+  const merged=a.map(x=>({...x,...(byId[String(x.id)]||{}),credit_used:Number(usedBy[String(x.id)]||0)}));
+  const filtered=merged.filter(x=>norm(x.name||'').includes(q)||norm(x.email||'').includes(q));
+  if($('userCount'))$('userCount').textContent=merged.length+' usuários';
+  const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const creditBox=$('creditConfigList');
+  if(creditBox)creditBox.innerHTML=filtered.map(x=>{
+    const limit=Number(x.credit_limit||0),used=Number(x.credit_used||0),available=Math.max(0,limit-used);
+    return '<div class="creditConfigBox" style="margin-top:10px;padding:12px"><div class="creditConfigGrid"><label>'+esc(x.name||x.email||'Cliente')+'<select id="creditEnabled_'+esc(x.id)+'"><option value="false" '+(!x.credit_enabled?'selected':'')+'>Sem limite</option><option value="true" '+(x.credit_enabled?'selected':'')+'>Com limite</option></select></label><label>Limite<input id="creditLimit_'+esc(x.id)+'" type="number" min="0" step="0.01" value="'+limit.toFixed(2)+'"></label><button type="button" class="creditSaveBtn" onclick="saveUserCredit(\''+esc(x.id)+'\')">Salvar</button></div><div class="creditBalance">Usado: <strong>'+money(used)+'</strong> · Disponível: <strong>'+money(available)+'</strong></div></div>';
+  }).join('')||'<div class="emptyState"><span>👤</span><b>Nenhum cliente encontrado.</b><small>Cadastre um usuário ou altere a busca.</small></div>';
   b.innerHTML='<div class="permissionTitle"><div><b>Usuários cadastrados</b><small>Defina a permissão de cada conta abaixo.</small></div><span>PERMISSÕES</span></div>'+
-    (filtered.map(x=>`<div class="userPerm">
-      <div class="userIdentity"><span class="userAvatar">${esc((x.name||x.email||'U').trim().charAt(0).toUpperCase())}</span><div><b>${esc(x.name||'Usuário')}</b><small>${esc(x.email||'')} · ${esc(x.role==='administrador'?'Administrador':x.role==='motoboy'?'Motoboy':'Usuário')}</small></div></div>
-      <div class="permissionField"><label>Permissão</label><select onchange="changeUserRole('${esc(x.id)}',this.value)">
-        <option value="usuario" ${x.role==='usuario'?'selected':''}>Usuário</option>
-        <option value="motoboy" ${x.role==='motoboy'?'selected':''}>Motoboy</option>
-        <option value="administrador" ${x.role==='administrador'?'selected':''}>Administrador</option>
-      </select></div>
-      <button type="button" class="userDelete" onclick="deleteUser('${esc(x.id)}')">Excluir</button>
-    </div>`).join('')||'<div class="emptyState"><span>👤</span><b>Nenhum usuário encontrado.</b><small>Cadastre um usuário ou altere a busca.</small></div>');
+    (filtered.map(x=>'<div class="userPerm"><div class="userIdentity"><span class="userAvatar">'+esc((x.name||x.email||'U').trim().charAt(0).toUpperCase())+'</span><div><b>'+esc(x.name||'Usuário')+'</b><small>'+esc(x.email||'')+' · '+esc(x.role==='administrador'?'Administrador':x.role==='motoboy'?'Motoboy':'Usuário')+'</small></div></div><div class="permissionField"><label>Permissão</label><select onchange="changeUserRole(\''+esc(x.id)+'\',this.value)"><option value="usuario" '+(x.role==='usuario'?'selected':'')+'>Usuário</option><option value="motoboy" '+(x.role==='motoboy'?'selected':'')+'>Motoboy</option><option value="administrador" '+(x.role==='administrador'?'selected':'')+'>Administrador</option></select></div><button type="button" class="userDelete" onclick="deleteUser(\''+esc(x.id)+'\')">Excluir</button></div>').join('')||'<div class="emptyState"><span>👤</span><b>Nenhum usuário encontrado.</b><small>Cadastre um usuário ou altere a busca.</small></div>');
 };
   window.createAdminUser=async()=>{const n=$('newUserName')?.value.trim(),e=$('newUserEmail')?.value.trim(),p=$('newUserPass')?.value||'',role=$('newUserRole')?.value||'usuario';if(!n||!e||p.length<6)return toast('Preencha nome, e-mail e senha com no mínimo 6 caracteres.');const r=await sb.functions.invoke('admin-user',{body:{action:'create',name:n,email:e,password:p,role}});if(r.error||!r.data?.ok)return toast(r.error?.message||r.data?.error||'Não foi possível cadastrar.');await window.renderUsers();toast('Usuário cadastrado.')};
   window.changeUserRole=async(id,role)=>{const r=await sb.functions.invoke('admin-user',{body:{action:'role',user_id:id,role}});if(r.error||!r.data?.ok)return toast(r.error?.message||r.data?.error||'Não foi possível alterar a permissão.');await window.renderUsers();toast('Permissão atualizada.')};
@@ -1528,7 +1535,7 @@ window.BV_TRACKING_REALTIME=null;
       window.renderProducts();
     }
 
-    const profileRes=await sb.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
+    const profileRes=await sb.from('profiles').select('name,role,credit_enabled,credit_limit').eq('id',user.id).maybeSingle();
     if(profileRes.error||!profileRes.data){
       console.error('[BV PROFILE]',profileRes.error||'Perfil não encontrado');
       toast('Seu perfil não foi encontrado.');
@@ -1536,7 +1543,7 @@ window.BV_TRACKING_REALTIME=null;
     }
 
     window.BV_ROLE=String(profileRes.data.role||'usuario').trim().toLowerCase();
-    window.BV_USER_NAME=profileRes.data.name||user.email||'';
+    window.BV_USER_NAME=profileRes.data.name||user.email||'';window.BV_CREDIT_ENABLED=!!profileRes.data.credit_enabled;window.BV_CREDIT_LIMIT=Number(profileRes.data.credit_limit||0);
     try{
       localStorage.setItem('bv_profile_cache',JSON.stringify({
         name:window.BV_USER_NAME,
@@ -1544,7 +1551,7 @@ window.BV_TRACKING_REALTIME=null;
         userId:user.id
       }));
     }catch(e){}
-    window.applyAccess();
+    window.applyAccess();window.BV_REFRESH_CREDIT_UI?.();
     $('login')&&$('login').style.setProperty('display','none','important');
 
     // Se a conta é motoboy, garante que a interface e a navegação sejam as do motoboy.
