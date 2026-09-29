@@ -1058,14 +1058,27 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
     const a=(window.products||[]).filter(x=>x.active!==false);
     b.innerHTML=a.map(x=>{
       const fallback=x.category==='Bebidas'?'🥤':'🍔';
-      const media=x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.name)+'" loading="lazy" decoding="async" onerror="this.style.display=\\'none\\';this.nextElementSibling.style.display=\\'grid\\'">'+'<span style="display:none">'+fallback+'</span>':'<span>'+fallback+'</span>';
+      const media=x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.name)+'" loading="lazy" decoding="async">':'<span>'+fallback+'</span>';
       const isRefrigerante=String(x.category||'')==='Bebidas';
       const stock=Math.max(0,Number(x.stock)||0);
       const isRefri2L=norm(x.name)==='refri 2l';
-      const flavorBox=isRefri2L?'<div class="adminStockBox" style="display:block"><span style="display:block;margin-bottom:8px">ESTOQUE POR SABOR</span><div class="adminStockControls" style="justify-content:space-between"><b>🥤 Guaraná</b><button type="button" class="stockMinus" onclick="adjustProductFlavorStock(\\''+esc(x.id)+\\',\\'Guaraná\\',-1)">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::guarana']??0)+'</strong><button type="button" class="stockPlus" onclick="adjustProductFlavorStock(\\''+esc(x.id)+\\',\\'Guaraná\\',1)">+</button></div><div class="adminStockControls" style="justify-content:space-between;margin-top:8px"><b>🍊 Laranja</b><button type="button" class="stockMinus" onclick="adjustProductFlavorStock(\\''+esc(x.id)+\\',\\'Laranja\\',-1)">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::laranja']??0)+'</strong><button type="button" class="stockPlus" onclick="adjustProductFlavorStock(\\''+esc(x.id)+\\',\\'Laranja\\',1)">+</button></div></div>':'';
-      const stockHtml=isRefri2L?flavorBox:(isRefrigerante?'<div class="adminStockBox"><span>ESTOQUE</span><div class="adminStockControls"><button type="button" class="stockMinus" aria-label="Diminuir estoque" onclick="adjustProductStock(\\''+esc(x.id)+\\',-1)">−</button><strong>'+stock+'</strong><button type="button" class="stockPlus" aria-label="Aumentar estoque" onclick="adjustProductStock(\\''+esc(x.id)+\\',1)">+</button></div></div>':'');
-      return '<article class="productCard adminProductCard"><div class="productImage">'+media+'</div><div class="productInfo"><small class="eyebrow">'+esc(x.category||'Lanches')+'</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p>'+stockHtml+'<div class="productBottom"><b>'+money(x.price)+'</b><div class="productAdminActions"><button type="button" class="productEditBtn" onclick="editProduct(\\''+esc(x.id)+\\')">✎ Editar</button><button type="button" class="productDeleteBtn" onclick="removeProduct(\\''+esc(x.id)+\\')">Excluir produto</button></div></div></div></article>';
+      const flavorBox=isRefri2L?'<div class="adminStockBox" style="display:block"><span style="display:block;margin-bottom:8px">ESTOQUE POR SABOR</span><div class="adminStockControls" style="justify-content:space-between"><b>🥤 Guaraná</b><button type="button" class="stockMinus" data-flavor-stock-id="'+esc(x.id)+'" data-flavor-stock="Guaraná" data-flavor-delta="-1">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::guarana']??0)+'</strong><button type="button" class="stockPlus" data-flavor-stock-id="'+esc(x.id)+'" data-flavor-stock="Guaraná" data-flavor-delta="1">+</button></div><div class="adminStockControls" style="justify-content:space-between;margin-top:8px"><b>🍊 Laranja</b><button type="button" class="stockMinus" data-flavor-stock-id="'+esc(x.id)+'" data-flavor-stock="Laranja" data-flavor-delta="-1">−</button><strong>'+Number(window.BV_FLAVOR_STOCKS?.[String(x.id)+'::laranja']??0)+'</strong><button type="button" class="stockPlus" data-flavor-stock-id="'+esc(x.id)+'" data-flavor-stock="Laranja" data-flavor-delta="1">+</button></div></div>':'';
+      const stockHtml=isRefri2L?flavorBox:(isRefrigerante?'<div class="adminStockBox"><span>ESTOQUE</span><div class="adminStockControls"><button type="button" class="stockMinus" aria-label="Diminuir estoque" data-stock-id="'+esc(x.id)+'" data-stock-delta="-1">−</button><strong>'+stock+'</strong><button type="button" class="stockPlus" aria-label="Aumentar estoque" data-stock-id="'+esc(x.id)+'" data-stock-delta="1">+</button></div></div>':'');
+      return '<article class="productCard adminProductCard"><div class="productImage">'+media+'</div><div class="productInfo"><small class="eyebrow">'+esc(x.category||'Lanches')+'</small><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'')+'</p>'+stockHtml+'<div class="productBottom"><b>'+money(x.price)+'</b><div class="productAdminActions"><button type="button" class="productEditBtn" data-product-edit="'+esc(x.id)+'">✎ Editar</button><button type="button" class="productDeleteBtn" data-product-delete="'+esc(x.id)+'">Excluir produto</button></div></div></div></article>';
     }).join('')||'<div class="emptyState"><span>📦</span><b>Nenhum produto cadastrado.</b><small>Cadastre um produto para começar seu cardápio.</small></div>';
+  };
+  if(!window.BV_PRODUCT_ADMIN_EVENTS){
+    window.BV_PRODUCT_ADMIN_EVENTS=true;
+    document.addEventListener('click',e=>{
+      const edit=e.target.closest?.('[data-product-edit]');
+      if(edit){e.preventDefault();window.editProduct?.(edit.dataset.productEdit);return;}
+      const del=e.target.closest?.('[data-product-delete]');
+      if(del){e.preventDefault();window.removeProduct?.(del.dataset.productDelete);return;}
+      const stock=e.target.closest?.('[data-stock-id]');
+      if(stock){e.preventDefault();window.adjustProductStock?.(stock.dataset.stockId,Number(stock.dataset.stockDelta)||0);return;}
+      const flavor=e.target.closest?.('[data-flavor-stock-id]');
+      if(flavor){e.preventDefault();window.adjustProductFlavorStock?.(flavor.dataset.flavorStockId,flavor.dataset.flavorStock,Number(flavor.dataset.flavorDelta)||0);return;}
+    });
   };
   window.editProduct=async id=>{
     const role=String(window.BV_ROLE||'').trim().toLowerCase();
