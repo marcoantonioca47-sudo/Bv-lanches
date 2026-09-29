@@ -149,8 +149,23 @@
         try{
           const {data:{user}}=await sb.auth.getUser();
           const p=user?await sb.from('profiles').select('credit_enabled,credit_limit').eq('id',user.id).maybeSingle():null;
-          if(!p?.data?.credit_enabled || Number(p.data.credit_limit||0)<=0) throw new Error('CREDITO_NAO_AUTORIZADO');
-        }catch(e){throw new Error(e?.message==='CREDITO_NAO_AUTORIZADO'?'Venda a prazo não está liberada para esta conta.':'Não foi possível verificar seu limite de crédito.')}
+          const enabled=!!p?.data?.credit_enabled, limit=Number(p?.data?.credit_limit||0);
+          const outstanding=await sb.from('orders').select('total,status,payment_status').eq('user_id',user.id).eq('payment_method','prazo');
+          let used=0;(outstanding.data||[]).forEach(x=>{if(String(x.payment_status||'').toLowerCase()!=='pago'&&String(x.status||'').toLowerCase()!=='cancelado')used+=Number(x.total||0)});
+          const orderTotal=Number($('total')?.textContent?.replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.')||0);
+          const available=Math.max(0,limit-used);
+          if(!enabled||limit<=0){
+            window.openCreditRequest?.();
+            throw new Error('CREDIT_REQUEST_OPEN');
+          }
+          if(orderTotal>available+0.009){
+            window.openCreditRequest?.();
+            throw new Error('LIMITE_CREDITO_EXCEDIDO');
+          }
+        }catch(e){
+          if(e?.message==='CREDIT_REQUEST_OPEN'||e?.message==='LIMITE_CREDITO_EXCEDIDO') return;
+          throw new Error('Não foi possível verificar seu limite de crédito.');
+        }
       }
       const changeRaw = payment === 'dinheiro' ? String($('troco')?.value || '').replace(',', '.') : '';
       const changeFor = payment === 'dinheiro' && changeRaw ? Math.max(0, Number(changeRaw) || 0) : null;
