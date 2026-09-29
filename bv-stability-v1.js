@@ -503,7 +503,7 @@ window.BV_REFRESH_CREDIT_UI=async()=>{
   btn.style.display='inline-flex';
   btn.textContent=enabled&&limit>0?'📒 A prazo · '+money(available):'📒 A prazo';
   if(info){
-    info.style.display='block';
+    info.style.display='none';
     info.textContent=enabled&&limit>0?'Limite: '+money(limit)+' · Usado: '+money(used)+' · Disponível: '+money(available):'Você ainda não possui limite aprovado para compras a prazo.';
   }
   if(req){
@@ -519,6 +519,8 @@ window.BV_REFRESH_CREDIT_UI=async()=>{
 window.handlePrazoPayment=async(b)=>{
   await window.BV_REFRESH_CREDIT_UI?.();
   const btn=$('payPrazoBtn');
+  const info=$('creditCheckoutInfo');
+  if(info&&btn?.dataset.creditEnabled==='true')info.style.display='block';
   if(btn?.dataset.creditEnabled==='true'){window.pay('Prazo',b);return}
   if(btn?.dataset.creditPending==='true'){toast('Sua solicitação de limite já está em análise.');return}
   window.openCreditRequest?.();
@@ -588,7 +590,7 @@ window.pay=(p,b)=>{
     window.BV_PAYMENT=label;
     localStorage.setItem('bv_payment',label);
     document.querySelectorAll('#page-pedido .pay button').forEach(x=>x.classList.toggle('active',x===b));
-    $('troco')?.classList.toggle('hide',label!=='Dinheiro'&&label!=='Prazo');
+    $('troco')?.classList.toggle('hide',label!=='Dinheiro');
   };
   window.initPaymentSelection=()=>{
     // Estado do pagamento fica sincronizado com o botão visível.
@@ -606,6 +608,7 @@ window.pay=(p,b)=>{
       window.BV_PAYMENT=label;
       localStorage.setItem('bv_payment',label);
       $('troco')?.classList.toggle('hide',label!=='Dinheiro');
+      if(label!=='Prazo'){$('creditCheckoutInfo')?.style.setProperty('display','none');}
     }else{
       window.pay('Pix',buttons[0]);
     }
