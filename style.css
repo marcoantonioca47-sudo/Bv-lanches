@@ -750,3 +750,22 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
   #page-config .userCreditInline{min-width:0}
   #page-config .userCreditInline input,#page-config .userCreditInline select{min-width:0}
 }
+
+/* ===== BV LANCHES — PAGAMENTO A PRAZO + SOLICITAÇÃO DE LIMITE ===== */
+#page-pedido .pay #payPrazoBtn{display:inline-flex!important;align-items:center;justify-content:center}
+#page-pedido .creditCheckoutInfo{margin-top:10px}
+#page-pedido .creditRequestBtn{width:100%;margin-top:8px;padding:11px 14px;border-radius:10px;border:1px solid rgba(229,9,20,.35);background:rgba(229,9,20,.08);color:#ff7279;font-weight:900;cursor:pointer}
+#page-pedido .creditRequestBtn:hover{background:rgba(229,9,20,.16);border-color:#e50914}
+#page-pedido .creditRequestBtn:disabled{opacity:.7;cursor:not-allowed}
+.creditRequestLabel{display:block;margin-top:14px;color:#cfd3da;font-size:12px;font-weight:900}
+.creditRequestLabel input,.creditRequestLabel textarea{margin-top:7px}
+.creditRequestError{min-height:18px;margin-top:8px;color:#ff6870;font-size:12px;font-weight:800}
+.creditRequestAdminPanel{margin-top:18px}
+.creditRequestAdminCard{padding:15px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.creditRequestAdminCard:last-child{border-bottom:0}
+.creditRequestAdminHead{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center}
+.creditRequestAdminHead b{display:block;color:#fff;font-size:15px;font-weight:950}.creditRequestAdminHead small{display:block;margin-top:5px;color:#a7adb6;font-size:12px;line-height:1.45}
+.creditRequestAdminHead strong{font-size:19px;color:#fff;white-space:nowrap}
+.creditRequestStatus{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.7px}.creditRequestStatus.pendente{color:#ffd15c;background:rgba(255,183,0,.12);border:1px solid rgba(255,183,0,.3)}.creditRequestStatus.aprovado{color:#70e0a7;background:rgba(35,180,105,.12);border:1px solid rgba(35,180,105,.3)}.creditRequestStatus.recusado{color:#ff6870;background:rgba(229,9,20,.12);border:1px solid rgba(229,9,20,.3)}
+.creditRequestAdminMeta{margin-top:8px;color:#777f89;font-size:10px}.creditRequestAdminActions{display:flex;justify-content:flex-end;gap:8px;margin-top:11px}.creditRequestAdminActions button{min-height:38px;padding:0 14px;border-radius:9px;border:1px solid #343a44;background:#20242a;color:#fff;font-weight:900;cursor:pointer}.creditRequestAdminActions button:first-child{background:#16834b;border-color:#1ca45e}.creditRequestAdminActions button:last-child:hover{border-color:#e50914;color:#ff6970}
+@media(max-width:700px){.creditRequestAdminHead{grid-template-columns:1fr auto}.creditRequestAdminHead strong{grid-column:1}.creditRequestStatus{grid-column:2;grid-row:1}.creditRequestAdminActions{display:grid;grid-template-columns:1fr 1fr}.creditRequestAdminActions button{width:100%}}
