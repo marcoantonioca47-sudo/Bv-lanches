@@ -1,130 +1,24 @@
 (()=>{'use strict';
-const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),toast=m=>{const x=$('toast');if(x){x.textContent=m;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}},admin=()=>['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase()),sb=()=>window.BV_SUPABASE;
-const labels={recebido:'Recebido',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Pronto',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'},next={recebido:'em_preparo',em_preparo:'saiu_entrega',em_producao:'saiu_entrega',saiu_entrega:'entregue'};
-const styleText=`#bvUpd{position:fixed;right:12px;bottom:12px;z-index:9998}#bvBell{width:48px;height:48px;border:1px solid #343a44;border-radius:14px;background:#171a20;color:#fff;font-size:20px;box-shadow:0 12px 30px #0008;cursor:pointer;position:relative}#bvBadge{position:absolute;right:-4px;top:-5px;background:#e50914;border:2px solid #0d0f12;border-radius:20px;min-width:18px;height:18px;display:none;place-items:center;font-size:9px;font-weight:900}#bvNotices{display:none;width:min(360px,calc(100vw - 24px));max-height:55vh;overflow:auto;margin-bottom:8px;padding:13px;background:#111419;color:#fff;border:1px solid #343a44;border-radius:15px;box-shadow:0 25px 70px #000b}#bvNotices.show{display:block}#bvNotices h3{margin:0 0 8px;font-size:15px}.bvN{display:flex;gap:9px;padding:10px 0;border-bottom:1px solid #ffffff12;align-items:flex-start}.bvN:last-child{border:0}.bvN>div{flex:1;min-width:0}.bvNDelete{flex:0 0 24px;width:24px;height:24px;border:1px solid #3b2225;border-radius:7px;background:#241215;color:#ff5b63;font-size:19px;line-height:19px;font-weight:900;display:grid;place-items:center;cursor:pointer;padding:0;margin-top:-2px}.bvNDelete:hover{background:#e50914;border-color:#e50914;color:#fff;transform:scale(1.05)}.bvN b{display:block;font-size:12px}.bvN small{display:block;color:#8f96a0;margin-top:3px}.bvKpiGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.bvKpi{padding:14px;border:1px solid #ffffff12;border-radius:14px;background:linear-gradient(145deg,#171a20,#0d0f12)}.bvKpi small{color:#8f96a0;font-size:10px;font-weight:900;text-transform:uppercase}.bvKpi strong{display:block;margin-top:6px;font-size:22px}.bvKpi span{display:block;color:#737b86;font-size:11px;margin-top:3px}.bvKitchen{margin-bottom:16px;padding:15px;border:1px solid #ffffff12;border-radius:15px;background:linear-gradient(145deg,#15181d,#0d0f12)}.bvKH{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}.bvKH h3{margin:0;font-size:17px}.bvKH small{color:#8f96a0}.bvKG{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.bvKC{background:#0a0c0f;border:1px solid #ffffff0e;border-radius:11px;padding:10px}.bvKC h4{margin:0;font-size:11px;text-transform:uppercase}.bvKI{margin-top:8px;padding:9px;border-radius:9px;background:#171a20}.bvKI b{font-size:12px}.bvKI small{display:block;color:#8f96a0;margin-top:3px}.bvKI button{width:100%;margin-top:7px;min-height:34px;border:0;border-radius:8px;background:#e50914;color:#fff;font-weight:900}.bvTL{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:15px}.bvTS{text-align:center;color:#69717c;font-size:8px;font-weight:900;text-transform:uppercase}.bvTS:before{content:"";display:block;width:11px;height:11px;margin:0 auto 5px;border-radius:50%;background:#343a44}.bvTS.done{color:#fff}.bvTS.done:before{background:#e50914}.bvTS.current:before{box-shadow:0 0 0 4px #e5091428}@media(max-width:800px){.bvKpiGrid{grid-template-columns:repeat(2,1fr)}.bvKG{grid-template-columns:1fr}.bvTL{grid-template-columns:repeat(3,1fr)}}`;
-function injectCss(){if($('bvUpdCss'))return;let s=document.createElement('style');s.id='bvUpdCss';s.textContent=styleText;document.head.appendChild(s)}
-function notices(){if($('bvUpd'))return;let d=document.createElement('div');d.id='bvUpd';d.innerHTML='<div id="bvNotices"><h3>🔔 Notificações</h3><div id="bvNoticeList"></div></div><button id="bvBell" type="button">🔔<i id="bvBadge">0</i></button>';document.body.appendChild(d);$('bvBell').onclick=()=>{$('bvNotices').classList.toggle('show')};$('bvNoticeList').onclick=e=>{let btn=e.target.closest('[data-notice-delete]');if(!btn)return;let i=Number(btn.dataset.noticeDelete),a=getN();if(Number.isInteger(i)&&i>=0&&i<a.length){a.splice(i,1);localStorage.setItem('bv_notifications',JSON.stringify(a));renderNotices()}};const sync=()=>{const login=$('login'),box=$('bvUpd');if(!box)return;const hidden=login&&getComputedStyle(login).display!=='none';const role=String(window.BV_ROLE||'').toLowerCase();const allowed=!hidden;box.style.display=allowed?'':'none'};renderNotices();sync();new MutationObserver(sync).observe(document.body,{attributes:true,subtree:true,attributeFilter:['style','class']})}
-let bvAudioCtx=null,bvAudioReady=false;
-function unlockNotificationSound(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!bvAudioCtx)bvAudioCtx=new AC();if(bvAudioCtx.state==='suspended')bvAudioCtx.resume().catch(()=>{});bvAudioReady=true}catch(e){}}
-function playOrderSound(){if(!bvAudioReady||!bvAudioCtx)return;try{if(bvAudioCtx.state==='suspended')bvAudioCtx.resume().catch(()=>{});const now=bvAudioCtx.currentTime;[0,0.22,0.44,0.66].forEach((offset,i)=>{const o=bvAudioCtx.createOscillator(),g=bvAudioCtx.createGain();o.type=i===2?'square':'sine';o.frequency.value=[740,988,1175,988][i];g.gain.setValueAtTime(0.0001,now+offset);g.gain.exponentialRampToValueAtTime(0.42,now+offset+0.025);g.gain.exponentialRampToValueAtTime(0.0001,now+offset+0.19);o.connect(g);g.connect(bvAudioCtx.destination);o.start(now+offset);o.stop(now+offset+0.21)})}catch(e){}}
-document.addEventListener('pointerdown',unlockNotificationSound,{passive:true});
-document.addEventListener('pointerdown',()=>{const role=String(window.BV_ROLE||'').toLowerCase();if(['administrador','admin'].includes(role))requestAdminNotificationPermission?.()},{passive:true});
-document.addEventListener('touchstart',unlockNotificationSound,{passive:true});
-async function notifyNewOrderDevice(o){
-  const title='🔔 NOVO PEDIDO — BV Lanches';
-  const body='Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' recebido de '+(o.customer||'Cliente')+'.';
-  try{
-    if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
-    const tag='bv-new-order-'+o.id;
-    const reg=await navigator.serviceWorker?.ready.catch(()=>null);
-    if(reg?.showNotification){
-      await reg.showNotification(title,{body,tag,renotify:true,requireInteraction:true,silent:false,icon:'./bv-logo.png',badge:'./bv-logo.png',data:{orderId:o.id}});
-      return;
-    }
-    const n=new Notification(title,{body,tag,renotify:true,requireInteraction:true,silent:false,icon:'./bv-logo.png'});
-    n.onclick=()=>{window.focus?.();document.querySelector('[data-page="pedidos"],#menuPedidos,button[onclick*="pedidos"]')?.click();n.close?.()};
-  }catch(e){console.warn('[BV NOTIFY]',e)}
-}
-async function requestAdminNotificationPermission(){
-  try{
-    if(typeof Notification==='undefined'||Notification.permission==='denied')return;
-    if(Notification.permission==='default')await Notification.requestPermission();
-  }catch(e){}
-}
-function getN(){try{let a=JSON.parse(localStorage.getItem('bv_notifications')||'[]')||[];const role=String(window.BV_ROLE||'').toLowerCase();if(role==='motoboy')return a.filter(n=>n&&n.deliveryPickup===true);if(role!=='administrador'&&role!=='admin')return a.filter(n=>n&&n.customerNotice===true);return a}catch{return[]}}
-function addN(title,detail,key){let a;try{a=JSON.parse(localStorage.getItem('bv_notifications')||'[]')||[]}catch{a=[]}const role=String(window.BV_ROLE||'').toLowerCase();const deliveryPickup=role==='motoboy',customerNotice=role!=='motoboy'&&!['administrador','admin'].includes(role);if(a.some(x=>x.key===key))return;a.unshift({title,detail,key,deliveryPickup,customerNotice});localStorage.setItem('bv_notifications',JSON.stringify(a.slice(0,25)));renderNotices()}
-function renderNotices(){let l=$('bvNoticeList'),b=$('bvBadge');if(!l)return;let a=getN();l.innerHTML=a.length?a.map((n,i)=>'<div class="bvN" data-notice-index="'+i+'"><span>🔔</span><div><b>'+esc(n.title)+'</b><small>'+esc(n.detail)+'</small></div><button type="button" class="bvNDelete" data-notice-delete="'+i+'" aria-label="Excluir notificação" title="Excluir notificação">×</button></div>').join(''):'<small style="color:#737b86">Nenhuma notificação.</small>';if(b){b.textContent=Math.min(a.length,99);b.style.display=a.length?'grid':'none'}}
-function kpis(){let p=$('page-dashboard');if(!p)return;let b=$('bvKpiGrid');if(!b){b=document.createElement('div');b.id='bvKpiGrid';b.className='bvKpiGrid';p.prepend(b)}let t=new Date(),a=(window.orders||[]).filter(o=>{let d=new Date(o.created_at);return o.rawStatus!=='cancelado'&&d.toDateString()===t.toDateString()}),v=a.reduce((s,o)=>s+Math.max(0,(Number(o.total)||0)-(Number(o.deliveryFee ?? o.delivery_fee)||0)),0),avg=a.length?v/a.length:0,done=a.filter(o=>o.rawStatus==='entregue').length,open=a.filter(o=>!['entregue','cancelado'].includes(o.rawStatus)).length;b.innerHTML='<div class="bvKpi"><small>Faturamento hoje</small><strong>'+money(v)+'</strong><span>'+a.length+' pedido(s)</span></div><div class="bvKpi"><small>Ticket médio</small><strong>'+money(avg)+'</strong><span>Hoje</span></div><div class="bvKpi"><small>Entregues</small><strong>'+done+'</strong><span>Hoje</span></div><div class="bvKpi"><small>Em aberto</small><strong>'+open+'</strong><span>Acompanhar</span></div>'}
-async function advance(id,st){if(typeof window.statusOrder==='function')return window.statusOrder(id,st);return toast('Função de atualização indisponível.')}
-function timeline(){let p=$('page-acompanhar'),c=p?.querySelector('.trackingCard');if(!c)return;let old=c.querySelector('.bvTL');if(old)old.remove();let o=(window.orders||[]).find(x=>String(x.id)===String(localStorage.getItem('bv_track_id')))||(window.orders||[])[0];if(!o)return;let flow=['recebido','em_preparo','em_producao','saiu_entrega','entregue'],cur=flow.indexOf(o.rawStatus),w=document.createElement('div');w.className='bvTL';w.innerHTML=flow.map((s,i)=>'<div class="bvTS '+(i<cur||o.rawStatus==='entregue'?'done ':'')+(i===cur?'current':'')+'">'+labels[s]+'</div>').join('');c.appendChild(w)}
-let last='';
-function watch(){
-  const a=window.orders||[];
-  const snap=a.map(o=>o.id+'|'+o.rawStatus+'|'+o.paymentStatus).join(';');
-  if(snap===last)return;
-  let old={};
-  try{old=JSON.parse(sessionStorage.getItem('bv_statuses')||'{}')}catch(e){old={};}
-
-  if(last){
-    a.forEach(o=>{
-      const role=String(window.BV_ROLE||'').toLowerCase();
-      const isMoto=role==='motoboy';
-      const isAdmin=['administrador','admin'].includes(role);
-
-      if(isMoto){
-        if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='em_preparo'){
-          addN(
-            '👨‍🍳 Pedido em preparo',
-            'O pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' está em preparo.',
-            'preparo:'+o.id
-          );
-          playOrderSound();
-        }
-      }      }else if(!isAdmin){
-        if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega'&&String(localStorage.getItem('bv_track_id')||'')===String(o.id)){
-          addN(
-            '🛵 Pedido saiu para entrega',
-            'Seu pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' saiu para entrega.',
-            'delivery:'+o.id+':'+o.rawStatus
-          );
-        }
-      }else if(isAdmin){
-        if(!old[o.id]){
-          addN(
-            '🔔 Novo pedido',
-            'Pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' recebido.',
-            'new:'+o.id
-          );
-          playOrderSound();
-          notifyNewOrderDevice(o);
-        }
-      }else{
-        // Cliente: somente avisa quando o próprio pedido saiu para entrega.
-        if(old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega'){
-          addN(
-            '🛵 Pedido saiu para entrega',
-            'Seu pedido #'+(window.orderLabel?.(o)||o.orderNumber||'—')+' saiu para entrega.',
-            'delivery:'+o.id+':'+o.rawStatus
-          );
-        }
-      }
-    });
-  }
-
-  const m={};
-  a.forEach(o=>m[o.id]=o.rawStatus);
-  sessionStorage.setItem('bv_statuses',JSON.stringify(m));
-  kpis();
-  timeline();
-
-  const trackId=localStorage.getItem('bv_track_id');
-  if(trackId&&document.getElementById('page-acompanhar')?.classList.contains('activePage')){
-    const tracked=a.find(x=>String(x.id)===String(trackId));
-    if(tracked&&typeof window.renderTracking==='function'){
-      const sig=JSON.stringify({
-        id:tracked.id,status:tracked.rawStatus,payment:tracked.payment,paymentStatus:tracked.paymentStatus,
-        motoboyId:tracked.motoboyId,changeFor:tracked.changeFor,total:tracked.total,
-        pixPaymentId:tracked.pixPaymentId,pixQrCode:tracked.pixQrCode,pixQrCodeBase64:tracked.pixQrCodeBase64,
-        pixExpiresAt:tracked.pixExpiresAt
-      });
-      if(sig!==window.BV_TRACKING_RENDER_SIG){
-        window.BV_TRACKING_RENDER_SIG=sig;
-        window.renderTracking(tracked);
-      }
-    }
-  }
-  last=snap;
-}
-function patch(){if(window.BV_UPDATES_PATCHED||typeof window.BV_REFRESH_ORDERS!=='function')return;let f=window.BV_REFRESH_ORDERS;window.BV_REFRESH_ORDERS=async(...x)=>{let r=await f(...x);setTimeout(watch,20);return r};window.BV_UPDATES_PATCHED=true}
-function boot(){injectCss();notices();patch();watch();kpis();timeline()}
-document.addEventListener('DOMContentLoaded',boot,{once:true});
-let bvHousekeepingTimer=null;
-function startHousekeeping(){if(bvHousekeepingTimer)clearInterval(bvHousekeepingTimer);bvHousekeepingTimer=setInterval(()=>{patch();watch()},4000)}
-startHousekeeping();
-window.BV_UPDATES_VERSION='2026.09.26.513'
+function BVU$(id){return document.getElementById(id)}
+function BVUesc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]})}
+function BVUmoney(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+function BVUtoast(m){var x=BVU$('toast');if(x){x.textContent=String(m);x.classList.add('show');setTimeout(function(){x.classList.remove('show')},3000)}}
+var BVUlast='';
+function BVUinject(){if(BVU$('bvUpdCss'))return;var s=document.createElement('style');s.id='bvUpdCss';s.textContent='#bvUpd{position:fixed;right:12px;bottom:12px;z-index:9998}#bvBell{width:48px;height:48px;border:1px solid #343a44;border-radius:14px;background:#171a20;color:#fff;font-size:20px;cursor:pointer;position:relative}#bvBadge{position:absolute;right:-4px;top:-5px;background:#e50914;color:#fff;border-radius:20px;min-width:18px;height:18px;display:none;place-items:center;font-size:9px;font-weight:900}.bvN{display:flex;gap:9px;padding:10px 0;border-bottom:1px solid #ffffff12}.bvN>div{flex:1}.bvN small{display:block;color:#8f96a0;margin-top:3px}';document.head.appendChild(s)}
+function BVUnotices(){if(BVU$('bvUpd'))return;var d=document.createElement('div');d.id='bvUpd';d.innerHTML='<div id="bvNotices" style="display:none;width:min(360px,calc(100vw - 24px));max-height:55vh;overflow:auto;margin-bottom:8px;padding:13px;background:#111419;color:#fff;border:1px solid #343a44;border-radius:15px"><h3>🔔 Notificações</h3><div id="bvNoticeList"></div></div><button id="bvBell" type="button">🔔<i id="bvBadge">0</i></button>';document.body.appendChild(d);BVU$('bvBell').onclick=function(){var n=BVU$('bvNotices');n.style.display=n.style.display==='none'?'block':'none'};BVU$('bvNoticeList').onclick=function(e){var b=e.target.closest('[data-notice-delete]');if(!b)return;var a=BVUgetN(),i=Number(b.getAttribute('data-notice-delete'));if(i>=0&&i<a.length){a.splice(i,1);localStorage.setItem('bv_notifications',JSON.stringify(a));BVUrender()}};BVUrender()}
+function BVUgetN(){try{var a=JSON.parse(localStorage.getItem('bv_notifications')||'[]')||[],r=String(window.BV_ROLE||'').toLowerCase();if(r==='motoboy')return a.filter(function(n){return n&&n.deliveryPickup===true});if(r!=='administrador'&&r!=='admin')return a.filter(function(n){return n&&n.customerNotice===true});return a}catch(e){return[]}}
+function BVUaddN(t,d,k){var a=BVUgetN();if(a.some(function(x){return x.key===k}))return;var r=String(window.BV_ROLE||'').toLowerCase();a.unshift({title:t,detail:d,key:k,deliveryPickup:r==='motoboy',customerNotice:r!=='motoboy'&&r!=='administrador'&&r!=='admin'});localStorage.setItem('bv_notifications',JSON.stringify(a.slice(0,25)));BVUrender()}
+function BVUrender(){var l=BVU$('bvNoticeList'),b=BVU$('bvBadge');if(!l)return;var a=BVUgetN();l.innerHTML=a.length?a.map(function(n,i){return '<div class="bvN"><span>🔔</span><div><b>'+BVUesc(n.title)+'</b><small>'+BVUesc(n.detail)+'</small></div><button type="button" data-notice-delete="'+i+'">×</button></div>'}).join(''):'<small style="color:#737b86">Nenhuma notificação.</small>';if(b){b.textContent=Math.min(a.length,99);b.style.display=a.length?'grid':'none'}}
+function BVUkpis(){var p=BVU$('page-dashboard');if(!p)return;var b=BVU$('bvKpiGrid');if(!b){b=document.createElement('div');b.id='bvKpiGrid';b.className='bvKpiGrid';p.insertBefore(b,p.firstChild)}var today=new Date().toDateString(),a=(window.orders||[]).filter(function(o){return o.rawStatus!=='cancelado'&&new Date(o.created_at).toDateString()===today}),v=a.reduce(function(s,o){return s+Math.max(0,Number(o.total||0)-Number(o.deliveryFee!=null?o.deliveryFee:o.delivery_fee||0))},0);b.innerHTML='<div class="bvKpi"><small>Faturamento hoje</small><strong>'+BVUmoney(v)+'</strong><span>'+a.length+' pedido(s)</span></div><div class="bvKpi"><small>Ticket médio</small><strong>'+BVUmoney(a.length?v/a.length:0)+'</strong><span>Hoje</span></div><div class="bvKpi"><small>Entregues</small><strong>'+a.filter(function(o){return o.rawStatus==='entregue'}).length+'</strong><span>Hoje</span></div><div class="bvKpi"><small>Em aberto</small><strong>'+a.filter(function(o){return o.rawStatus!=='entregue'&&o.rawStatus!=='cancelado'}).length+'</strong><span>Acompanhar</span></div>'}
+function BVUtimeline(){var p=BVU$('page-acompanhar');if(!p)return;var c=p.querySelector('.trackingCard');if(!c)return;var old=c.querySelector('.bvTL');if(old)old.remove();var a=window.orders||[],id=localStorage.getItem('bv_track_id'),o=a.find(function(x){return String(x.id)===String(id)})||a[0];if(!o)return;var flow=['recebido','em_preparo','em_producao','saiu_entrega','entregue'],names={recebido:'Recebido',em_preparo:'Em preparo',em_producao:'Pronto',saiu_entrega:'Saiu para entrega',entregue:'Entregue'},cur=flow.indexOf(o.rawStatus),w=document.createElement('div');w.className='bvTL';w.innerHTML=flow.map(function(s,i){return '<div class="bvTS '+(i<cur||o.rawStatus==='entregue'?'done ':'')+(i===cur?'current':'')+'">'+names[s]+'</div>'}).join('');c.appendChild(w)}
+function BVUwatch(){var a=window.orders||[],snap=a.map(function(o){return o.id+'|'+o.rawStatus+'|'+o.paymentStatus}).join(';');if(snap===BVUlast)return;var old={};try{old=JSON.parse(sessionStorage.getItem('bv_statuses')||'{}')}catch(e){}if(BVUlast){a.forEach(function(o){var r=String(window.BV_ROLE||'').toLowerCase(),m=r==='motoboy',ad=r==='administrador'||r==='admin';if(m&&old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='em_preparo')BVUaddN('👨‍🍳 Pedido em preparo','Pedido #'+(window.orderLabel?window.orderLabel(o):o.orderNumber||'—')+' está em preparo.','preparo:'+o.id);if(ad&&!old[o.id])BVUaddN('🔔 Novo pedido','Pedido #'+(window.orderLabel?window.orderLabel(o):o.orderNumber||'—')+' recebido.','new:'+o.id);if(!m&&!ad&&old[o.id]&&old[o.id]!==o.rawStatus&&o.rawStatus==='saiu_entrega'&&String(localStorage.getItem('bv_track_id')||'')===String(o.id))BVUaddN('🛵 Pedido saiu para entrega','Pedido #'+(window.orderLabel?window.orderLabel(o):o.orderNumber||'—')+' saiu para entrega.','delivery:'+o.id+':'+o.rawStatus)})}var m={};a.forEach(function(o){m[o.id]=o.rawStatus});sessionStorage.setItem('bv_statuses',JSON.stringify(m));BVUkpis();BVUtimeline();BVUlast=snap}
+function BVUpatch(){if(window.BV_UPDATES_PATCHED||typeof window.BV_REFRESH_ORDERS!=='function')return;var f=window.BV_REFRESH_ORDERS;window.BV_REFRESH_ORDERS=async function(){var args=arguments,r=await f.apply(this,args);setTimeout(BVUwatch,20);return r};window.BV_UPDATES_PATCHED=true}
+function BVUboot(){BVUinject();BVUnotices();BVUpatch();BVUwatch();BVUkpis();BVUtimeline()}
+document.addEventListener('pointerdown',function(){try{if(window.AudioContext){var a=new AudioContext();if(a.state==='suspended')a.resume()}}catch(e){}},{passive:true});
+document.addEventListener('DOMContentLoaded',BVUboot,{once:true});
+setInterval(function(){BVUpatch();BVUwatch()},4000);
+window.BV_UPDATES_VERSION='2026.09.29.2001';
 })();
-
-/* DASHBOARD PRO — vendas, produtos, pagamentos e faturamento por período */
 (()=>{'use strict';
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),sb=()=>window.BV_SUPABASE,isAdmin=()=>['administrador','admin'].includes(String(window.BV_ROLE||'').toLowerCase());
 let lastKey='',lastFetch=0;
