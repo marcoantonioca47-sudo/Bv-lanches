@@ -128,7 +128,7 @@
 .productFlavorRow b{overflow:hidden;text-overflow:ellipsis}.productFlavorRemove{height:38px;border-radius:9px;border:1px solid rgba(229,9,20,.35);background:rgba(229,9,20,.1);color:#fff;font-size:20px}
 @media(max-width:600px){.productFlavorAdd{grid-template-columns:1fr 90px}.productFlavorAdd button{grid-column:1/-1}.productFlavorRow{grid-template-columns:1fr 90px 38px}}
 `;document.head.appendChild(st);}
-  window.BV_STABILITY_VERSION='2026.09.26.359';
+  window.BV_STABILITY_VERSION='2026.09.29.2200';
   window.BV_PIX_QR_TIMER=null;
   window.BV_PIX_QR_INFLIGHT=null;
   window.ensurePixQr=async(order)=>{
@@ -1370,12 +1370,12 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
       role=String(pr.data?.role||'usuario').trim().toLowerCase();
       window.BV_ROLE=role;
     }
-    let q=sb.from('orders').select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,pix_payment_id,pix_qr_code,pix_qr_code_base64,pix_expires_at,credit_due_at,delivery_refused_reason,delivery_refused_at').neq('status','cancelado').order('created_at',{ascending:false});
-    if(role==='motoboy')q=q.or('and(status.in.(em_preparo,em_producao),motoboy_id.is.null),and(status.in.(em_preparo,em_producao),motoboy_id.eq.'+user.id+'),and(status.eq.saiu_entrega,motoboy_id.eq.'+user.id+')');else if(!['administrador','admin'].includes(String(role).toLowerCase()))q=q.eq('user_id',user.id);
+    let q=sb.from('orders').select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,pix_payment_id,pix_qr_code,pix_qr_code_base64,pix_expires_at,credit_due_at,delivery_refused_reason,delivery_refused_at,cancellation_reason').order('created_at',{ascending:false});
+    if(role==='motoboy')q=q.neq('status','cancelado').or('and(status.in.(em_preparo,em_producao),motoboy_id.is.null),and(status.in.(em_preparo,em_producao),motoboy_id.eq.'+user.id+'),and(status.eq.saiu_entrega,motoboy_id.eq.'+user.id+')');else if(['administrador','admin'].includes(String(role).toLowerCase()))q=q.neq('status','cancelado');else q=q.eq('user_id',user.id);
     const r=await q;if(r.error)return toast('Erro ao carregar pedidos: '+r.error.message);
     const ids=(r.data||[]).map(x=>x.id);let its=[];if(ids.length){const z=await sb.from('order_items').select('order_id,product_id,product_name,quantity').in('order_id',ids);if(!z.error)its=z.data||[]}
     const g={};its.forEach(i=>(g[i.order_id]??=[]).push(i));
-    window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,changeFor:Number(o.change_for)||null,paymentStatus:o.payment_status||'pendente',status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,pixPaymentId:o.pix_payment_id||null,pixQrCode:o.pix_qr_code||'',pixQrCodeBase64:o.pix_qr_code_base64||'',pixExpiresAt:o.pix_expires_at||null,creditDueAt:o.credit_due_at||null,deliveryRefusedReason:String(o.delivery_refused_reason||'').trim(),deliveryRefusedAt:o.delivery_refused_at||null,items:(g[o.id]||[]).map(i=>({product_id:i.product_id,product_name:i.product_name,quantity:i.quantity}))}));
+    window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,changeFor:Number(o.change_for)||null,paymentStatus:o.payment_status||'pendente',status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,pixPaymentId:o.pix_payment_id||null,pixQrCode:o.pix_qr_code||'',pixQrCodeBase64:o.pix_qr_code_base64||'',pixExpiresAt:o.pix_expires_at||null,creditDueAt:o.credit_due_at||null,deliveryRefusedReason:String(o.delivery_refused_reason||'').trim(),deliveryRefusedAt:o.delivery_refused_at||null,cancellationReason:String(o.cancellation_reason||'').trim(),items:(g[o.id]||[]).map(i=>({product_id:i.product_id,product_name:i.product_name,quantity:i.quantity}))}));
     if(role==='motoboy'){window.renderMotoOrders?.();return;}
     window.renderAdmin();
     window.renderDashboard();
