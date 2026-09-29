@@ -246,10 +246,10 @@
     if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();window.startTrackingStatusPolling?.();}
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
-    if(p==='taxa-entrega'){if(['administrador','admin','motoboy'].includes(role))window.renderMotoFeeOrders?.();else window.renderDeliveryFees?.()}if(p==='a-prazo')window.renderCreditSales?.();
+    if(p==='taxa-entrega'){if(['administrador','admin','motoboy'].includes(role))window.renderMotoFeeOrders?.();else window.renderDeliveryFees?.()}if(p==='a-prazo'){window.renderCreditSales?.();window.renderCreditRequests?.();}
     if(p==='produtos'){const el=$('page-produtos');if(!el)return;el.classList.add('activePage');const manage=$('manage');if(manage&&!manage.innerHTML.trim())manage.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando produtos...</b><small>Aguarde um instante.</small></div>';try{window.renderProductsAdmin?.()}catch(e){console.error('[BV PRODUTOS RENDER]',e)};Promise.resolve(window.BV_REFRESH_PRODUCTS?.()).then(()=>{try{window.renderProductsAdmin?.()}catch(e){console.error('[BV PRODUTOS FINAL]',e)}}).catch(e=>{console.error('[BV PRODUTOS SYNC]',e);try{window.renderProductsAdmin?.()}catch(_){}});}
     if(p==='promocoes'){await window.BV_REFRESH_PROMOTIONS?.();window.renderPromotionsAdmin?.();}
-    if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.()}
+    if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.();window.renderCreditRequests?.()}
   };
 
   window.clearCreditSalesFilters=()=>{['creditSalesSearch','creditSalesStatus','creditSalesPeriod'].forEach(id=>{const el=$(id);if(el)el.value=''});window.renderCreditSales?.()};
@@ -485,7 +485,104 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   };
   window.mode=(m,b)=>{document.querySelectorAll('#page-pedido .tabs button').forEach(x=>x.classList.remove('active'));b?.classList.add('active');window.BV_MODE=m;$('address')&&($('address').style.display=m==='entrega'?'block':'none');window.refreshNeighborhoodFee()};
   window.saveUserCredit=async(id)=>{if(!window.admin()||!id)return;const enabled=$('creditEnabled_'+id)?.value==='true';const limit=Math.max(0,Number(String($('creditLimit_'+id)?.value||0).replace(',','.'))||0);if(enabled&&limit<=0)return toast('Informe um limite maior que R$ 0,00.');const r=await sb.from('profiles').update({credit_enabled:enabled,credit_limit:enabled?limit:0}).eq('id',id);if(r.error)return toast('Não foi possível salvar o limite: '+r.error.message);toast(enabled?'Venda a prazo liberada para este cliente.':'Venda a prazo bloqueada para este cliente.');await window.renderUsers?.()};
-window.BV_REFRESH_CREDIT_UI=async()=>{const btn=$('payPrazoBtn'),info=$('creditCheckoutInfo');if(!btn)return;let enabled=false,limit=0,used=0;try{const {data:{user}}=await sb.auth.getUser();if(user){const p=await sb.from('profiles').select('credit_enabled,credit_limit').eq('id',user.id).maybeSingle();if(!p.error&&p.data){enabled=!!p.data.credit_enabled;limit=Number(p.data.credit_limit||0)}const o=await sb.from('orders').select('total,status,payment_status').eq('user_id',user.id).eq('payment_method','prazo');if(!o.error)(o.data||[]).forEach(x=>{if(String(x.payment_status||'').toLowerCase()!=='pago'&&String(x.status||'').toLowerCase()!=='cancelado')used+=Number(x.total||0)})}}catch(e){console.warn('[BV CREDIT UI]',e)}const available=Math.max(0,limit-used);btn.style.display=enabled&&limit>0?'inline-flex':'none';btn.textContent='📒 Prazo · '+money(available);if(info){info.style.display=enabled?'block':'none';info.textContent=enabled?'Limite: '+money(limit)+' · Usado: '+money(used)+' · Disponível: '+money(available):''}if(!enabled&&String(window.BV_PAYMENT||'').toLowerCase()==='prazo'){window.BV_PAYMENT='Pix';const pix=document.querySelector('#page-pedido .pay button');if(pix)window.pay('Pix',pix)}};
+window.BV_REFRESH_CREDIT_UI=async()=>{
+  const btn=$('payPrazoBtn'),info=$('creditCheckoutInfo'),req=$('creditRequestBtn'); if(!btn)return;
+  let enabled=false,limit=0,used=0,pending=false;
+  try{
+    const {data:{user}}=await sb.auth.getUser();
+    if(user){
+      const p=await sb.from('profiles').select('credit_enabled,credit_limit').eq('id',user.id).maybeSingle();
+      if(!p.error&&p.data){enabled=!!p.data.credit_enabled;limit=Number(p.data.credit_limit||0)}
+      const o=await sb.from('orders').select('total,status,payment_status').eq('user_id',user.id).eq('payment_method','prazo');
+      if(!o.error)(o.data||[]).forEach(x=>{if(String(x.payment_status||'').toLowerCase()!=='pago'&&String(x.status||'').toLowerCase()!=='cancelado')used+=Number(x.total||0)});
+      const q=await sb.from('credit_limit_requests').select('id').eq('user_id',user.id).eq('status','pendente').limit(1);
+      pending=!q.error&&(q.data||[]).length>0;
+    }
+  }catch(e){console.warn('[BV CREDIT UI]',e)}
+  const available=Math.max(0,limit-used);
+  btn.style.display='inline-flex';
+  btn.textContent=enabled&&limit>0?'📒 A prazo · '+money(available):'📒 A prazo';
+  if(info){
+    info.style.display='block';
+    info.textContent=enabled&&limit>0?'Limite: '+money(limit)+' · Usado: '+money(used)+' · Disponível: '+money(available):'Você ainda não possui limite aprovado para compras a prazo.';
+  }
+  if(req){
+    req.style.display=enabled&&limit>0?'none':'block';
+    req.textContent=pending?'⏳ Solicitação de limite em análise':'📝 Solicitar limite para comprar a prazo';
+    req.disabled=pending;
+  }
+  btn.dataset.creditAvailable=String(available);
+  btn.dataset.creditEnabled=enabled&&limit>0?'true':'false';
+  btn.dataset.creditPending=pending?'true':'false';
+  if(!enabled&&String(window.BV_PAYMENT||'').toLowerCase()==='prazo'){window.BV_PAYMENT='Pix';const pix=document.querySelector('#page-pedido .pay button');if(pix)window.pay('Pix',pix)}
+};
+window.handlePrazoPayment=async(b)=>{
+  await window.BV_REFRESH_CREDIT_UI?.();
+  const btn=$('payPrazoBtn');
+  if(btn?.dataset.creditEnabled==='true'){window.pay('Prazo',b);return}
+  if(btn?.dataset.creditPending==='true'){toast('Sua solicitação de limite já está em análise.');return}
+  window.openCreditRequest?.();
+};
+window.openCreditRequest=()=>{
+  const m=$('creditRequestModal'); if(!m)return;
+  const e=$('creditRequestError'); if(e)e.textContent='';
+  const amount=$('creditRequestAmount'); if(amount)amount.value='';
+  const reason=$('creditRequestReason'); if(reason)reason.value='';
+  m.classList.add('show');m.setAttribute('aria-hidden','false');
+  setTimeout(()=>amount?.focus(),120);
+};
+window.closeCreditRequest=()=>{
+  const m=$('creditRequestModal');if(!m)return;
+  m.classList.remove('show');m.setAttribute('aria-hidden','true');
+};
+window.submitCreditRequest=async()=>{
+  if(!sb)return;
+  const amount=Math.max(0,Number(String($('creditRequestAmount')?.value||'').replace(',','.'))||0);
+  const reason=String($('creditRequestReason')?.value||'').trim();
+  const err=$('creditRequestError');
+  if(amount<=0){if(err)err.textContent='Informe o valor desejado.';return}
+  if(reason.length<5){if(err)err.textContent='Informe uma justificativa com pelo menos 5 caracteres.';return}
+  const btn=document.querySelector('#creditRequestModal .bvSystemModalBtn'); if(btn){btn.disabled=true;btn.textContent='Enviando...'}
+  try{
+    const r=await sb.rpc('request_credit_limit',{p_desired_limit:amount,p_justification:reason});
+    if(r.error)throw r.error;
+    window.closeCreditRequest(); toast('Solicitação enviada ao administrador.');
+    await window.BV_REFRESH_CREDIT_UI?.();
+  }catch(e){
+    console.error('[BV CREDIT REQUEST]',e);
+    const map={SOLICITACAO_PENDENTE:'Você já possui uma solicitação em análise.',VALOR_INVALIDO:'Informe um valor válido.',JUSTIFICATIVA_OBRIGATORIA:'Informe uma justificativa.'};
+    if(err)err.textContent=map[String(e?.message||'').match(/[A-Z_]+/)?.[0]]||e?.message||'Não foi possível enviar a solicitação.';
+  }finally{if(btn){btn.disabled=false;btn.textContent='Enviar solicitação'}}
+};
+window.renderCreditRequests=async()=>{
+  if(!window.admin())return;
+  const box=$('creditRequestsList');if(!box)return;
+  box.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando solicitações...</b></div>';
+  try{
+    const r=await sb.from('credit_limit_requests').select('id,user_id,desired_limit,justification,status,admin_note,created_at,decided_at').order('created_at',{ascending:false});
+    if(r.error)throw r.error;
+    const rows=r.data||[];
+    if(!rows.length){box.innerHTML='<div class="emptyState"><span>📒</span><b>Nenhuma solicitação encontrada.</b></div>';return}
+    const profiles={};
+    const ids=[...new Set(rows.map(x=>x.user_id))];
+    if(ids.length){const p=await sb.from('profiles').select('id,name').in('id',ids);(p.data||[]).forEach(x=>profiles[x.id]=x)}
+    const labels={pendente:'Pendente',aprovado:'Aprovado',recusado:'Recusado',cancelado:'Cancelado'};
+    box.innerHTML=rows.map(x=>{
+      const p=profiles[x.user_id]||{};
+      const st=String(x.status||'pendente');
+      return '<article class="creditRequestAdminCard"><div class="creditRequestAdminHead"><div><b>'+esc(p.name||'Usuário')+'</b><small>'+esc(x.justification)+'</small></div><strong>'+money(x.desired_limit)+'</strong><span class="creditRequestStatus '+st+'">'+labels[st]+'</span></div><div class="creditRequestAdminMeta"><span>Solicitado em '+new Date(x.created_at).toLocaleString('pt-BR')+'</span></div>'+(st==='pendente'?'<div class="creditRequestAdminActions"><button type="button" onclick="decideCreditRequest(\''+x.id+'\',\'aprovado\')">✓ Aprovar</button><button type="button" onclick="decideCreditRequest(\''+x.id+'\',\'recusado\')">Recusar</button></div>':'')+'</article>';
+    }).join('');
+  }catch(e){console.error('[BV CREDIT REQUESTS]',e);box.innerHTML='<div class="emptyState"><b>Não foi possível carregar as solicitações.</b><small>'+esc(e?.message||'Erro')+'</small></div>'}
+};
+window.decideCreditRequest=async(id,status)=>{
+  if(!window.admin()||!id)return;
+  let note='';
+  if(status==='recusado'){note=prompt('Justificativa da recusa (opcional):')??''}
+  const r=await sb.rpc('decide_credit_limit_request',{p_request_id:id,p_status:status,p_admin_note:note});
+  if(r.error)return toast('Não foi possível atualizar: '+r.error.message);
+  toast(status==='aprovado'?'Limite aprovado com sucesso.':'Solicitação recusada.');
+  await window.renderCreditRequests?.(); await window.renderUsers?.();
+};
 window.pay=(p,b)=>{
     const label=String(p||'Pix');if(label.toLowerCase()==='prazo'&&!$('payPrazoBtn')?.offsetParent)return toast('Venda a prazo não está liberada para esta conta.');
     window.BV_PAYMENT=label;
