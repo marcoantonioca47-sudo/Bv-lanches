@@ -471,7 +471,6 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     window.BV_RESET_PRODUCT_FORM?.();
     const panel=$('productFormPanel');
     if(!panel)return toast('Formulário de produto não encontrado. Recarregue a página.');
-    document.body.classList.add('bv-product-form-lock');
     panel.classList.add('show','open');
     panel.style.setProperty('display','block','important');
     requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
@@ -481,7 +480,6 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
   window.BV_CLOSE_PRODUCT_FORM=()=>{
     const panel=$('productFormPanel');
     if(!panel)return;
-    document.body.classList.remove('bv-product-form-lock');
         panel.classList.remove('show','open');
     panel.style.removeProperty('display');
   };
@@ -1071,8 +1069,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
   };
 
   window.BV_RESET_PRODUCT_FORM=()=>{
-    document.body.classList.remove('bv-product-form-lock');
-    $('productEditId')&&($('productEditId').value='');
+        $('productEditId')&&($('productEditId').value='');
     $('productName')&&($('productName').value='');
     $('productPrice')&&($('productPrice').value='');
     $('productCategory')&&($('productCategory').value='Lanches');
