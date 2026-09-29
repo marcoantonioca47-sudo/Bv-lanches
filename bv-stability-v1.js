@@ -572,7 +572,7 @@ window.renderCreditRequests=async()=>{
     box.innerHTML=rows.map(x=>{
       const p=profiles[x.user_id]||{};
       const st=String(x.status||'pendente');
-      return '<article class="creditRequestAdminCard"><div class="creditRequestAdminHead"><div><b>'+esc(p.name||'Usuário')+'</b><small>'+esc(x.justification)+'</small></div><strong>'+money(x.desired_limit)+'</strong><span class="creditRequestStatus '+st+'">'+labels[st]+'</span></div><div class="creditRequestAdminMeta"><span>Solicitado em '+new Date(x.created_at).toLocaleString('pt-BR')+'</span></div>'+(st==='pendente'?'<div class="creditRequestAdminActions"><button type="button" onclick="decideCreditRequest(\''+x.id+'\',\'aprovado\')">✓ Aprovar</button><button type="button" onclick="decideCreditRequest(\''+x.id+'\',\'recusado\')">Recusar</button></div>':'')+'</article>';
+      return '<article class="creditRequestAdminCard"><div class="creditRequestAdminHead"><div><b>'+esc(p.name||'Usuário')+'</b><small>'+esc(x.justification)+'</small></div><strong>'+money(x.desired_limit)+'</strong><span class="creditRequestStatus '+st+'">'+labels[st]+'</span></div><div class="creditRequestAdminMeta"><span>Solicitado em '+new Date(x.created_at).toLocaleString('pt-BR')+'</span></div>'+(st==='pendente'?'<div class="creditRequestAdminActions"><button type="button" onclick="decideCreditRequest(\''+x.id+'\',\'aprovado\')">✓ Confirmar</button><button type="button" onclick="decideCreditRequest(\''+x.id+'\',\'recusado\')">Recusar</button></div>':'')+'</article>';
     }).join('');
   }catch(e){console.error('[BV CREDIT REQUESTS]',e);box.innerHTML='<div class="emptyState"><b>Não foi possível carregar as solicitações.</b><small>'+esc(e?.message||'Erro')+'</small></div>'}
 };
@@ -582,8 +582,8 @@ window.decideCreditRequest=async(id,status)=>{
   if(status==='recusado'){note=prompt('Justificativa da recusa (opcional):')??''}
   const r=await sb.rpc('decide_credit_limit_request',{p_request_id:id,p_status:status,p_admin_note:note});
   if(r.error)return toast('Não foi possível atualizar: '+r.error.message);
-  toast(status==='aprovado'?'Limite aprovado com sucesso.':'Solicitação recusada.');
-  await window.renderCreditRequests?.(); await window.renderUsers?.();
+  toast(status==='aprovado'?'Limite confirmado e atualizado para vendas a prazo.':'Solicitação recusada.');
+  await window.renderCreditRequests?.(); await window.renderUsers?.(); await window.BV_REFRESH_CREDIT_UI?.();
 };
 window.pay=(p,b)=>{
     const label=String(p||'Pix');if(label.toLowerCase()==='prazo'&&!$('payPrazoBtn')?.offsetParent)return toast('Venda a prazo não está liberada para esta conta.');
