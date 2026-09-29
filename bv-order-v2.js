@@ -133,15 +133,25 @@
       // A seleção atual da tela tem prioridade absoluta. window.BV_PAYMENT é
       // atualizado pelo botão e fica como segunda fonte; localStorage só é fallback.
       let payment =
+        selectedPay.includes('prazo') ? 'prazo' :
         selectedPay.includes('dinheiro') ? 'dinheiro' :
         selectedPay.includes('cart') ? 'cartao' :
         selectedPay.includes('pix') ? 'pix' :
+        activeText.includes('prazo') ? 'prazo' :
         activeText.includes('dinheiro') ? 'dinheiro' :
         activeText.includes('cart') ? 'cartao' :
         activeText.includes('pix') ? 'pix' :
+        storedPay.includes('prazo') ? 'prazo' :
         storedPay.includes('dinheiro') ? 'dinheiro' :
         storedPay.includes('cart') ? 'cartao' : 'pix';
-      const paymentLabel = payment === 'dinheiro' ? 'Dinheiro' : payment === 'cartao' ? 'Cartão' : 'Pix';
+      const paymentLabel = payment === 'prazo' ? 'Prazo' : payment === 'dinheiro' ? 'Dinheiro' : payment === 'cartao' ? 'Cartão' : 'Pix';
+      if(payment==='prazo'){
+        try{
+          const {data:{user}}=await sb.auth.getUser();
+          const p=user?await sb.from('profiles').select('credit_enabled,credit_limit').eq('id',user.id).maybeSingle():null;
+          if(!p?.data?.credit_enabled || Number(p.data.credit_limit||0)<=0) throw new Error('CREDITO_NAO_AUTORIZADO');
+        }catch(e){throw new Error(e?.message==='CREDITO_NAO_AUTORIZADO'?'Venda a prazo não está liberada para esta conta.':'Não foi possível verificar seu limite de crédito.')}
+      }
       const changeRaw = payment === 'dinheiro' ? String($('troco')?.value || '').replace(',', '.') : '';
       const changeFor = payment === 'dinheiro' && changeRaw ? Math.max(0, Number(changeRaw) || 0) : null;
       if(payment === 'dinheiro' && (!changeFor || changeFor <= 0)) { if(typeof window.bvModal==='function'){ window.bvModal({type:'info',icon:'💵',kicker:'PAGAMENTO EM DINHEIRO',title:'Informe o troco',message:'Digite o valor em dinheiro que você vai entregar para que possamos calcular o <strong>troco correto</strong>.',button:'Entendi'}); } else { msg('Informe o valor do troco para.'); } return; }
