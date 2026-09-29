@@ -474,7 +474,7 @@ window.BV_ADD_PRODUCT_TO_CART=(p,flavor='')=>{
     panel.classList.add('show','open');
     panel.style.setProperty('display','block','important');
     requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
-    setTimeout(()=>{$('productName')?.focus({preventScroll:true});$('productTopSave')?.focus({preventScroll:true});},180);
+    setTimeout(()=>{$('productName')?.focus({preventScroll:true})},180);
   };
   window.openProductForm=window.BV_OPEN_PRODUCT_FORM;
   window.BV_CLOSE_PRODUCT_FORM=()=>{
@@ -1106,7 +1106,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
     if(!['Lanches','Bebidas','Adicionais'].includes(cat))return toast('Selecione uma categoria válida.');
     const flavors=cat==='Bebidas'?window.BV_GET_PRODUCT_FLAVORS?.()||[]:[];
     const btn=$('productFormSave')||form.querySelector('.formSave');
-    if(btn){btn.disabled=true;btn.textContent=id?'Salvando...':'Cadastrando...';$('productTopSave')?.setAttribute('disabled','disabled');$('productTopSave')&&( $('productTopSave').textContent=id?'Salvando...':'Cadastrando...')}
+    if(btn){btn.disabled=true;btn.textContent=id?'Salvando...':'Cadastrando...';}
     try{
       let productId=id,r;
       if(id) r=await sb.from('products').update({name:n,price:p,description:d,category:cat}).eq('id',id);
@@ -1130,7 +1130,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
       window.BV_RESET_PRODUCT_FORM?.();window.closeProductForm();await window.BV_REFRESH_PRODUCTS();
       toast(id?'Produto atualizado com sucesso.':'Produto cadastrado com sucesso.');
     }catch(err){console.error('Produto:',err);toast((id?'Erro ao salvar produto: ':'Erro ao cadastrar produto: ')+(err?.message||'Verifique os dados e tente novamente.'))}
-    finally{if(btn){btn.disabled=false;btn.textContent=id?'✓ Salvar alterações':'✓ Cadastrar produto'}$('productTopSave')?.removeAttribute('disabled');$('productTopSave')&&( $('productTopSave').textContent=id?'✓ Salvar alterações':'✓ Cadastrar')}
+    finally{if(btn){btn.disabled=false;btn.textContent=id?'✓ Salvar alterações':'✓ Cadastrar produto'}}
   };
 
   window.BV_GET_PRODUCT_FLAVORS=()=>{
