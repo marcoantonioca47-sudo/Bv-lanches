@@ -193,9 +193,9 @@
   const sb=window.BV_SUPABASE||(window.supabase&&window.BV_SUPABASE_CONFIG?supabase.createClient(window.BV_SUPABASE_CONFIG.url,window.BV_SUPABASE_CONFIG.publishableKey):null);
   if(sb)window.BV_SUPABASE=sb;
 
-  const labels={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',produtos:'Produtos',promocoes:'Promoções',cupons:'Cupons',config:'Configurações','taxa-entrega':'Taxa de entrega'};
+  const labels={inicio:'Início',cardapio:'Cardápio',pedido:'Meu pedido',acompanhar:'Acompanhar pedido',dashboard:'Dashboard',pedidos:'Pedidos',produtos:'Produtos',promocoes:'Promoções',cupons:'Cupons',config:'Configurações','taxa-entrega':'Taxa de entrega','a-prazo':'Vendas a prazo'};
   const status={recebido:'Liberado',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Pronto',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
-  const payLabel={pix:'Pix',dinheiro:'Dinheiro',cartao:'Cartão'};
+  const payLabel={pix:'Pix',dinheiro:'Dinheiro',cartao:'Cartão',prazo:'Prazo'};
 
   window.admin=()=>['administrador','admin'].includes(window.BV_ROLE);
   window.applyAccess=()=>{
@@ -246,12 +246,69 @@
     if(p==='acompanhar'){window.BV_REFRESH_ORDERS?.();window.setupTrackingRealtime?.();window.startTrackingStatusPolling?.();}
     if(p==='dashboard')window.renderDashboard();
     if(p==='pedidos'){if(window.BV_ROLE==='motoboy')window.renderMotoOrders?.();else window.renderAdmin()}
-    if(p==='taxa-entrega'){if(['administrador','admin','motoboy'].includes(role))window.renderMotoFeeOrders?.();else window.renderDeliveryFees?.()}
+    if(p==='taxa-entrega'){if(['administrador','admin','motoboy'].includes(role))window.renderMotoFeeOrders?.();else window.renderDeliveryFees?.()}if(p==='a-prazo')window.renderCreditSales?.();
     if(p==='produtos'){const el=$('page-produtos');if(!el)return;el.classList.add('activePage');const manage=$('manage');if(manage&&!manage.innerHTML.trim())manage.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando produtos...</b><small>Aguarde um instante.</small></div>';try{window.renderProductsAdmin?.()}catch(e){console.error('[BV PRODUTOS RENDER]',e)};Promise.resolve(window.BV_REFRESH_PRODUCTS?.()).then(()=>{try{window.renderProductsAdmin?.()}catch(e){console.error('[BV PRODUTOS FINAL]',e)}}).catch(e=>{console.error('[BV PRODUTOS SYNC]',e);try{window.renderProductsAdmin?.()}catch(_){}});}
     if(p==='promocoes'){await window.BV_REFRESH_PROMOTIONS?.();window.renderPromotionsAdmin?.();}
     if(p==='config'){window.refreshDeliveryFees();window.renderUsers?.()}
   };
 
+  window.clearCreditSalesFilters=()=>{['creditSalesSearch','creditSalesStatus','creditSalesPeriod'].forEach(id=>{const el=$(id);if(el)el.value=''});window.renderCreditSales?.()};
+  window.markCreditSalePaid=async(id)=>{
+    if(!sb||!window.admin())return toast('Acesso restrito ao administrador.');
+    if(!id)return;
+    if(!confirm('Marcar esta venda a prazo como paga?'))return;
+    const r=await sb.from('orders').update({payment_status:'pago',updated_at:new Date().toISOString()}).eq('id',id).eq('payment_method','prazo');
+    if(r.error)return toast('Não foi possível registrar o pagamento: '+r.error.message);
+    toast('Venda a prazo marcada como paga.');
+    await window.renderCreditSales?.();
+    await window.BV_REFRESH_CREDIT_UI?.();
+  };
+  window.renderCreditSales=async()=>{
+    if(!window.admin())return;
+    const box=$('creditSalesList'),summary=$('creditSalesSummary');
+    if(!box)return;
+    box.innerHTML='<div class="emptyState"><span>⏳</span><b>Carregando vendas a prazo...</b></div>';
+    try{
+      const r=await sb.from('orders').select('id,order_number,user_id,customer_name,phone,total,payment_status,status,created_at,credit_due_at,address,neighborhood').eq('payment_method','prazo').order('created_at',{ascending:false});
+      if(r.error)throw r.error;
+      const rows=r.data||[], now=Date.now();
+      const statusOf=o=>{
+        const payment=String(o.payment_status||'').toLowerCase(), order=String(o.status||'').toLowerCase();
+        if(payment==='pago')return 'pago';
+        if(order==='cancelado')return 'cancelado';
+        const due=new Date(o.credit_due_at||new Date(new Date(o.created_at).getTime()+30*86400000)).getTime();
+        return Number.isFinite(due)&&now>due?'vencido':'aberto';
+      };
+      const statusLabel={aberto:'Em aberto',vencido:'Vencido',pago:'Pago',cancelado:'Cancelado'};
+      const q=norm($('creditSalesSearch')?.value||''), sf=$('creditSalesStatus')?.value||'', pf=$('creditSalesPeriod')?.value||'';
+      const filtered=rows.filter(o=>{
+        const st=statusOf(o);
+        if(sf&&st!==sf)return false;
+        const txt=norm([o.customer_name,o.phone,o.order_number,o.id].join(' '));
+        if(q&&!txt.includes(q))return false;
+        if(pf){
+          const t=new Date(o.created_at).getTime();
+          if(pf==='today'){const d=new Date();d.setHours(0,0,0,0);if(t<d.getTime())return false}
+          else if(now-t>Number(pf)*86400000)return false;
+        }
+        return true;
+      });
+      const allOpen=rows.filter(o=>statusOf(o)==='aberto').reduce((s,o)=>s+Number(o.total||0),0);
+      const allOverdue=rows.filter(o=>statusOf(o)==='vencido').reduce((s,o)=>s+Number(o.total||0),0);
+      const allPaid=rows.filter(o=>statusOf(o)==='pago').reduce((s,o)=>s+Number(o.total||0),0);
+      if(summary)summary.innerHTML='<div class="creditSalesKpi"><small>Em aberto</small><strong>'+money(allOpen)+'</strong></div><div class="creditSalesKpi"><small>Vencido</small><strong>'+money(allOverdue)+'</strong></div><div class="creditSalesKpi"><small>Pago</small><strong>'+money(allPaid)+'</strong></div>';
+      const fmtDate=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')};
+      const fmtDateTime=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
+      box.innerHTML=filtered.length?filtered.map(o=>{
+        const st=statusOf(o), due=o.credit_due_at||new Date(new Date(o.created_at).getTime()+30*86400000).toISOString();
+        const overdue=st==='vencido';
+        return '<article class="creditSalesCard"><div class="creditSalesHead"><div class="creditSalesClient"><b>'+esc(o.customer_name||'Cliente')+'</b><small>'+esc(o.phone||'Telefone não informado')+'</small></div><strong class="creditSalesValue">'+money(o.total)+'</strong><span class="creditSalesBadge '+(st==='aberto'?'open':st==='vencido'?'overdue':st==='pago'?'paid':'cancelled')+'">'+statusLabel[st]+'</span></div><div class="creditSalesMeta"><div><small>Pedido</small><b>#'+esc(window.orderLabel(o))+'</b></div><div><small>Venda</small><b>'+fmtDateTime(o.created_at)+'</b></div><div><small>Vencimento</small><b>'+fmtDate(due)+'</b></div><div><small>Prazo</small><b>30 dias</b></div></div>'+(st!=='pago'&&st!=='cancelado'?'<div class="creditSalesActions"><button type="button" class="creditMarkPaidBtn" onclick="markCreditSalePaid(\''+esc(o.id)+'\')">✓ Marcar como pago</button></div>':'')+'</article>';
+      }).join(''):'<div class="emptyState"><span>📒</span><b>Nenhuma venda a prazo encontrada</b><small>As vendas realizadas a prazo aparecerão aqui.</small></div>';
+    }catch(e){
+      console.error('[BV CREDIT SALES]',e);
+      box.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não foi possível carregar as vendas a prazo</b><small>'+esc(e?.message||'Erro de conexão com o banco.')+'</small><button type="button" onclick="renderCreditSales()">Tentar novamente</button></div>';
+    }
+  };
   window.renderMotoFeeOrders=async()=>{
     if(!['motoboy','administrador','admin'].includes(window.BV_ROLE))return;
     const b=$('motoFeeOrders');if(!b||!sb)return;
@@ -1182,12 +1239,12 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
       role=String(pr.data?.role||'usuario').trim().toLowerCase();
       window.BV_ROLE=role;
     }
-    let q=sb.from('orders').select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,pix_payment_id,pix_qr_code,pix_qr_code_base64,pix_expires_at,delivery_refused_reason,delivery_refused_at').neq('status','cancelado').order('created_at',{ascending:false});
+    let q=sb.from('orders').select('id,order_number,user_id,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,pix_payment_id,pix_qr_code,pix_qr_code_base64,pix_expires_at,credit_due_at,delivery_refused_reason,delivery_refused_at').neq('status','cancelado').order('created_at',{ascending:false});
     if(role==='motoboy')q=q.or('and(status.in.(em_preparo,em_producao),motoboy_id.is.null),and(status.in.(em_preparo,em_producao),motoboy_id.eq.'+user.id+'),and(status.eq.saiu_entrega,motoboy_id.eq.'+user.id+')');else if(!['administrador','admin'].includes(String(role).toLowerCase()))q=q.eq('user_id',user.id);
     const r=await q;if(r.error)return toast('Erro ao carregar pedidos: '+r.error.message);
     const ids=(r.data||[]).map(x=>x.id);let its=[];if(ids.length){const z=await sb.from('order_items').select('order_id,product_id,product_name,quantity').in('order_id',ids);if(!z.error)its=z.data||[]}
     const g={};its.forEach(i=>(g[i.order_id]??=[]).push(i));
-    window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,changeFor:Number(o.change_for)||null,paymentStatus:o.payment_status||'pendente',status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,pixPaymentId:o.pix_payment_id||null,pixQrCode:o.pix_qr_code||'',pixQrCodeBase64:o.pix_qr_code_base64||'',pixExpiresAt:o.pix_expires_at||null,deliveryRefusedReason:String(o.delivery_refused_reason||'').trim(),deliveryRefusedAt:o.delivery_refused_at||null,items:(g[o.id]||[]).map(i=>({product_id:i.product_id,product_name:i.product_name,quantity:i.quantity}))}));
+    window.orders=(r.data||[]).map(o=>({id:o.id,orderNumber:o.order_number,created_at:o.created_at,customer:o.customer_name,phone:o.phone,total:Number(o.total)||0,payment:payLabel[o.payment_method]||o.payment_method,changeFor:Number(o.change_for)||null,paymentStatus:o.payment_status||'pendente',status:status[o.status]||o.status,rawStatus:o.status,address:o.address?{rua:o.address,bairro:o.neighborhood}:null,deliveryFee:Number(o.delivery_fee)||0,motoboyId:o.motoboy_id,pixPaymentId:o.pix_payment_id||null,pixQrCode:o.pix_qr_code||'',pixQrCodeBase64:o.pix_qr_code_base64||'',pixExpiresAt:o.pix_expires_at||null,creditDueAt:o.credit_due_at||null,deliveryRefusedReason:String(o.delivery_refused_reason||'').trim(),deliveryRefusedAt:o.delivery_refused_at||null,items:(g[o.id]||[]).map(i=>({product_id:i.product_id,product_name:i.product_name,quantity:i.quantity}))}));
     if(role==='motoboy'){window.renderMotoOrders?.();return;}
     window.renderAdmin();
     window.renderDashboard();
@@ -1570,7 +1627,7 @@ window.BV_TRACKING_REALTIME=null;
     }else if(!window.BV_HAS_NAVIGATED){
       // Restaura a última tela usada; se não houver uma salva, começa em Início.
       const saved=getSavedPage();
-      const allowed=['inicio','cardapio','pedido','acompanhar','dashboard','pedidos','produtos','promocoes','cupons','config','taxa-entrega'];
+      const allowed=['inicio','cardapio','pedido','acompanhar','dashboard','pedidos','produtos','promocoes','cupons','config','taxa-entrega','a-prazo'];
       const target=allowed.includes(saved)?saved:'inicio';
       window.showPage(target,true);
     }
