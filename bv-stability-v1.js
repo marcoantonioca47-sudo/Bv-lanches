@@ -128,7 +128,7 @@
 .productFlavorRow b{overflow:hidden;text-overflow:ellipsis}.productFlavorRemove{height:38px;border-radius:9px;border:1px solid rgba(229,9,20,.35);background:rgba(229,9,20,.1);color:#fff;font-size:20px}
 @media(max-width:600px){.productFlavorAdd{grid-template-columns:1fr 90px}.productFlavorAdd button{grid-column:1/-1}.productFlavorRow{grid-template-columns:1fr 90px 38px}}
 `;document.head.appendChild(st);}
-  window.BV_STABILITY_VERSION='2026.09.29.2200';
+  window.BV_STABILITY_VERSION='2026.09.30.2230';
   window.BV_PIX_QR_TIMER=null;
   window.BV_PIX_QR_INFLIGHT=null;
   window.ensurePixQr=async(order)=>{
