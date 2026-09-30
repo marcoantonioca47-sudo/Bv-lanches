@@ -547,8 +547,14 @@ window.BV_REFRESH_CREDIT_UI=async()=>{
   btn.dataset.creditAvailable=String(available);
   btn.dataset.creditEnabled=enabled&&limit>0&&available>=orderTotal?'true':'false';
   btn.dataset.creditPending=pending?'true':'false';
-  if((!enabled||limit<=0||insufficient)&&String(window.BV_PAYMENT||'').toLowerCase()==='prazo'){window.BV_PAYMENT='Pix';const pix=document.querySelector('#page-pedido .pay button');if(pix)window.pay('Pix',pix)}
+  
 };
+document.addEventListener('click',function(e){
+  const b=e.target.closest&&e.target.closest('#page-pedido .pay button');
+  if(!b)return;
+  const isPrazo=b.id==='payPrazoBtn'||/A prazo/i.test(b.textContent||'');
+  if(!isPrazo){const req=document.getElementById('creditRequestBtn');if(req)req.style.display='none';const info=document.getElementById('creditCheckoutInfo');if(info)info.style.display='none';}
+},true);
 window.handlePrazoPayment=async(b)=>{
   await window.BV_REFRESH_CREDIT_UI?.();
   const btn=$('payPrazoBtn');
