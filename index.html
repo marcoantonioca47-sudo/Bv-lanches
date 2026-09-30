@@ -417,15 +417,13 @@
 <div id="bvClientHome" class="bvClientHome" aria-label="Início do cliente">
   <div class="bvClientGreeting">
     <div class="bvClientAvatar"><img src="./bv-logo.png?v=20260929.2200" alt="BV Lanches"></div>
-    <div class="bvClientGreetingText"><small>OLÁ, <span id="bvClientName">CLIENTE</span> 👋</small><h2>O que você vai pedir hoje?</h2></div>
+    <div class="bvClientGreetingText"><small>OLÁ, <span id="bvClientName">CLIENTE</span> 👋</small><h2>O que vamos pedir hoje?</h2></div>
     <button type="button" class="bvClientBell" onclick="toggleNotifications()" aria-label="Notificações">🔔</button>
   </div>
-
   <div class="bvClientHero">
     <div class="bvClientHeroText"><span>BV LANCHES</span><h1>Seu lanche favorito<br><b>do seu jeito.</b></h1><p>Escolha, peça e acompanhe tudo pelo celular.</p><button type="button" onclick="showPage('cardapio')">🍔 Ver cardápio <b>→</b></button></div>
     <div class="bvClientHeroArt" aria-hidden="true">🍔</div>
   </div>
-
   <div class="bvClientSectionHead"><div><small>ACESSO RÁPIDO</small><b>Escolha uma opção</b></div><span>Deslize →</span></div>
   <div class="bvClientHorizontal bvClientQuick">
     <button type="button" onclick="showPage('cardapio')"><i>🍔</i><b>Cardápio</b><small>Ver lanches</small></button>
@@ -433,19 +431,21 @@
     <button type="button" onclick="showPage('acompanhar')"><i>📦</i><b>Acompanhar</b><small>Status do pedido</small></button>
     <button type="button" onclick="showPage('taxa-entrega')"><i>🚚</i><b>Entrega</b><small>Consultar taxa</small></button>
   </div>
-
   <div class="bvClientOrderBox" id="bvClientOrderBox">
-    <div class="bvClientSectionHead"><div><small>SEU PEDIDO</small><b>Meu pedido</b></div><button type="button" onclick="showPage('pedido')">Abrir pedido →</button></div>
+    <div class="bvClientSectionHead"><div><small>SEU PEDIDO</small><b>Meu pedido</b></div><button type="button" onclick="showPage('pedido')">Ver meu pedido →</button></div>
     <div id="bvClientOrderItems" class="bvClientHorizontal bvClientOrderItems"></div>
+    <div class="bvClientOrderSummary" id="bvClientOrderSummary"></div>
   </div>
-
-  <div class="bvClientSectionHead bvClientPromoHead"><div><small>HOJE NA BV</small><b>Ofertas e novidades</b></div><span>Deslize →</span></div>
+  <div class="bvClientSectionHead bvClientPromoHead"><div><small>MAIS PEDIDOS</small><b>Os favoritos da BV</b></div><span>Deslize →</span></div>
   <div class="bvClientHorizontal bvClientOffers">
     <button type="button" onclick="showPage('cardapio')" class="offerRed"><span>🍔</span><div><small>QUER MATAR A FOME?</small><b>Monte seu lanche</b><em>Confira o cardápio →</em></div></button>
-    <button type="button" onclick="showPage('cardapio')" class="offerYellow"><span>🏷️</span><div><small>ECONOMIZE</small><b>Veja as promoções</b><em>Ofertas disponíveis →</em></div></button>
-    <button type="button" onclick="showPage('taxa-entrega')" class="offerDark"><span>🚚</span><div><small>RECEBA EM CASA</small><b>Consulte sua entrega</b><em>Ver taxa do bairro →</em></div></button>
+    <button type="button" onclick="showPage('cardapio')" class="offerYellow"><span>🔥</span><div><small>OS MAIS PEDIDOS</small><b>X-Bacon e X-Tudão</b><em>Escolher agora →</em></div></button>
+    <button type="button" onclick="showPage('cardapio')" class="offerDark"><span>🥤</span><div><small>PARA ACOMPANHAR</small><b>Bebidas geladas</b><em>Ver bebidas →</em></div></button>
   </div>
-
+  <div class="bvClientPromoBanner">
+    <div><small>OFERTA DO DIA</small><h3>🔥 Promoções imperdíveis</h3><p>Confira as ofertas disponíveis e aproveite.</p></div>
+    <button type="button" onclick="showPage('cardapio')">Conferir ofertas →</button>
+  </div>
   <div class="bvClientStatus">
     <div><span class="statusDot"></span><div><small>STATUS DA LOJA</small><b>Estamos prontos para receber seu pedido</b></div></div>
     <button type="button" onclick="showPage('cardapio')">Pedir agora →</button>
@@ -888,4 +888,20 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
   html[data-bv-role="usuario"] .bvClientBottomNav button b{font-size:10px}
   html[data-bv-role="usuario"] .bvClientBottomNav button.active{color:#fff;background:rgba(229,9,20,.16)}
 }
+</style><script id="bv-client-order-summary-v2">
+(function(){
+ function brl(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+ function render(){
+  var el=document.getElementById('bvClientOrderSummary');if(!el)return;
+  var cart=[];try{cart=JSON.parse(localStorage.getItem('bv_cart')||'[]');}catch(e){}
+  var total=Array.isArray(cart)?cart.reduce(function(s,x){return s+(Number(x.price||x.valor||0)*Number(x.q||x.qty||1));},0):0;
+  var qty=Array.isArray(cart)?cart.reduce(function(s,x){return s+Number(x.q||x.qty||1)},0):0;
+  el.innerHTML=qty?'<b>'+qty+' '+(qty===1?'item':'itens')+' no pedido</b><strong>'+brl(total)+'</strong>':'<b>Seu pedido está vazio</b><strong>Escolha seus lanches →</strong>';
+ }
+ document.addEventListener('DOMContentLoaded',render);window.addEventListener('load',render);window.addEventListener('storage',render);setInterval(render,700);
+})();
+</script><style id="bv-client-home-v2">
+.bvClientOrderSummary{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:13px 15px;border-radius:15px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+.bvClientOrderSummary b{font-size:12px}.bvClientOrderSummary strong{font-size:18px;color:#ffd400}.bvClientPromoBanner{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:18px 0;padding:20px;border-radius:22px;background:linear-gradient(135deg,#e50914,#780008);border:1px solid rgba(255,255,255,.1);box-shadow:0 15px 35px rgba(0,0,0,.25)}.bvClientPromoBanner small{font-size:9px;font-weight:1000;letter-spacing:1.5px;color:#ffd400}.bvClientPromoBanner h3{margin:5px 0;font-size:20px}.bvClientPromoBanner p{margin:0;color:rgba(255,255,255,.78);font-size:12px}.bvClientPromoBanner button{border:0;border-radius:12px;padding:11px 14px;background:#ffd400;color:#111;font-weight:1000;white-space:nowrap;cursor:pointer}
+@media(max-width:700px){.bvClientPromoBanner{align-items:flex-start;flex-direction:column}.bvClientPromoBanner button{width:100%}}
 </style></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
