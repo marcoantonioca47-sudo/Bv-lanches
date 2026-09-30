@@ -1243,4 +1243,41 @@ window.bvAccountLogout=async function(){
  .bvHeaderLogout{min-height:26px!important;height:26px!important;padding:0 6px!important;font-size:9px!important}
  #bvInstallAppBtn{min-height:26px!important;height:26px!important;padding:0 6px!important;font-size:9px!important}
 }
+</style><style id="bv-top-controls-final">
+.topbar .topActions .bvHeaderLogout{min-width:0!important;width:auto!important;min-height:24px!important;height:24px!important;padding:0 6px!important;border-radius:6px!important;font-size:9px!important;line-height:1!important}
+.topbar .topActions #bvInstallAppBtn{min-width:0!important;min-height:24px!important;height:24px!important;padding:0 6px!important;border-radius:6px!important;font-size:9px!important;line-height:1!important}
+.cartTop,.floatingCart,.bv-floating-cart,#floatingCart,[class*="floatingCart"],[id*="floatingCart"]{display:none!important}
+@media(max-width:700px){
+ .topbar .topActions .bvHeaderLogout{min-height:22px!important;height:22px!important;padding:0 5px!important;font-size:8px!important}
+ .topbar .topActions #bvInstallAppBtn{min-height:22px!important;height:22px!important;padding:0 5px!important;font-size:8px!important}
+}
 </style>
+<script id="bv-logout-final">
+(function(){
+ window.bvAccountLogout=async function(){
+   try{
+     var client=window.BV_SUPABASE||window.sb;
+     if(client&&client.auth){try{await client.auth.signOut({scope:'local'})}catch(e){try{await client.auth.signOut()}catch(e2){}}}
+   }catch(e){}
+   ['bv_user','bv_user_name','bv_user_email','bv_name','bv_role','bv_session','bv_token','bv_auth_user'].forEach(function(k){
+     try{sessionStorage.removeItem(k);localStorage.removeItem(k)}catch(e){}
+   });
+   try{sessionStorage.clear()}catch(e){}
+   try{localStorage.removeItem('sb-eaqngkiegrkmhopaztgz-auth-token')}catch(e){}
+   var login=document.getElementById('login');
+   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('activePage');p.style.display='none'});
+   if(login){
+     login.style.display='flex';
+     login.classList.add('show');
+     login.removeAttribute('hidden');
+     var email=document.getElementById('email'),pass=document.getElementById('pass');
+     if(email)email.value='';
+     if(pass)pass.value='';
+     window.scrollTo(0,0);
+   }
+   document.documentElement.removeAttribute('data-bv-role');
+   document.body.classList.remove('logged');
+   try{history.replaceState(null,'',location.pathname+'?bv_logout='+Date.now())}catch(e){}
+ };
+})();
+</script>
