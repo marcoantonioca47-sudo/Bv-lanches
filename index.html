@@ -1234,4 +1234,13 @@ window.bvAccountLogout=async function(){
 .bvHeaderLogout{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:34px;padding:0 10px;border:1px solid rgba(229,9,20,.55);border-radius:9px;background:rgba(229,9,20,.12);color:#fff;font-weight:850;font-size:12px;cursor:pointer;white-space:nowrap}
 .bvHeaderLogout:active{transform:scale(.98)}
 @media(max-width:700px){.bvHeaderLogout{min-height:32px;padding:0 8px;font-size:11px;border-radius:8px}.topActions{gap:5px!important}}
+</style><style id="bv-final-top-buttons-v3">
+/* Esconde somente o carrinho flutuante/duplicado que fica atrás da navegação inferior; mantém o botão Carrinho da barra inferior. */
+.cartTop,.floatingCart,.bv-floating-cart,#floatingCart,[class*="floatingCart"],[id*="floatingCart"]{display:none!important}
+.bvHeaderLogout{min-height:28px!important;height:28px!important;padding:0 7px!important;border-radius:7px!important;font-size:10px!important;gap:3px!important;font-weight:800!important}
+#bvInstallAppBtn{min-height:28px!important;height:28px!important;padding:0 7px!important;border-radius:7px!important;font-size:10px!important;gap:3px!important}
+@media(max-width:700px){
+ .bvHeaderLogout{min-height:26px!important;height:26px!important;padding:0 6px!important;font-size:9px!important}
+ #bvInstallAppBtn{min-height:26px!important;height:26px!important;padding:0 6px!important;font-size:9px!important}
+}
 </style>
