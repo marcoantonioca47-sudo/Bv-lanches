@@ -448,6 +448,7 @@
         return;
       }
       box.innerHTML=rows.map(o=>card(o,items[o.id]||[],products)).join('');
+      if(!navigator.onLine){const note=document.createElement('div');note.className='motoOfflineNote';note.textContent='📴 Exibindo os últimos pedidos sincronizados. Ações ficam disponíveis somente quando houver conexão.';box.prepend(note);}
       const search=document.getElementById('orderSearch');
       if (search) filterMotoCards(search.value);
     } catch(e) {
@@ -592,17 +593,27 @@
 
     try {
       const client=db();
-      const session=await client.auth.getSession();
-      const user=session?.data?.session?.user;
-      if (!user) throw new Error('Sessão expirada.');
+      const cache=motoOfflineCacheRead();
+      let user=null;
+      try{const session=await client?.auth?.getSession?.();user=session?.data?.session?.user||null}catch(e){}
+      if(!user&&cache?.userId)user={id:cache.userId};
+      if(!user) throw new Error('Sessão expirada.');
 
-      const r=await client.from('orders').select('id,order_number,delivery_fee,created_at,motoboy_id,status')
-        .eq('status','entregue').eq('motoboy_id',user.id).order('created_at',{ascending:false});
-      if (r.error) throw r.error;
+      let rows=[];
+      try{
+        if(!client)throw new Error('Banco indisponível.');
+        const r=await client.from('orders').select('id,order_number,delivery_fee,created_at,motoboy_id,status')
+          .eq('status','entregue').eq('motoboy_id',user.id).order('created_at',{ascending:false});
+        if(r.error)throw r.error;
+        rows=r.data||[];
+        motoOfflineCacheWrite({...(cache||{}),userId:user.id,userName:window.BV_USER_NAME||cache?.userName||'',role:'motoboy',fees:rows,orders:cache?.orders||null});
+      }catch(e){
+        if(Array.isArray(cache?.fees)){rows=cache.fees;console.warn('[MOTO OFFLINE TAXAS]',e)}
+        else throw e;
+      }
 
       const filter=window.BV_MOTO_FEE_FILTER||'all';
       const now=new Date();
-      let rows=r.data||[];
       let start=null,end=null;
       if(filter==='today') start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
       if(filter==='week'){start=new Date(now.getFullYear(),now.getMonth(),now.getDate());const d=start.getDay();start.setDate(start.getDate()-(d===0?6:d-1));}
@@ -616,9 +627,12 @@
         '</div><label><span>Data específica</span><input type="date" value="'+(filter.startsWith('specific:')?filter.slice(9):'')+'" onchange="setMotoFeeSpecificDate(this.value)"></label></div>'+
         '<div class="motoFeeHeader"><div><small>ENTREGAS REALIZADAS</small><strong>'+rows.length+'</strong></div><div><small>TOTAL A RECEBER</small><strong>'+money(total)+'</strong></div></div>'+
         (rows.length?'<div class="motoFeeList">'+rows.map(o=>'<article class="motoFeeOrder"><div><small>PEDIDO</small><b>#'+esc(String(o.order_number).padStart(3,'0'))+'</b><small>DATA</small><b>'+new Date(o.created_at).toLocaleDateString('pt-BR')+'</b></div><div><small>TAXA</small><strong>'+money(o.delivery_fee)+'</strong></div></article>').join('')+'</div>':'<div class="emptyState"><span>💰</span><b>Nenhuma entrega no período</b></div>');
+      if(!navigator.onLine){
+        const note=document.createElement('div');note.className='motoOfflineNote';note.textContent='📴 Exibindo os últimos dados salvos para uso offline.';box.prepend(note);
+      }
     } catch(e) {
       console.error('[MOTO TAXAS]',e);
-      box.innerHTML='<div class="emptyState"><span>⚠️</span><b>Erro ao carregar taxas</b><small>'+esc(e?.message||'Erro de conexão.')+'</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>';
+      box.innerHTML='<div class="emptyState"><span>⚠️</span><b>Não há dados de taxas salvos para uso offline</b><small>Conecte-se à internet uma vez para sincronizar as entregas e taxas.</small><button type="button" onclick="renderMotoFeeOrders()">Tentar novamente</button></div>';
     }
   };
 
@@ -630,7 +644,7 @@
     const s=document.createElement('style');
     s.id='bvMotoCleanStyle';
     s.textContent='.bvMotoNotifyBtn{position:fixed;right:14px;bottom:18px;z-index:99999;border:0;border-radius:999px;padding:12px 16px;background:#e50914;color:#fff;font-weight:900;box-shadow:0 10px 28px rgba(0,0,0,.35);cursor:pointer}.bvMotoIncoming{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:100000;width:min(430px,calc(100vw - 24px));display:flex;align-items:center;gap:12px;padding:15px;border-radius:18px;background:#111;color:#fff;border:2px solid #e50914;box-shadow:0 16px 40px rgba(0,0,0,.5);animation:bvMotoIn .22s ease-out}.bvMotoIncomingIcon{font-size:30px}.bvMotoIncoming div:nth-child(2){flex:1;display:flex;flex-direction:column;gap:3px}.bvMotoIncoming b{color:#ff3340;font-size:13px}.bvMotoIncoming strong{font-size:19px}.bvMotoIncoming small{opacity:.8}.bvMotoIncoming button{border:0;background:transparent;color:#fff;font-size:25px;cursor:pointer}@keyframes bvMotoIn{from{opacity:0;transform:translate(-50%,-16px)}to{opacity:1;transform:translate(-50%,0)}}.motoSingleCard{margin:0 0 14px;padding:18px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}.motoCardTop,.motoFeeHeader{display:flex;align-items:center;justify-content:space-between;gap:12px}.motoCardTop small,.motoInfo small,.motoFeeHeader small{display:block;opacity:.65;font-size:11px}.motoCardTop strong{display:block;font-size:22px}.motoCardTop span{padding:7px 10px;border-radius:10px;background:rgba(229,9,20,.15);font-weight:800;font-size:12px}.motoCardBody h3{margin:16px 0 5px}.motoItems{margin:12px 0 14px}.motoItemsGroup{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.08)}.motoGroupTitle{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#ff3340;margin-bottom:7px}.motoGroupList{display:grid;gap:5px}.motoItemLine{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:start;font-size:14px;line-height:1.35}.motoItemQty{font-weight:900;opacity:.8}.motoItemName{font-weight:800}.motoCardBody p{margin:0 0 14px}.motoInfo{display:grid;gap:10px}.motoDeliveryBox{display:grid;gap:10px;margin-top:10px;padding:12px 13px;border-radius:13px;background:rgba(229,9,20,.06);border:1px solid rgba(229,9,20,.18)}.motoDeliveryBox small{display:block;font-size:10px;letter-spacing:.12em;opacity:.65;font-weight:900}.motoDeliveryBox b{display:block;margin-top:4px;line-height:1.35}.motoInfo b{display:block;margin-top:3px}.motoFee{display:flex;justify-content:space-between;align-items:center;margin:15px 0;padding:12px;border-radius:12px;background:rgba(0,0,0,.16)}.motoFee strong{font-size:18px}.motoOrderTotal{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:10px 0 15px;padding:14px;border-radius:13px;background:rgba(32,166,90,.12);border:1px solid rgba(32,166,90,.28)}.motoOrderTotal span{font-weight:900}.motoOrderTotal strong{font-size:21px}.motoPaymentBadge{display:inline-flex;align-items:center;gap:6px;margin:4px 0 12px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-weight:900;font-size:14px}.motoActionBtn{width:100%;min-height:48px;border:0;border-radius:12px;color:#fff;font-weight:900;cursor:pointer;pointer-events:auto;touch-action:manipulation}.motoActionBtn:disabled{opacity:.55}.motoCollect{background:linear-gradient(135deg,#e50914,#900007)}.motoDeliver{background:linear-gradient(135deg,#20a65a,#08783b)}.motoLoading,.motoEmpty{padding:35px 18px;text-align:center}.motoEmpty span{display:block;font-size:32px;margin-bottom:8px}.motoEmpty b,.motoEmpty small{display:block}.motoEmpty small{margin:7px 0 14px}.motoFeeFilter{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.03)}.motoFeeQuickFilters{display:flex;gap:8px;flex-wrap:wrap}.motoFeeQuickFilters button{min-height:42px;padding:0 14px;border:1px solid #343a44;border-radius:10px;background:#20242a;color:#fff;font-weight:800}.motoFeeQuickFilters button.active{background:#e50914;border-color:#e50914}.motoFeeFilter label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:800}.motoFeeFilter input{min-height:42px;padding:0 12px;border-radius:10px;border:1px solid #343a44;background:#080a0d;color:#fff}.motoFeeHeader{padding:8px 0 16px}.motoFeeHeader>div{display:flex;flex-direction:column;gap:3px}.motoFeeHeader strong{font-size:22px}.motoFeeOrder{display:flex;justify-content:space-between;gap:15px;padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}.motoFeeOrder small{display:block;opacity:.65;margin-top:3px}.motoFeeOrder b,.motoFeeOrder strong{display:block;margin-bottom:7px}.motoPromoBanner{display:none;margin:0 0 18px}.motoPromoBanner.show{display:block}.motoPromoBanner .homePromoSlide{cursor:default}.motoPromoBanner .homePromoCopy{min-width:0}.motoPromoBanner .homePromoTrack{width:100%}';
-    document.head.appendChild(s);
+    s.textContent += '.motoOfflineNote{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.22);color:#ffd45c;font-size:11px;font-weight:800}';document.head.appendChild(s);
   }
 
   async function boot(){
