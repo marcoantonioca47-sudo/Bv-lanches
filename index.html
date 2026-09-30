@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR"><head><script id="bv-cache-force-2026.09.30.1830">
+<!doctype html><html lang="pt-BR"><head><script id="bv-cache-force-2026.09.30.1900">
 (function(){
 var V='2026.09.30.1830';
 try{
@@ -1313,7 +1313,7 @@ html[data-bv-role="administrador"] .sidebar .sideNav .navTitle.adminOnly{display
  function syncAdminMenu(){
    var role='';
    try{role=sessionStorage.getItem('bv_role')||''}catch(e){}
-   var attr=document.documentElement.getAttribute('data-bv-role')||''; var isAdmin=role==='administrador'||role==='admin'||attr==='administrador'||attr==='admin';
+   var attr=document.documentElement.getAttribute('data-bv-role')||''; var isAdmin=role==='administrador'||role==='admin'||role==='maximo'||attr==='administrador'||attr==='admin'||attr==='maximo';
    if(!isAdmin)return;
    document.querySelectorAll('#sidebar .sideNav .adminOnly,#sidebar .sideNav .adminDeliveryFeeLink').forEach(function(el){
      el.style.setProperty('display',el.classList.contains('navTitle')?'block':'flex','important');
