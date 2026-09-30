@@ -462,12 +462,12 @@ html[data-bv-role="usuario"] #page-inicio .homePromoDots{
   <div class="bvClientHorizontal bvClientOffers">
     <button type="button" onclick="showPage('cardapio')" class="offerRed"><span>🍔</span><div><small>QUER MATAR A FOME?</small><b>Monte seu lanche</b><em>Confira o cardápio →</em></div></button>
     <button type="button" onclick="showPage('cardapio')" class="offerYellow"><span>🔥</span><div><small>OS MAIS PEDIDOS</small><b>X-Bacon e X-Tudão</b><em>Escolher agora →</em></div></button>
-    <button type="button" onclick="openBebidasFromHome()" class="offerDark"><span>🥤</span><div><small>PARA ACOMPANHAR</small><b>Bebidas geladas</b><em>Ver bebidas →</em></div></button>
+    <button type="button" onclick="BV_OPEN_BEBIDAS()" class="offerDark"><span>🥤</span><div><small>PARA ACOMPANHAR</small><b>Bebidas geladas</b><em>Ver bebidas →</em></div></button>
   </div>
 
   <div class="bvClientPromoBanner">
     <div><small>OFERTA DO DIA</small><h3>🔥 Promoções imperdíveis</h3><p>Confira as ofertas disponíveis e aproveite.</p></div>
-    <button type="button" onclick="openPromocoesFromHome()">Conferir ofertas →</button>
+    <button type="button" onclick="BV_OPEN_PROMOCOES()">Conferir ofertas →</button>
   </div>
 
   <div class="bvClientStatus">
@@ -1001,5 +1001,26 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
     var nonPrazo=e.target.closest && e.target.closest('.pay button:not(#payPrazoBtn)');
     if(nonPrazo)hideRequest();
   },true);
+})();
+</script><script id="bv-home-navigation-fix-v1">
+(function(){
+  function goCategory(category){
+    try{
+      if(typeof window.showPage==='function') window.showPage('cardapio');
+      var run=function(){
+        var btn=document.querySelector('[data-menu-category="'+category+'"]');
+        if(btn){
+          if(typeof window.setMenuCategory==='function') window.setMenuCategory(category,btn);
+          else btn.click();
+          btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+        }
+      };
+      run();
+      setTimeout(run,120);
+      setTimeout(run,400);
+    }catch(e){console.error('BV navegação:',e);}
+  }
+  window.BV_OPEN_BEBIDAS=function(){goCategory('Bebidas');};
+  window.BV_OPEN_PROMOCOES=function(){goCategory('Promocoes');};
 })();
 </script></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
