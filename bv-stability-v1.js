@@ -531,6 +531,8 @@ window.BV_REFRESH_CREDIT_UI=async()=>{
     }
   }catch(e){console.warn('[BV CREDIT UI]',e)}
   const available=Math.max(0,limit-used);
+  const orderTotal=Math.max(0,Number(String(document.getElementById('total')?.textContent||'0').replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.'))||0);
+  const insufficient=available<orderTotal;
   btn.style.display='inline-flex';
   btn.textContent=enabled&&limit>0?'📒 A prazo · '+money(available):'📒 A prazo';
   if(info){
@@ -538,14 +540,14 @@ window.BV_REFRESH_CREDIT_UI=async()=>{
     info.textContent=enabled&&limit>0?'Limite: '+money(limit)+' · Usado: '+money(used)+' · Disponível: '+money(available):'Você ainda não possui limite aprovado para compras a prazo.';
   }
   if(req){
-    req.style.display=enabled&&limit>0?'none':'block';
+    req.style.display=(String(window.BV_PAYMENT||'').toLowerCase()==='prazo' && (!enabled||limit<=0||insufficient))?'block':'none';
     req.textContent=pending?'⏳ Solicitação de limite em análise':'📝 Solicitar limite para comprar a prazo';
     req.disabled=pending;
   }
   btn.dataset.creditAvailable=String(available);
-  btn.dataset.creditEnabled=enabled&&limit>0?'true':'false';
+  btn.dataset.creditEnabled=enabled&&limit>0&&available>=orderTotal?'true':'false';
   btn.dataset.creditPending=pending?'true':'false';
-  if(!enabled&&String(window.BV_PAYMENT||'').toLowerCase()==='prazo'){window.BV_PAYMENT='Pix';const pix=document.querySelector('#page-pedido .pay button');if(pix)window.pay('Pix',pix)}
+  if((!enabled||limit<=0||insufficient)&&String(window.BV_PAYMENT||'').toLowerCase()==='prazo'){window.BV_PAYMENT='Pix';const pix=document.querySelector('#page-pedido .pay button');if(pix)window.pay('Pix',pix)}
 };
 window.handlePrazoPayment=async(b)=>{
   await window.BV_REFRESH_CREDIT_UI?.();
