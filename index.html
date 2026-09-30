@@ -818,12 +818,25 @@ window.renderDeliveryFees=async function(){
   function bvClientHomeName(){
     var el=document.getElementById('bvClientName');
     if(!el)return;
-    var n=String(sessionStorage.getItem('bv_user_name')||'CLIENTE').trim();
-    el.textContent=(n||'CLIENTE').split(' ')[0].toUpperCase();
+    var n=String(
+      sessionStorage.getItem('bv_user_name') ||
+      sessionStorage.getItem('bv_name') ||
+      localStorage.getItem('bv_user_name') ||
+      localStorage.getItem('bv_name') ||
+      ''
+    ).trim();
+    if(!n){
+      try{
+        var user=JSON.parse(sessionStorage.getItem('bv_user')||localStorage.getItem('bv_user')||'null');
+        if(user) n=String(user.name||user.nome||user.full_name||user.fullName||'').trim();
+      }catch(e){}
+    }
+    el.textContent=(n||'CLIENTE').split(/\s+/)[0].toUpperCase();
   }
   document.addEventListener('DOMContentLoaded',bvClientHomeName);
   window.addEventListener('load',bvClientHomeName);
   setTimeout(bvClientHomeName,500);
+  setInterval(bvClientHomeName,1000);
 })();
 </script><style id="bv-client-home-horizontal-v1">
 /* Novo início exclusivo para clientes: layout horizontal/rolável */
