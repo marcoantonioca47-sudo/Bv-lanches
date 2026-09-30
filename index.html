@@ -548,4 +548,158 @@ window.renderDeliveryFees=async function(){
   document.addEventListener('DOMContentLoaded',()=>setTimeout(applyDrinkImages,150));
   setTimeout(applyDrinkImages,700);
   window.BV_APPLY_DRINK_IMAGES=applyDrinkImages;
-})();</script></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
+})();</script><style id="bv-home-redesign-v1">
+/* BV Lanches — redesign exclusivo da tela inicial */
+#page-inicio{
+  --bv-red:#e50914;--bv-red2:#ff3038;--bv-yellow:#ffd400;
+  padding:0!important;background:
+    radial-gradient(circle at 88% 8%,rgba(229,9,20,.18),transparent 28%),
+    radial-gradient(circle at 8% 42%,rgba(255,212,0,.06),transparent 25%),
+    linear-gradient(180deg,#090a0c 0%,#0d0f12 48%,#090a0c 100%)!important;
+}
+#page-inicio .homeNotificationBar{margin:0 0 12px!important}
+#page-inicio .homePromoBanner{
+  margin:0 0 18px!important;border:1px solid rgba(229,9,20,.28)!important;
+  border-radius:20px!important;overflow:hidden;box-shadow:0 18px 45px rgba(0,0,0,.28)!important;
+}
+#page-inicio .homeHero{
+  position:relative!important;min-height:420px!important;margin:0!important;
+  border:1px solid rgba(255,255,255,.08)!important;border-radius:28px!important;
+  overflow:hidden!important;background:
+    radial-gradient(circle at 80% 35%,rgba(229,9,20,.28),transparent 30%),
+    linear-gradient(135deg,#181a1f 0%,#0d0f12 52%,#090a0c 100%)!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.38)!important;
+}
+#page-inicio .homeHero:before{
+  content:"";position:absolute;inset:auto -12% -58% 35%;height:420px;
+  background:radial-gradient(ellipse,rgba(229,9,20,.28),transparent 65%);
+  transform:rotate(-8deg);pointer-events:none;
+}
+#page-inicio .homeHeroGlow{opacity:.22!important}
+#page-inicio .homeHeroFood{
+  position:absolute!important;right:5%!important;bottom:4%!important;
+  width:320px!important;height:320px!important;display:grid!important;place-items:center!important;
+  font-size:220px!important;filter:drop-shadow(0 25px 35px rgba(0,0,0,.5))!important;
+  transform:rotate(-5deg)!important;z-index:1!important;
+}
+#page-inicio .homeHeroContent{
+  position:relative!important;z-index:3!important;max-width:600px!important;
+  padding:48px 42px!important;text-align:left!important;
+}
+#page-inicio .bvHomeLogo{
+  width:112px!important;height:112px!important;object-fit:contain!important;
+  border-radius:28px!important;padding:10px!important;
+  background:rgba(0,0,0,.32)!important;border:1px solid rgba(255,255,255,.1)!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.25)!important;
+}
+#page-inicio .homeScript{
+  display:block!important;margin-top:24px!important;color:#aeb4bd!important;
+  font-size:11px!important;font-weight:950!important;letter-spacing:3px!important;
+}
+#page-inicio .homeHeroContent h2{
+  margin:4px 0 10px!important;font-size:clamp(38px,7vw,70px)!important;
+  line-height:.95!important;letter-spacing:-3px!important;
+}
+#page-inicio .homeHeroContent h2 strong{color:#fff!important}
+#page-inicio .homeHeroContent h2 i{color:var(--bv-red2)!important;font-style:normal!important}
+#page-inicio .homeHeroContent>p{
+  color:#c1c5cb!important;font-size:16px!important;line-height:1.55!important;margin:0 0 26px!important;
+}
+#page-inicio .homeHeroActions{display:flex!important;gap:10px!important;flex-wrap:wrap!important}
+#page-inicio .homeHeroActions button{
+  min-height:48px!important;padding:0 20px!important;border-radius:13px!important;
+  border:1px solid var(--bv-red)!important;background:linear-gradient(135deg,var(--bv-red2),#b50009)!important;
+  color:#fff!important;font-weight:950!important;box-shadow:0 12px 25px rgba(229,9,20,.2)!important;
+}
+#page-inicio .homeHeroActions button.outline{
+  background:rgba(255,255,255,.045)!important;border-color:rgba(255,255,255,.14)!important;
+  box-shadow:none!important;
+}
+#page-inicio .homeScribble{display:none!important}
+#page-inicio .homeDots{display:none!important}
+#page-inicio .homeFeatureGrid{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;margin:18px 0!important;
+}
+#page-inicio .homeFeature{
+  min-height:150px!important;text-align:left!important;padding:18px!important;
+  border:1px solid rgba(255,255,255,.08)!important;border-radius:18px!important;
+  background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018))!important;
+  color:#fff!important;box-shadow:0 14px 35px rgba(0,0,0,.18)!important;
+  transition:transform .2s ease,border-color .2s ease!important;
+}
+#page-inicio .homeFeature:hover{transform:translateY(-3px)!important;border-color:rgba(229,9,20,.38)!important}
+#page-inicio .homeFeature>span{
+  width:42px!important;height:42px!important;display:grid!important;place-items:center!important;
+  border-radius:12px!important;background:rgba(229,9,20,.12)!important;font-size:22px!important;
+}
+#page-inicio .homeFeature b{display:block!important;margin-top:13px!important;font-size:15px!important}
+#page-inicio .homeFeature small{display:block!important;margin-top:5px!important;color:#858c96!important;line-height:1.35!important}
+#page-inicio .homeFeature em{display:block!important;margin-top:12px!important;color:#ff5b62!important;font-size:11px!important;font-weight:900!important;font-style:normal!important}
+#page-inicio .howWorks{
+  margin:18px 0!important;padding:22px!important;border:1px solid rgba(255,255,255,.07)!important;
+  border-radius:20px!important;background:rgba(255,255,255,.025)!important;
+}
+#page-inicio .howTitle{margin-bottom:18px!important}
+#page-inicio .howGrid{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important}
+#page-inicio .howGrid>div{
+  position:relative!important;padding:16px 12px!important;text-align:center!important;
+  border-radius:15px!important;background:rgba(0,0,0,.18)!important;
+  border:1px solid rgba(255,255,255,.055)!important;
+}
+#page-inicio .howGrid strong{
+  position:absolute!important;top:9px!important;right:10px!important;color:rgba(255,255,255,.28)!important;font-size:11px!important;
+}
+#page-inicio .howGrid span{display:block!important;font-size:27px!important;margin-bottom:8px!important}
+#page-inicio .howGrid b{display:block!important;font-size:12px!important;color:#fff!important}
+#page-inicio .howGrid small{display:block!important;margin-top:5px!important;color:#777f89!important;line-height:1.35!important}
+#page-inicio .homeInfoGrid{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;
+}
+#page-inicio .homeInfoCard{
+  min-height:86px!important;padding:15px!important;display:flex!important;align-items:center!important;gap:12px!important;
+  border:1px solid rgba(255,255,255,.07)!important;border-radius:16px!important;
+  background:linear-gradient(145deg,#15181d,#0d0f12)!important;color:#fff!important;text-align:left!important;
+}
+#page-inicio .homeInfoCard>span{font-size:24px!important}
+#page-inicio .homeInfoCard b{display:block!important;font-size:12px!important}
+#page-inicio .homeInfoCard small{display:block!important;margin-top:4px!important;color:#858c96!important;line-height:1.35!important}
+#page-inicio .homeHighlights{
+  margin:18px 0!important;padding:20px!important;border-radius:20px!important;
+  background:linear-gradient(135deg,rgba(229,9,20,.13),rgba(255,255,255,.025))!important;
+  border:1px solid rgba(229,9,20,.2)!important;
+}
+#page-inicio .homeHighlightHead b{font-size:19px!important}
+#page-inicio .homeHighlightHead span{font-size:10px!important;color:#6ee7a4!important;font-weight:950!important}
+#page-inicio .homeFooter{
+  margin-top:18px!important;padding:20px 4px 8px!important;border-top:1px solid rgba(255,255,255,.07)!important;
+}
+@media(max-width:900px){
+  #page-inicio .homeFeatureGrid,#page-inicio .homeInfoGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #page-inicio .homeHeroFood{width:240px!important;height:240px!important;font-size:165px!important;right:-15px!important;bottom:8px!important;opacity:.72!important}
+  #page-inicio .homeHeroContent{max-width:58%!important}
+}
+@media(max-width:600px){
+  #page-inicio{padding:0 10px 18px!important}
+  #page-inicio .homePromoBanner{border-radius:16px!important}
+  #page-inicio .homeHero{min-height:455px!important;border-radius:22px!important}
+  #page-inicio .homeHeroFood{width:180px!important;height:180px!important;font-size:125px!important;right:-22px!important;bottom:5px!important;opacity:.5!important}
+  #page-inicio .homeHeroContent{max-width:none!important;padding:30px 22px!important}
+  #page-inicio .bvHomeLogo{width:82px!important;height:82px!important;border-radius:20px!important}
+  #page-inicio .homeScript{margin-top:18px!important;font-size:9px!important;letter-spacing:2.2px!important}
+  #page-inicio .homeHeroContent h2{font-size:43px!important;letter-spacing:-2px!important}
+  #page-inicio .homeHeroContent>p{font-size:14px!important;max-width:240px!important}
+  #page-inicio .homeHeroActions{position:relative!important;z-index:5!important}
+  #page-inicio .homeHeroActions button{width:100%!important}
+  #page-inicio .homeFeatureGrid,#page-inicio .homeInfoGrid{grid-template-columns:1fr 1fr!important;gap:9px!important}
+  #page-inicio .homeFeature{min-height:142px!important;padding:14px!important}
+  #page-inicio .homeFeature small{font-size:10px!important}
+  #page-inicio .homeFeature em{font-size:10px!important}
+  #page-inicio .howWorks{padding:15px!important}
+  #page-inicio .howGrid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  #page-inicio .howGrid>div{min-height:105px!important}
+  #page-inicio .homeInfoCard{min-height:78px!important;padding:12px!important}
+  #page-inicio .homeInfoCard>span{font-size:20px!important}
+  #page-inicio .homeInfoCard small{font-size:9px!important}
+}
+</style></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
