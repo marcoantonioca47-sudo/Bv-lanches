@@ -535,6 +535,18 @@ html:not([data-bv-role="administrador"]):not([data-bv-role="motoboy"]) #bvCustom
 .bvAccountOrder{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff}
 .bvAccountLogout{margin-top:0!important;border:1px solid rgba(255,60,60,.35)!important;background:rgba(220,30,30,.16)!important;color:#fff}
 @media(max-width:420px){.bvAccountActions{grid-template-columns:1fr}}
+</style><style id="bv-navigation-role-device-v4">
+@media(min-width:701px){
+ #bvCustomerBottomNav{display:none!important}
+ #sidebar{display:flex!important}
+ .menuBtn{display:none!important}
+}
+@media(max-width:700px){
+ html[data-bv-role="administrador"] #bvCustomerBottomNav,
+ html[data-bv-role="motoboy"] #bvCustomerBottomNav{display:none!important}
+ html[data-bv-role="administrador"] #sidebar,
+ html[data-bv-role="motoboy"] #sidebar{display:flex!important}
+}
 </style></head><body>
 <div id="login" class="overlay"><div class="login"><div class="logo">BV <i>LANCHES</i></div><small>ACESSE SUA CONTA</small><h1>Entrar</h1><input id="email" type="email" placeholder="E-mail"><input id="pass" type="password" placeholder="Senha"><button onclick="login()">Entrar</button><button type="button" class="registerLoginBtn" onclick="openRegister()">＋ Criar minha conta</button><p id="err"></p><button type="button" class="registerLoginBtn" onclick="resetBVPassword()">Esqueci minha senha</button></div></div>
 <div id="registerModal" aria-hidden="true"><div class="registerBackdrop" onclick="closeRegister()"></div><div class="registerCard"><div class="productFormHero"><div><small>CADASTRO DE CLIENTE</small><h3>Criar minha conta</h3><p>Cadastre seus dados para fazer pedidos.</p></div><button type="button" class="productClose" onclick="closeRegister()">×</button></div><form class="productForm" onsubmit="registerUser(event)"><label><span>Nome</span><input id="registerName" required placeholder="Seu nome"></label><label><span>E-mail</span><input id="registerEmail" type="email" required placeholder="seu@email.com"></label><label><span>Senha</span><input id="registerPass" type="password" minlength="6" required placeholder="Mínimo de 6 caracteres"></label><label><span>Confirmar senha</span><input id="registerPass2" type="password" minlength="6" required placeholder="Digite novamente"></label><p id="registerErr" class="registerErr"></p><div class="productFormActions"><button type="button" class="formCancel" onclick="closeRegister()">Cancelar</button><button type="submit" class="formSave">✓ Criar conta</button></div></form></div></div>
@@ -1168,20 +1180,27 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
   var r=role();
   var admin=r==='administrador'||document.documentElement.getAttribute('data-bv-role')==='administrador';
   var moto=r==='motoboy'||document.documentElement.getAttribute('data-bv-role')==='motoboy';
-  var user=!admin&&!moto;
+  var customer=!admin&&!moto;
+  var mobile=window.innerWidth<=700;
   var nav=document.getElementById('bvCustomerBottomNav'),side=document.getElementById('sidebar'),menu=document.querySelector('.menuBtn');
-  if(nav)nav.style.setProperty('display',user?'grid':'none','important');
-  if(side)side.style.setProperty('display',user&&(window.innerWidth>700)?'flex':'','important');
-  if(menu)menu.style.setProperty('display',(user||window.innerWidth>700)?'none':'','important');
-  if(user){
-   var p=(document.querySelector('.page.activePage')||{}).id||'page-inicio';p=p.replace('page-',''); if(p==='conta')window.BV_FILL_ACCOUNT?.();
+  // Cliente: barra inferior somente no celular. Desktop: menu lateral.
+  // Administrador/motoboy: sempre menu lateral e nunca barra inferior.
+  if(nav)nav.style.setProperty('display',(customer&&mobile)?'grid':'none','important');
+  if(side)side.style.setProperty('display',mobile&&customer?'none':'flex','important');
+  if(menu)menu.style.setProperty('display',mobile&&customer?'none':'','important');
+  if(customer){
+   var p=(document.querySelector('.page.activePage')||{}).id||'page-inicio';p=p.replace('page-','');
+   if(p==='conta')window.BV_FILL_ACCOUNT?.();
    if(nav)nav.querySelectorAll('[data-customer-page]').forEach(function(b){b.classList.toggle('active',b.dataset.customerPage===p)});
-   try{var cart=JSON.parse(localStorage.getItem('bv_cart')||'[]'),q=Array.isArray(cart)?cart.reduce(function(s,x){return s+Number(x.q||x.qty||0)},0):0;var n=document.getElementById('bvCustomerCount');if(n){n.textContent=q||'';n.style.display=q?'grid':'none'}}catch(e){}
+   try{
+    var cart=JSON.parse(localStorage.getItem('bv_cart')||'[]'),q=Array.isArray(cart)?cart.reduce(function(s,x){return s+Number(x.q||x.qty||0)},0):0;
+    var n=document.getElementById('bvCustomerCount');if(n){n.textContent=q||'';n.style.display=q?'grid':'none'}
+   }catch(e){}
   }
  }
  document.addEventListener('DOMContentLoaded',sync);window.addEventListener('load',sync);window.addEventListener('pageshow',sync);window.addEventListener('resize',sync);
  new MutationObserver(sync).observe(document.documentElement,{attributes:true,attributeFilter:['data-bv-role']});
- setInterval(sync,250);
+ setInterval(sync,500);
 })();
 </script><script id="bv-account-v1-js">
 (function(){
