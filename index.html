@@ -403,6 +403,24 @@
   #page-config .bvCompactDetails>summary{min-height:54px;padding:10px 11px}
   #page-config .bvCompactDetailsBody{padding:10px}
 }
+</style><style id="bv-home-promo-only-v1">
+/* Tela inicial do cliente: somente banners de promoção */
+html[data-bv-role="usuario"] #page-inicio{
+  padding:0 10px 110px!important;
+  background:#070809!important;
+}
+html[data-bv-role="usuario"] #page-inicio .bvOnlyPromoHome{
+  display:block!important;
+  width:100%!important;
+  min-height:120px;
+  margin:0 auto!important;
+}
+html[data-bv-role="usuario"] #page-inicio .homePromoTrack{
+  width:100%!important;
+}
+html[data-bv-role="usuario"] #page-inicio .homePromoDots{
+  display:flex!important;
+}
 </style></head><body>
 <div id="login" class="overlay"><div class="login"><div class="logo">BV <i>LANCHES</i></div><small>ACESSE SUA CONTA</small><h1>Entrar</h1><input id="email" type="email" placeholder="E-mail"><input id="pass" type="password" placeholder="Senha"><button onclick="login()">Entrar</button><button type="button" class="registerLoginBtn" onclick="openRegister()">＋ Criar minha conta</button><p id="err"></p><button type="button" class="registerLoginBtn" onclick="resetBVPassword()">Esqueci minha senha</button></div></div>
 <div id="registerModal" aria-hidden="true"><div class="registerBackdrop" onclick="closeRegister()"></div><div class="registerCard"><div class="productFormHero"><div><small>CADASTRO DE CLIENTE</small><h3>Criar minha conta</h3><p>Cadastre seus dados para fazer pedidos.</p></div><button type="button" class="productClose" onclick="closeRegister()">×</button></div><form class="productForm" onsubmit="registerUser(event)"><label><span>Nome</span><input id="registerName" required placeholder="Seu nome"></label><label><span>E-mail</span><input id="registerEmail" type="email" required placeholder="seu@email.com"></label><label><span>Senha</span><input id="registerPass" type="password" minlength="6" required placeholder="Mínimo de 6 caracteres"></label><label><span>Confirmar senha</span><input id="registerPass2" type="password" minlength="6" required placeholder="Digite novamente"></label><p id="registerErr" class="registerErr"></p><div class="productFormActions"><button type="button" class="formCancel" onclick="closeRegister()">Cancelar</button><button type="submit" class="formSave">✓ Criar conta</button></div></form></div></div>
@@ -411,62 +429,14 @@
 <nav id="bvClientBottomNav" class="bvClientBottomNav" aria-label="Menu do cliente">
   <button data-bv-bottom-page="inicio" onclick="showPage('inicio')"><span>⌂</span><b>Início</b></button>
   <button data-bv-bottom-page="cardapio" onclick="showPage('cardapio')"><span>🍔</span><b>Cardápio</b></button>
-  <button data-bv-bottom-page="pedido" onclick="showPage('pedido')"><span class="bvBottomCart">🛒<i id="bvBottomCount">0</i></span><b>Meu pedido</b></button>
+  <button data-bv-bottom-page="pedido" class="bvBottomCart" onclick="showPage('pedido')"><span>🛒<i id="bvBottomCount">0</i></span><b>Meu pedido</b></button>
   <button data-bv-bottom-page="acompanhar" onclick="showPage('acompanhar')"><span>📦</span><b>Acompanhar</b></button>
 </nav>
-<div id="bvClientHome" class="bvClientHome" aria-label="Início do cliente">
-  <div class="bvClientGreeting">
-    <div class="bvClientAvatar"><img src="./bv-logo.png?v=20260929.2200" alt="BV Lanches"></div>
-    <div class="bvClientGreetingText"><small>OLÁ, <span id="bvClientName">CLIENTE</span> 👋</small><h2>O que vamos pedir hoje?</h2></div>
-    <button type="button" class="bvClientBell" onclick="toggleNotifications()" aria-label="Notificações">🔔</button>
-  </div>
-  <div class="bvClientHero">
-    <div class="bvClientHeroText"><span>BV LANCHES</span><h1>Seu lanche favorito<br><b>do seu jeito.</b></h1><p>Escolha, peça e acompanhe tudo pelo celular.</p><button type="button" onclick="showPage('cardapio')">🍔 Ver cardápio <b>→</b></button></div>
-    <div class="bvClientHeroArt" aria-hidden="true">🍔</div>
-  </div>
-  <div class="bvClientSectionHead"><div><small>ACESSO RÁPIDO</small><b>Escolha uma opção</b></div><span>Deslize →</span></div>
-  <div class="bvClientHorizontal bvClientQuick">
-    <button type="button" onclick="showPage('cardapio')"><i>🍔</i><b>Cardápio</b><small>Ver lanches</small></button>
-    <button type="button" onclick="showPage('pedido')"><i>🛒</i><b>Meu pedido</b><small>Itens e checkout</small></button>
-    <button type="button" onclick="showPage('acompanhar')"><i>📦</i><b>Acompanhar</b><small>Status do pedido</small></button>
-    <button type="button" onclick="showPage('taxa-entrega')"><i>🚚</i><b>Entrega</b><small>Consultar taxa</small></button>
-  </div>
-  <div class="bvClientOrderBox" id="bvClientOrderBox">
-    <div class="bvClientSectionHead"><div><small>SEU PEDIDO</small><b>Meu pedido</b></div><button type="button" onclick="showPage('pedido')">Ver meu pedido →</button></div>
-    <div id="bvClientOrderItems" class="bvClientHorizontal bvClientOrderItems"></div>
-    <div class="bvClientOrderSummary" id="bvClientOrderSummary"></div>
-  </div>
-  <div class="bvClientSectionHead bvClientPromoHead"><div><small>MAIS PEDIDOS</small><b>Os favoritos da BV</b></div><span>Deslize →</span></div>
-  <div class="bvClientHorizontal bvClientOffers">
-    <button type="button" onclick="showPage('cardapio')" class="offerRed"><span>🍔</span><div><small>QUER MATAR A FOME?</small><b>Monte seu lanche</b><em>Confira o cardápio →</em></div></button>
-    <button type="button" onclick="showPage('cardapio')" class="offerYellow"><span>🔥</span><div><small>OS MAIS PEDIDOS</small><b>X-Bacon e X-Tudão</b><em>Escolher agora →</em></div></button>
-    <button type="button" onclick="showPage('cardapio')" class="offerDark"><span>🥤</span><div><small>PARA ACOMPANHAR</small><b>Bebidas geladas</b><em>Ver bebidas →</em></div></button>
-  </div>
-  <div class="bvClientPromoBanner">
-    <div><small>OFERTA DO DIA</small><h3>🔥 Promoções imperdíveis</h3><p>Confira as ofertas disponíveis e aproveite.</p></div>
-    <button type="button" onclick="showPage('cardapio')">Conferir ofertas →</button>
-  </div>
-  <div class="bvClientStatus">
-    <div><span class="statusDot"></span><div><small>STATUS DA LOJA</small><b>Estamos prontos para receber seu pedido</b></div></div>
-    <button type="button" onclick="showPage('cardapio')">Pedir agora →</button>
-  </div>
-  <div class="bvClientBottomNote">🍔 <b>BV Lanches</b> · sabor que chega até você</div>
+<div id="homePromoBanner" class="homePromoBanner bvOnlyPromoHome" aria-label="Promoções ativas">
+  <div id="homePromoTrack" class="homePromoTrack"></div>
+  <div id="homePromoDots" class="homePromoDots"></div>
 </div>
-<div class="bvClientLegacyHome">
-<div class="homeNotificationBar adminOnly"><button class="notifyBtn" type="button" onclick="toggleNotifications()">🔔 <span id="homeNotificationBadge">0</span><b>Notificações</b></button></div><div id="notificationCenter" class="notificationCenter"></div><div id="homePromoBanner" class="homePromoBanner" aria-label="Promoções ativas"><div id="homePromoTrack" class="homePromoTrack"></div><div id="homePromoDots" class="homePromoDots"></div></div><div class="homeHero"><div class="homeHeroGlow"></div><div class="homeHeroFood">🍔</div><div class="homeHeroContent"><img class="bvHomeLogo" src="./bv-logo.png?v=20260926.1005" alt="BV Lanches"><span class="homeScript">BEM-VINDO AO</span><h2><strong>BV</strong> <i>LANCHES</i></h2><p>Sabor, qualidade e praticidade<br>no seu dia a dia!</p><div class="homeHeroActions"><button onclick="showPage('cardapio')">🍴 &nbsp;Ver cardápio</button><button class="outline" onclick="showPage('pedido')">🏍️ &nbsp;Fazer pedido</button></div></div><div class="homeScribble">♛<br><span>Lanche bom<br>é aqui!</span></div></div><div class="homeDots"><b></b><i></i><i></i></div><div class="homeFeatureGrid"><button class="homeFeature" onclick="showPage('cardapio')"><span>🍔</span><b>Lanches</b><small>Os melhores lanches<br>da cidade!</small><em>Ver cardápio&nbsp; →</em></button><button class="homeFeature" onclick="showPage('cardapio')"><span>🥤</span><b>Bebidas</b><small>Refresque seu<br>momento!</small><em>Ver cardápio&nbsp; →</em></button><button class="homeFeature" onclick="showPage('cardapio')"><span>🏍️</span><b>Entrega rápida</b><small>Seu pedido no conforto<br>da sua casa!</small><em>Ver taxas&nbsp; →</em></button><button class="homeFeature" onclick="showPage('pedido')"><span>🛡️</span><b>Pagamento seguro</b><small>Diversas formas<br>de pagamento.</small><em>Saiba mais&nbsp; →</em></button></div><div class="howWorks"><div class="howTitle"><i></i><b>Como funciona?</b><i></i></div><div class="howGrid"><div><strong>1</strong><span>🍔</span><b>Escolha seu lanche</b><small>Veja nosso cardápio completo<br>e faça seu pedido.</small></div><div><strong>2</strong><span>📋</span><b>Confirme o pedido</b><small>Revise os itens e finalize<br>com segurança.</small></div><div><strong>3</strong><span>🏍️</span><b>Acompanhe a entrega</b><small>Fique por dentro do status<br>do seu pedido.</small></div><div><strong>4</strong><span>😊</span><b>Receba e aproveite</b><small>Seu lanche chega quentinho<br>e no prazo!</small></div></div></div><div class="homeInfoGrid">
-  <button type="button" class="homeInfoCard storeStatusHomeCard" aria-label="Status da loja"><span id="homeStoreStatusIcon">🟢</span><div><b>Status da loja</b><small id="homeStoreStatusText">Verificando...</small></div></button>  <button type="button" class="homeInfoCard adminHide" onclick="showPage('inicio')" aria-label="Horário de atendimento"><span>🕒</span><div><b>Horário de atendimento</b><small>Todos os dias<br><strong>18:00 às 23:00</strong></small></div></button>
-  <button type="button" class="homeInfoCard" onclick="showPage('taxa-entrega')" aria-label="Consultar taxa de entrega"><span>🚚</span><div><b>Entrega</b><small>Consulte a taxa do seu bairro<br>e receba no conforto de casa.</small></div></button>
-  <button type="button" class="homeInfoCard" onclick="showPage('pedido')" aria-label="Ver formas de pagamento"><span>💳</span><div><b>Formas de pagamento</b><small>Pix, cartão e dinheiro<br>com praticidade.</small></div></button>
-  <button type="button" class="homeInfoCard" onclick="showPage('acompanhar')" aria-label="Acompanhar pedido"><span>📦</span><div><b>Acompanhe seu pedido</b><small>Veja o status do pedido<br>até a entrega.</small></div></button>
-</div>
-<div class="homeHighlights">
-  <div class="homeHighlightHead"><div><small>BV LANCHES</small><b>Feito para facilitar seu pedido</b></div><span>● ONLINE</span></div>
-  <div class="homeHighlightGrid">
-    <button type="button" onclick="showPage('cardapio')" aria-label="Abrir cardápio"><strong>01</strong><b>Cardápio completo</b><small>Escolha lanches, bebidas e promoções em poucos toques.</small></button>
-    <button type="button" onclick="showPage('pedido')" aria-label="Fazer pedido"><strong>02</strong><b>Pedido simples</b><small>Monte seu pedido, informe a entrega e finalize com segurança.</small></button>
-    <button type="button" onclick="showPage('acompanhar')" aria-label="Acompanhar pedido"><strong>03</strong><b>Acompanhamento</b><small>Consulte o número do pedido e acompanhe cada etapa.</small></button>
-  </div>
-</div><div class="homeFooter"><b>🍔 &nbsp;BV Lanches</b><span>Sempre com você! ♡</span><strong class="adminHide">◷ &nbsp; Aberto agora <small>18:00 às 23:00</small></strong></div></div></section>
+</section>
 <section id="page-cardapio" class="page"><div class="sectionTitle"><div><small class="eyebrow">LOJA</small><h2>Cardápio</h2></div><span class="pill green">ABERTO</span></div><div class="menuCategoryTabs"><button type="button" class="active" data-menu-category="Lanches" onclick="setMenuCategory('Lanches',this)">🍔 Lanches</button><button type="button" data-menu-category="Bebidas" onclick="setMenuCategory('Bebidas',this)">🥤 Bebidas</button><button type="button" data-menu-category="Adicionais" onclick="setMenuCategory('Adicionais',this)">＋ Adicionais</button><button type="button" data-menu-category="Promocoes" onclick="setMenuCategory('Promocoes',this)">🏷️ Promoções</button></div><div id="products" class="grid"></div></section>
 <section id="page-pedido" class="page"><div class="sectionTitle"><div><small class="eyebrow">CHECKOUT</small><h2>Meu pedido</h2></div></div><div class="checkout"><div class="panel"><h3>Itens do pedido</h3><div id="cart"></div><div class="line"><span>Subtotal</span><b id="sub">R$ 0,00</b></div><div class="line"><span>Entrega</span><b id="fee">R$ 0,00</b></div><div class="line total"><span>Total</span><b id="total">R$ 0,00</b></div></div><div class="panel"><h3>Entrega e pagamento</h3><div class="tabs"><button class="active" onclick="mode('entrega',this)">🚚 Entrega</button><button onclick="mode('retirada',this)">🏪 Retirada</button></div><div id="address"><input id="name" placeholder="Nome"><input id="phone" placeholder="WhatsApp"><div class="two"><input id="street" placeholder="Rua"><input id="num" placeholder="Nº"></div><div class="two"><input id="bairro" placeholder="Bairro" autocomplete="address-level2" oninput="refreshNeighborhoodFee()" onchange="refreshNeighborhoodFee()"><input id="cep" placeholder="CEP"></div><input id="comp" placeholder="Complemento / referência"></div><h3>Pagamento</h3><div class="pay"><button class="active" onclick="pay('Pix',this)">🔷 Pix</button><button onclick="pay('Dinheiro',this)">💵 Dinheiro</button><button onclick="pay('Cartão',this)">💳 Cartão</button><button id="payPrazoBtn" type="button" onclick="handlePrazoPayment(this)">📒 A prazo</button></div><div id="creditCheckoutInfo" class="creditCheckoutInfo" style="display:none"></div><button id="creditRequestBtn" type="button" class="creditRequestBtn" onclick="openCreditRequest()" style="display:none">📝 Solicitar limite para comprar a prazo</button><input id="troco" class="hide" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Troco para: R$ 0,00"><input id="coupon" placeholder="Cupom de desconto"><button class="whats" onclick="finish()">✅ Finalizar pedido</button></div></div></section>
 <section id="page-acompanhar" class="page"><div class="sectionTitle"><div><small class="eyebrow">MEU PEDIDO</small><h2>Acompanhar pedido</h2><p class="muted">Acompanhe o status do seu pedido em tempo real.</p></div></div><div class="trackingGrid"><div class="panel trackingLookup"><div class="trackingLookupHead"><div class="trackingIcon">📦</div><div><h3>Consultar pedido</h3><small class="muted">Digite o número do pedido para acompanhar.</small></div></div><label>Número do pedido<input id="trackId" inputmode="numeric" placeholder="Ex.: 001"></label><label>WhatsApp <span class="optionalLabel">opcional</span><input id="trackPhone" inputmode="tel" placeholder="Ex.: (31) 99999-9999"></label><button class="trackBtn" type="button" onclick="trackOrder()">🔎 Consultar status</button><button class="trackLast" type="button" onclick="trackLastOrder()">📦 Ver meu último pedido</button><div class="trackingHint">💡 Se você estiver logado, seus pedidos são consultados automaticamente.</div></div><div id="trackingResult" class="panel trackingResult"><div class="trackingEmpty"><span>📦</span><h3>Nenhum pedido selecionado</h3><p>Informe um pedido ou veja seu último pedido para acompanhar o status.</p></div></div></div></section>
