@@ -60,10 +60,18 @@
     try { localStorage.setItem('bv_first_login_done','1'); } catch(e) {}
     $('login')?.style.setProperty('display','none','important');
 
+    // Após o login, recarrega a aplicação para inicializar todas as telas,
+    // permissões, dados e scripts já com a sessão autenticada.
+    // O Supabase mantém a sessão persistida, então o carregamento seguinte
+    // entra diretamente no sistema e evita telas parcialmente inicializadas.
     try {
-      await window.loadApp?.();
+      window.__BV_LOGIN_RELOADING = true;
+      const u = new URL(window.location.href);
+      u.searchParams.set('bv_login_refresh', String(Date.now()));
+      window.location.replace(u.href);
     } catch (e) {
-      console.error('[BV AUTH] loadApp', e);
+      console.error('[BV AUTH] login refresh', e);
+      try { await window.loadApp?.(); } catch (e2) { console.error('[BV AUTH] loadApp', e2); }
     }
     return {};
   };
