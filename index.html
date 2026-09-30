@@ -1086,13 +1086,14 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
 (function(){
  function role(){try{return sessionStorage.getItem('bv_role')||''}catch(e){return ''}}
  function sync(){
-  var r=role(), user=r==='usuario'||document.documentElement.getAttribute('data-bv-role')==='usuario';
+  var r=role();
   var admin=r==='administrador'||document.documentElement.getAttribute('data-bv-role')==='administrador';
   var moto=r==='motoboy'||document.documentElement.getAttribute('data-bv-role')==='motoboy';
+  var user=!admin&&!moto;
   var nav=document.getElementById('bvCustomerBottomNav'),side=document.getElementById('sidebar'),menu=document.querySelector('.menuBtn');
   if(nav)nav.style.setProperty('display',user?'grid':'none','important');
-  if(side)side.style.setProperty('display',user?'none':(admin||moto?'':'none'),'important');
-  if(menu)menu.style.setProperty('display',user?'none':(admin||moto?'':'none'),'important');
+  if(side)side.style.setProperty('display',user?'none':'','important');
+  if(menu)menu.style.setProperty('display',user?'none':'','important');
   if(user){
    var p=(document.querySelector('.page.activePage')||{}).id||'page-inicio';p=p.replace('page-','');
    if(nav)nav.querySelectorAll('[data-customer-page]').forEach(function(b){b.classList.toggle('active',b.dataset.customerPage===p)});
