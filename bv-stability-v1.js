@@ -197,7 +197,7 @@
   const status={recebido:'Liberado',aguardando_pagamento:'Aguardando pagamento',em_preparo:'Em preparo',em_producao:'Pronto',saiu_entrega:'Saiu para entrega',entregue:'Entregue',cancelado:'Cancelado'};
   const payLabel={pix:'Pix',dinheiro:'Dinheiro',cartao:'Cartão',prazo:'Prazo'};
 
-  window.admin=()=>['administrador','admin'].includes(window.BV_ROLE);
+  window.admin=()=>['administrador','admin','maximo'].includes(String(window.BV_ROLE||'').trim().toLowerCase());
   window.applyAccess=()=>{
     const role=String(window.BV_ROLE||'usuario').trim().toLowerCase();
     window.BV_ROLE=(role==='maximo'?'administrador':role);
