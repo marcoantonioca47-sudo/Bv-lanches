@@ -6,10 +6,13 @@
   const db = () => window.BV_SUPABASE || window.sb;
   const normalizeRole = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
   const isMoto = () => normalizeRole(window.BV_ROLE) === 'motoboy';
+  const MOTO_CACHE_KEY='bv_motoboy_offline_cache_v1';
+  const motoOfflineCacheRead=()=>{try{return JSON.parse(localStorage.getItem(MOTO_CACHE_KEY)||'null')}catch(e){return null}};
+  const motoOfflineCacheWrite=data=>{try{localStorage.setItem(MOTO_CACHE_KEY,JSON.stringify({...data,savedAt:new Date().toISOString()}));return true}catch(e){console.warn('[MOTO OFFLINE CACHE]',e);return false}};
   const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  window.BV_MOTO_SCREEN_VERSION = '2026.09.27.2140';
+  window.BV_MOTO_SCREEN_VERSION = '2026.09.30.2350';
   window.BV_MOTO_ACTIONS = window.BV_MOTO_ACTIONS || new Set();
   // Notificação sonora + visual para novos pedidos do motoboy.
   window.BV_MOTO_NOTIFY_VERSION='2026.09.27.1900';
@@ -226,23 +229,21 @@
   };
 
   async function syncMotoRole() {
-    const client = db();
-    if (!client) return false;
-    try {
-      const { data: { user } } = await client.auth.getUser();
-      if (!user) return false;
-      const { data: profile } = await client.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
-      if (!profile) return false;
-      window.BV_ROLE = normalizeRole(profile.role);
-      window.BV_USER_NAME = profile.name || user.email || '';
-      window.applyAccess?.();
-      return window.BV_ROLE === 'motoboy';
-    } catch (e) {
-      console.warn('[MOTO ROLE]', e);
-      return false;
-    }
+    const client=db();const cache=motoOfflineCacheRead();
+    try{
+      const {data:{user}}=await client?.auth?.getUser?.()||{data:{}};
+      if(user&&client){
+        const {data:profile}=await client.from('profiles').select('name,role').eq('id',user.id).maybeSingle();
+        if(profile){
+          window.BV_ROLE=normalizeRole(profile.role);window.BV_USER_NAME=profile.name||user.email||'';
+          motoOfflineCacheWrite({...(cache||{}),userId:user.id,userName:window.BV_USER_NAME,role:window.BV_ROLE});
+          window.applyAccess?.();return window.BV_ROLE==='motoboy';
+        }
+      }
+    }catch(e){console.warn('[MOTO ROLE ONLINE]',e)}
+    if(cache?.role==='motoboy'){window.BV_ROLE='motoboy';window.BV_USER_NAME=cache.userName||'Motoboy';window.BV_OFFLINE_MODE=true;window.applyAccess?.();return true}
+    return false;
   }
-
   window.applyMotoPageChrome = function applyMotoPageChrome() {
     if (!isMoto()) return;
     const page = document.getElementById('page-pedidos');
@@ -358,38 +359,34 @@
   }
 
   async function getOrders() {
-    const client = db();
-    if (!client) throw new Error('Banco de dados indisponível.');
-    const session = await client.auth.getSession();
-    const user = session?.data?.session?.user;
-    if (!user) throw new Error('Sessão do motoboy não encontrada.');
-
-    const fields = 'id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,delivery_refused_reason,delivery_refused_at';
-    const results = await Promise.all([
-      client.from('orders').select(fields).eq('status','em_preparo').order('created_at',{ascending:false}),
-      client.from('orders').select(fields).eq('status','em_producao').order('created_at',{ascending:false}),
-      client.from('orders').select(fields).eq('status','saiu_entrega').eq('motoboy_id',user.id).order('created_at',{ascending:false})
-    ]);
-    const bad = results.find(x => x.error);
-    if (bad) throw bad.error;
-
-    const map = new Map();
-    results.flatMap(x => x.data || []).forEach(o => map.set(String(o.id),o));
-    const rows = [...map.values()].filter(o => !window.BV_MOTO_DELIVERED.has(String(o.id))).sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
-
-    const items = {};
-    if (rows.length) {
-      const ir = await client.from('order_items').select('order_id,product_id,product_name,quantity').in('order_id',rows.map(x=>x.id));
-      if (!ir.error) (ir.data||[]).forEach(i => (items[i.order_id] ||= []).push(i));
+    const cache=motoOfflineCacheRead();
+    const client=db();
+    let user=null;
+    try{const session=await client?.auth?.getSession?.();user=session?.data?.session?.user||null}catch(e){}
+    if(!user&&cache?.userId)user={id:cache.userId};
+    if(!user) throw new Error('Sessão do motoboy não encontrada.');
+    const fields='id,order_number,customer_name,phone,address,neighborhood,delivery_fee,total,payment_method,payment_status,status,created_at,motoboy_id,change_for,delivery_refused_reason,delivery_refused_at';
+    try{
+      if(!client)throw new Error('Banco de dados indisponível.');
+      const results=await Promise.all([
+        client.from('orders').select(fields).eq('status','em_preparo').order('created_at',{ascending:false}),
+        client.from('orders').select(fields).eq('status','em_producao').order('created_at',{ascending:false}),
+        client.from('orders').select(fields).eq('status','saiu_entrega').eq('motoboy_id',user.id).order('created_at',{ascending:false})
+      ]);
+      const bad=results.find(x=>x.error);if(bad)throw bad.error;
+      const map=new Map();results.flatMap(x=>x.data||[]).forEach(o=>map.set(String(o.id),o));
+      const rows=[...map.values()].filter(o=>!window.BV_MOTO_DELIVERED.has(String(o.id))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+      const items={};
+      if(rows.length){const ir=await client.from('order_items').select('order_id,product_id,product_name,quantity').in('order_id',rows.map(x=>x.id));if(!ir.error)(ir.data||[]).forEach(i=>(items[i.order_id]||=[]).push(i))}
+      let products={};
+      if(rows.length){const ids=[...new Set((Object.values(items).flat()||[]).map(i=>i.product_id).filter(Boolean))];if(ids.length){const pr=await client.from('products').select('id,name,category').in('id',ids);if(!pr.error)(pr.data||[]).forEach(p=>products[p.id]=p)}}
+      motoOfflineCacheWrite({userId:user.id,userName:window.BV_USER_NAME||cache?.userName||'',role:'motoboy',orders:{rows,items,products},fees:cache?.fees||[]});
+      return {rows,items,products,offline:false};
+    }catch(e){
+      if(cache?.orders?.rows){console.warn('[MOTO OFFLINE PEDIDOS]',e);return {...cache.orders,offline:true}}
+      throw e;
     }
-    let products={};
-    if (rows.length) {
-      const ids=[...new Set((Object.values(items).flat()||[]).map(i=>i.product_id).filter(Boolean))];
-      if(ids.length){ const pr=await client.from('products').select('id,name,category').in('id',ids); if(!pr.error)(pr.data||[]).forEach(p=>products[p.id]=p); }
-    }
-    return {rows,items,products};
   }
-
   function card(o,items,products) {
     const label = o.status === 'saiu_entrega' ? 'Saiu para entrega' : o.status === 'em_producao' ? 'Pronto' : 'Em preparo';
     const groups={Lanches:[],Bebidas:[],Adicionais:[]};
