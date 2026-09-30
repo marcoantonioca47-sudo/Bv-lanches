@@ -946,24 +946,7 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
 .bvClientOrderTotal{display:flex;justify-content:space-between;margin-top:10px;font-size:9px;color:#8d949e}.bvClientOrderTotal b{color:#fff;font-size:12px}
 .bvClientOrderEmpty{min-width:100%;padding:16px;border:1px dashed rgba(255,255,255,.1);border-radius:16px;color:#7f8791;font-size:10px;text-align:center;box-sizing:border-box}
 @media(max-width:600px){.bvClientOrderCard{min-width:205px;width:205px}}
-</style><script id="bv-client-bottom-nav-v1-js">
-(function(){
- function updateBottomNav(){
-   var role=document.documentElement.dataset.bvRole;
-   if(role!=='usuario')return;
-   var current='';
-   document.querySelectorAll('.page').forEach(function(p){if(p.classList.contains('activePage'))current=p.id.replace('page-','');});
-   document.querySelectorAll('#bvClientBottomNav button').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-bv-bottom-page')===current);});
-   var c=0;try{var cart=JSON.parse(localStorage.getItem('bv_cart')||'[]');if(Array.isArray(cart))c=cart.reduce(function(s,x){return s+Number(x.q||0)},0)}catch(e){}
-   var el=document.getElementById('bvBottomCount');if(el){el.textContent=c;el.style.display=c?'grid':'none'}
- }
- document.addEventListener('DOMContentLoaded',updateBottomNav);
- window.addEventListener('load',updateBottomNav);
- window.addEventListener('storage',updateBottomNav);
- setInterval(updateBottomNav,700);
- window.BV_UPDATE_BOTTOM_NAV=updateBottomNav;
-})();
-</script><script id="bv-client-order-summary-v2">
+</style><script id="bv-client-order-summary-v2">
 (function(){
  function brl(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
  function render(){
@@ -1069,62 +1052,39 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
 <button type="button" data-customer-page="acompanhar" onclick="showPage('acompanhar')"><span>📦</span><b>Meus Pedidos</b></button>
 <button type="button" data-customer-page="pedido" onclick="showPage('pedido')"><span>🛒<i id="bvCustomerCount">0</i></span><b>Carrinho</b></button>
 </nav>
-<style id="bv-customer-bottom-clean">
-#bvCustomerBottomNav{display:none}
+
+
+<nav id="bvCustomerBottomNav" aria-label="Menu inferior do cliente">
+<button type="button" data-customer-page="inicio" onclick="showPage('inicio')"><span>⌂</span><b>Início</b></button>
+<button type="button" data-customer-page="cardapio" onclick="showPage('cardapio')"><span>🍔</span><b>Cardápio</b></button>
+<button type="button" data-customer-page="acompanhar" onclick="showPage('acompanhar')"><span>📦</span><b>Meus Pedidos</b></button>
+<button type="button" data-customer-page="pedido" onclick="showPage('pedido')"><span>🛒<i id="bvCustomerCount">0</i></span><b>Carrinho</b></button>
+</nav>
+<style id="bv-customer-bottom-final">
+#bvCustomerBottomNav{display:none!important}
 @media(max-width:700px){
- #bvCustomerBottomNav{position:fixed!important;left:8px!important;right:8px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;height:68px!important;
- display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:4px!important;padding:5px!important;z-index:2147483647!important;
- box-sizing:border-box!important;border:1px solid rgba(255,255,255,.14)!important;border-radius:20px!important;background:rgba(13,15,19,.98)!important;
- box-shadow:0 14px 40px rgba(0,0,0,.65)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
- #bvCustomerBottomNav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;
- border:0!important;background:transparent!important;color:#aeb4bd!important;border-radius:15px!important;font:inherit!important;padding:4px!important}
- #bvCustomerBottomNav button span{font-size:21px!important;line-height:22px!important;position:relative}
- #bvCustomerBottomNav button b{font-size:10px!important;line-height:12px!important;font-weight:900!important}
- #bvCustomerBottomNav button.active{background:rgba(229,9,20,.9)!important;color:#fff!important}
- #bvCustomerCount{position:absolute;top:-7px;right:-10px;min-width:17px;height:17px;padding:0 4px;display:grid;place-items:center;
- border-radius:99px;background:#ffd400;color:#111;font-size:9px;font-style:normal;font-weight:1000;line-height:17px}
+ html[data-bv-role="usuario"] #sidebar,html[data-bv-role="usuario"] .menuBtn{display:none!important}
+ html[data-bv-role="usuario"] #bvCustomerBottomNav{display:grid!important;position:fixed!important;left:8px!important;right:8px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;height:68px!important;z-index:2147483647!important;grid-template-columns:repeat(4,1fr)!important;gap:4px!important;padding:5px!important;box-sizing:border-box!important;background:rgba(13,15,19,.98)!important;border:1px solid rgba(255,255,255,.14)!important;border-radius:20px!important;box-shadow:0 14px 40px rgba(0,0,0,.65)!important}
+ html[data-bv-role="usuario"] #bvCustomerBottomNav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;border:0!important;background:transparent!important;color:#aeb4bd!important;border-radius:15px!important;padding:4px!important}
+ html[data-bv-role="usuario"] #bvCustomerBottomNav button.active{background:rgba(229,9,20,.9)!important;color:#fff!important}
+ html[data-bv-role="usuario"] #bvCustomerBottomNav span{font-size:21px!important}.bvCustomerCount{position:absolute}
  html[data-bv-role="usuario"] .content{padding-bottom:100px!important}
 }
 </style>
-<script id="bv-customer-bottom-clean-js">
-(function(){
- function isUser(){
-  try{return sessionStorage.getItem('bv_role')==='usuario'||document.documentElement.getAttribute('data-bv-role')==='usuario'}catch(e){return false}
- }
- function sync(){
-  var n=document.getElementById('bvCustomerBottomNav');if(!n)return;
-  var u=isUser();
-  n.style.setProperty('display',u?'grid':'none','important');
-  var m=document.querySelector('.menuBtn');if(m)m.style.setProperty('display',u?'none':'','important');
-  var s=document.getElementById('sidebar');if(s)s.style.setProperty('display',u?'none':'','important');
-  var a=document.querySelector('.page.activePage');
-  var p=a?(a.id||'').replace(/^page-/,''):(localStorage.getItem('bv_page')||'inicio');
-  n.querySelectorAll('[data-customer-page]').forEach(function(b){b.classList.toggle('active',b.dataset.customerPage===p)});
-  var q=0;try{var cart=JSON.parse(localStorage.getItem('bv_cart')||'[]');if(Array.isArray(cart))q=cart.reduce(function(t,x){return t+Number(x.q||x.qty||0)},0)}catch(e){}
-  var b=document.getElementById('bvCustomerCount');if(b)b.style.display=q?'grid':'none',b.textContent=q;
- }
- document.addEventListener('DOMContentLoaded',sync);window.addEventListener('load',sync);window.addEventListener('pageshow',sync);setInterval(sync,500);
-})();
-</script><style id="bv-customer-bottom-force-v2">
-@media(max-width:700px){
- html[data-bv-role="usuario"] #sidebar,
- html[data-bv-role="usuario"] .menuBtn{display:none!important}
- html[data-bv-role="usuario"] #bvCustomerBottomNav{display:grid!important}
- html[data-bv-role="usuario"] .content{padding-bottom:100px!important}
-}
-</style>
-<script id="bv-customer-bottom-force-v2-js">
+<script id="bv-customer-bottom-final-js">
 (function(){
  function sync(){
-  var isUser=document.documentElement.getAttribute('data-bv-role')==='usuario'||sessionStorage.getItem('bv_role')==='usuario';
-  var n=document.getElementById('bvCustomerBottomNav');
-  if(n)n.style.setProperty('display',isUser?'grid':'none','important');
-  var s=document.getElementById('sidebar'),m=document.querySelector('.menuBtn');
-  if(s)s.style.setProperty('display',isUser?'none':'','important');
-  if(m)m.style.setProperty('display',isUser?'none':'','important');
+  var user=sessionStorage.getItem('bv_role')==='usuario'||document.documentElement.getAttribute('data-bv-role')==='usuario';
+  var nav=document.getElementById('bvCustomerBottomNav');
+  if(!nav)return;
+  nav.style.setProperty('display',user?'grid':'none','important');
+  var side=document.getElementById('sidebar'),menu=document.querySelector('.menuBtn');
+  if(side)side.style.setProperty('display',user?'none':'','important');
+  if(menu)menu.style.setProperty('display',user?'none':'','important');
+  var p=(document.querySelector('.page.activePage')||{}).id||'page-inicio';p=p.replace('page-','');
+  nav.querySelectorAll('[data-customer-page]').forEach(function(b){b.classList.toggle('active',b.dataset.customerPage===p)});
+  try{var cart=JSON.parse(localStorage.getItem('bv_cart')||'[]'),q=Array.isArray(cart)?cart.reduce(function(s,x){return s+Number(x.q||x.qty||0)},0):0;var n=document.getElementById('bvCustomerCount');if(n)n.textContent=q||'';}catch(e){}
  }
- ['DOMContentLoaded','load','pageshow'].forEach(function(e){window.addEventListener(e,sync)});
- new MutationObserver(sync).observe(document.documentElement,{attributes:true,attributeFilter:['data-bv-role']});
- setInterval(sync,300);
+ document.addEventListener('DOMContentLoaded',sync);window.addEventListener('load',sync);setInterval(sync,250);
 })();
 </script></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
