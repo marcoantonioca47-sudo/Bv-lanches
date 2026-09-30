@@ -428,6 +428,11 @@
     <button type="button" onclick="showPage('taxa-entrega')"><i>🚚</i><b>Entrega</b><small>Consultar taxa</small></button>
   </div>
 
+  <div class="bvClientOrderBox" id="bvClientOrderBox">
+    <div class="bvClientSectionHead"><div><small>SEU PEDIDO</small><b>Meu pedido</b></div><button type="button" onclick="showPage('pedido')">Abrir pedido →</button></div>
+    <div id="bvClientOrderItems" class="bvClientHorizontal bvClientOrderItems"></div>
+  </div>
+
   <div class="bvClientSectionHead bvClientPromoHead"><div><small>HOJE NA BV</small><b>Ofertas e novidades</b></div><span>Deslize →</span></div>
   <div class="bvClientHorizontal bvClientOffers">
     <button type="button" onclick="showPage('cardapio')" class="offerRed"><span>🍔</span><div><small>QUER MATAR A FOME?</small><b>Monte seu lanche</b><em>Confira o cardápio →</em></div></button>
@@ -793,4 +798,39 @@ html[data-bv-role="usuario"] #page-inicio>#homePromoBanner{display:none!importan
   .bvClientQuick button{width:124px;min-width:124px;min-height:108px}.bvClientOffers>button{width:235px;min-width:235px;min-height:105px}
   .bvClientStatus{align-items:stretch;flex-direction:column}.bvClientStatus button{width:100%}
 }
+</style><script id="bv-client-order-home-v1-js">
+(function(){
+  function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  function renderClientHomeOrder(){
+    var box=document.getElementById('bvClientOrderItems'); if(!box)return;
+    var cart=[]; try{cart=JSON.parse(localStorage.getItem('bv_cart')||'[]')}catch(e){}
+    if(!Array.isArray(cart)||!cart.length){
+      box.innerHTML='<div class="bvClientOrderEmpty">🛒 Seu pedido está vazio.<br><b>Escolha seus lanches no cardápio.</b></div>'; return;
+    }
+    box.innerHTML=cart.map(function(x){
+      var q=Number(x.q||0), price=Number(x.price||0);
+      return '<div class="bvClientOrderCard"><div class="bvClientOrderCardHead"><b>🍔 '+esc(x.name||'Produto')+'</b><span>'+q+'x</span></div><div class="bvClientOrderProduct"><div><b>Quantidade: '+q+'</b><small>Preço unitário</small></div><strong>'+money(price)+'</strong></div><div class="bvClientOrderTotal"><span>Total do item</span><b>'+money(price*q)+'</b></div></div>';
+    }).join('');
+  }
+  document.addEventListener('DOMContentLoaded',renderClientHomeOrder);
+  window.addEventListener('load',renderClientHomeOrder);
+  window.addEventListener('storage',renderClientHomeOrder);
+  setInterval(renderClientHomeOrder,1000);
+  window.BV_RENDER_CLIENT_HOME_ORDER=renderClientHomeOrder;
+})();
+</script><style id="bv-client-order-home-v1">
+html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
+.bvClientOrderBox{margin:2px 0 18px}
+.bvClientOrderBox>.bvClientSectionHead{align-items:center}
+.bvClientOrderBox>.bvClientSectionHead>button{border:0;background:none;color:#ff5960;font-size:9px;font-weight:950;cursor:pointer}
+.bvClientOrderItems{margin-bottom:0!important;padding-bottom:4px!important}
+.bvClientOrderCard{min-width:220px;width:220px;scroll-snap-align:start;padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:17px;background:linear-gradient(145deg,#171a1f,#0d0f12);box-sizing:border-box}
+.bvClientOrderCardHead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bvClientOrderCardHead b{font-size:12px}.bvClientOrderCardHead span{font-size:8px;color:#69dc96;font-weight:950}
+.bvClientOrderProduct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06)}
+.bvClientOrderProduct>div{min-width:0}.bvClientOrderProduct b{display:block;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bvClientOrderProduct small{display:block;margin-top:3px;color:#777f89;font-size:8px}.bvClientOrderProduct strong{font-size:10px;color:#ffd400;white-space:nowrap}
+.bvClientOrderTotal{display:flex;justify-content:space-between;margin-top:10px;font-size:9px;color:#8d949e}.bvClientOrderTotal b{color:#fff;font-size:12px}
+.bvClientOrderEmpty{min-width:100%;padding:16px;border:1px dashed rgba(255,255,255,.1);border-radius:16px;color:#7f8791;font-size:10px;text-align:center;box-sizing:border-box}
+@media(max-width:600px){.bvClientOrderCard{min-width:205px;width:205px}}
 </style></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
