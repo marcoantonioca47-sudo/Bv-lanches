@@ -1175,9 +1175,10 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
   if(a)a.textContent=String(name);if(n)n.textContent=String(name);if(e)e.textContent=String(email);if(p)p.textContent=String(phone);
  }
  window.bvAccountLogout=async function(){
-  try{if(window.sb&&sb.auth)await sb.auth.signOut()}catch(e){}
-  ['bv_user','bv_user_name','bv_user_email','bv_name','bv_role'].forEach(function(k){try{sessionStorage.removeItem(k);localStorage.removeItem(k)}catch(e){}});
-  location.href=location.pathname+'?bv_logout='+Date.now();
+  try{if(window.sb&&window.sb.auth)await window.sb.auth.signOut()}catch(e){console.warn('[BV LOGOUT]',e)}
+  ['bv_user','bv_user_name','bv_user_email','bv_name','bv_role','bv_session','bv_token'].forEach(function(k){try{sessionStorage.removeItem(k);localStorage.removeItem(k)}catch(e){}});
+  try{sessionStorage.clear()}catch(e){}
+  location.replace(location.pathname+'?bv_logout='+Date.now());
  };
  document.addEventListener('DOMContentLoaded',fill);window.addEventListener('load',fill);window.addEventListener('pageshow',fill);
  window.BV_FILL_ACCOUNT=fill;
