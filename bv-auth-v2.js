@@ -187,7 +187,22 @@
           $('login')?.style.setProperty('display','none','important');
           await window.loadApp?.();
         }
-      } catch(e) { console.error('[BV AUTH] restore',e); }
+      } catch(e) {
+        console.error('[BV AUTH] restore',e);
+        // Se estiver sem internet, o motoboy pode continuar usando a sessão local
+        // e os dados previamente sincronizados pelo módulo offline.
+        try{
+          const cached=JSON.parse(localStorage.getItem('bv_motoboy_offline_cache_v1')||'null');
+          if(cached?.role==='motoboy'){
+            window.BV_ROLE='motoboy';
+            window.BV_USER_NAME=cached.userName||data.session.user.email||'Motoboy';
+            window.BV_OFFLINE_MODE=true;
+            window.applyAccess?.();
+            $('login')?.style.setProperty('display','none','important');
+            setTimeout(()=>window.showPage?.('pedidos',true),0);
+          }
+        }catch(cacheError){console.warn('[BV AUTH] offline restore',cacheError)}
+      }
     }
   });
 })();
