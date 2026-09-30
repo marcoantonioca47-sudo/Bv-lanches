@@ -510,6 +510,13 @@ html:not([data-bv-role="administrador"]):not([data-bv-role="motoboy"]) #page-ped
 html:not([data-bv-role="administrador"]):not([data-bv-role="motoboy"]) #page-acompanhar .trackingGrid{grid-template-columns:minmax(0,1fr) minmax(360px,.7fr)!important;gap:22px!important}
 html:not([data-bv-role="administrador"]):not([data-bv-role="motoboy"]) #bvCustomerBottomNav{display:none!important}
 }
+</style><style id="bv-account-actions-v2">
+.bvAccountActions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.bvAccountAction{width:100%;min-height:52px;padding:0 14px;border-radius:16px;font-weight:850;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;box-sizing:border-box}
+.bvAccountOrder{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff}
+.bvAccountLogout{margin-top:0!important;border:1px solid rgba(255,60,60,.35)!important;background:rgba(220,30,30,.16)!important;color:#fff}
+.bvAccountAction:active{transform:scale(.98)}
+@media(max-width:420px){.bvAccountActions{grid-template-columns:1fr;}}
 </style></head><body>
 <div id="login" class="overlay"><div class="login"><div class="logo">BV <i>LANCHES</i></div><small>ACESSE SUA CONTA</small><h1>Entrar</h1><input id="email" type="email" placeholder="E-mail"><input id="pass" type="password" placeholder="Senha"><button onclick="login()">Entrar</button><button type="button" class="registerLoginBtn" onclick="openRegister()">＋ Criar minha conta</button><p id="err"></p><button type="button" class="registerLoginBtn" onclick="resetBVPassword()">Esqueci minha senha</button></div></div>
 <div id="registerModal" aria-hidden="true"><div class="registerBackdrop" onclick="closeRegister()"></div><div class="registerCard"><div class="productFormHero"><div><small>CADASTRO DE CLIENTE</small><h3>Criar minha conta</h3><p>Cadastre seus dados para fazer pedidos.</p></div><button type="button" class="productClose" onclick="closeRegister()">×</button></div><form class="productForm" onsubmit="registerUser(event)"><label><span>Nome</span><input id="registerName" required placeholder="Seu nome"></label><label><span>E-mail</span><input id="registerEmail" type="email" required placeholder="seu@email.com"></label><label><span>Senha</span><input id="registerPass" type="password" minlength="6" required placeholder="Mínimo de 6 caracteres"></label><label><span>Confirmar senha</span><input id="registerPass2" type="password" minlength="6" required placeholder="Digite novamente"></label><p id="registerErr" class="registerErr"></p><div class="productFormActions"><button type="button" class="formCancel" onclick="closeRegister()">Cancelar</button><button type="submit" class="formSave">✓ Criar conta</button></div></form></div></div>
@@ -524,7 +531,10 @@ html:not([data-bv-role="administrador"]):not([data-bv-role="motoboy"]) #bvCustom
       <div><small>Telefone</small><strong id="bvAccountPhone">—</strong></div>
       <div><small>Senha</small><strong>••••••••</strong><em>Por segurança, a senha não é exibida.</em></div>
     </div>
-    <button type="button" class="bvAccountLogout" onclick="bvAccountLogout()">🚪 Sair da conta</button>
+    <div class="bvAccountActions">
+      <button type="button" class="bvAccountAction bvAccountOrder" onclick="showPage('pedido')">🛒 Meu pedido</button>
+      <button type="button" class="bvAccountAction bvAccountLogout" onclick="bvAccountLogout()">🚪 Sair da conta</button>
+    </div>
   </div>
 </section>
 <section id="page-inicio" class="page activePage">
