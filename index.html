@@ -772,8 +772,8 @@ window.renderDeliveryFees=async function(){
 })();
 </script><style id="bv-client-home-horizontal-v1">
 /* Novo início exclusivo para clientes: layout horizontal/rolável */
-#bvClientHome{display:none}
-html[data-bv-role="usuario"] #page-inicio .bvClientHome{display:block}
+#bvClientHome{display:block!important}
+html[data-bv-role="usuario"] #page-inicio .bvClientHome{display:block!important}
 html[data-bv-role="usuario"] #page-inicio .bvClientLegacyHome{display:none}
 html[data-bv-role="usuario"] #page-inicio{padding:0 0 24px!important;background:#090a0c!important}
 html[data-bv-role="usuario"] #page-inicio .homeNotificationBar,
@@ -803,6 +803,50 @@ html[data-bv-role="usuario"] #page-inicio>#homePromoBanner{display:none!importan
   .bvClientHero{min-height:198px;padding:20px 18px;border-radius:19px}.bvClientHeroText{max-width:74%}.bvClientHeroText h1{font-size:25px}.bvClientHeroText p{font-size:10px}.bvClientHeroArt{font-size:104px;right:-9px}
   .bvClientQuick button{width:124px;min-width:124px;min-height:108px}.bvClientOffers>button{width:235px;min-width:235px;min-height:105px}
   .bvClientStatus{align-items:stretch;flex-direction:column}.bvClientStatus button{width:100%}
+}
+</style><style id="bv-client-home-force-v3">
+/* BV Lanches — tela inicial do cliente realmente visível */
+html[data-bv-role="usuario"] #page-inicio{
+  background:
+    radial-gradient(circle at 90% 0%,rgba(229,9,20,.18),transparent 28%),
+    radial-gradient(circle at 0% 35%,rgba(255,212,0,.05),transparent 25%),
+    #070809!important;
+}
+html[data-bv-role="usuario"] #page-inicio .bvClientHome{
+  display:block!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  padding:14px 14px 110px!important;
+}
+html[data-bv-role="usuario"] #page-inicio .bvClientHero{
+  min-height:245px!important;
+  border-radius:26px!important;
+  background:
+    radial-gradient(circle at 88% 48%,rgba(229,9,20,.52),transparent 30%),
+    linear-gradient(135deg,#1d2026 0%,#0b0d10 58%,#150305 100%)!important;
+}
+html[data-bv-role="usuario"] #page-inicio .bvClientHeroText h1{
+  font-size:clamp(29px,5vw,43px)!important;
+  text-transform:uppercase;
+}
+html[data-bv-role="usuario"] #page-inicio .bvClientQuick button,
+html[data-bv-role="usuario"] #page-inicio .bvClientOrderCard,
+html[data-bv-role="usuario"] #page-inicio .bvClientOffers>button{
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease!important;
+}
+html[data-bv-role="usuario"] #page-inicio .bvClientQuick button:active,
+html[data-bv-role="usuario"] #page-inicio .bvClientOffers>button:active{
+  transform:scale(.97)!important;
+}
+html[data-bv-role="usuario"] #page-inicio .bvClientOrderBox{
+  padding:16px;
+  border-radius:20px;
+  background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
+  border:1px solid rgba(255,255,255,.08);
+}
+@media(max-width:600px){
+  html[data-bv-role="usuario"] #page-inicio .bvClientHome{padding:8px 10px 105px!important}
+  html[data-bv-role="usuario"] #page-inicio .bvClientHero{min-height:225px!important}
 }
 </style><script id="bv-client-order-home-v1-js">
 (function(){
