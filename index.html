@@ -547,31 +547,22 @@ html:not([data-bv-role="administrador"]):not([data-bv-role="motoboy"]) #bvCustom
  html[data-bv-role="administrador"] #sidebar,
  html[data-bv-role="motoboy"] #sidebar{display:flex!important}
 }
+</style><style id="bv-top-logout-v1">
+.bvClientGreeting{position:relative}
+.bvTopLogout{margin-left:auto;align-self:center;flex:0 0 auto;border:1px solid rgba(255,70,70,.35);background:rgba(220,30,30,.14);color:#fff;border-radius:13px;padding:11px 15px;font-weight:850;font-size:13px;cursor:pointer}
+.bvTopLogout:active{transform:scale(.98)}
+@media(max-width:700px){.bvTopLogout{padding:9px 10px;font-size:11px;border-radius:12px}.bvClientGreetingText{min-width:0}.bvClientGreetingText h2{font-size:16px}}
 </style></head><body>
 <div id="login" class="overlay"><div class="login"><div class="logo">BV <i>LANCHES</i></div><small>ACESSE SUA CONTA</small><h1>Entrar</h1><input id="email" type="email" placeholder="E-mail"><input id="pass" type="password" placeholder="Senha"><button onclick="login()">Entrar</button><button type="button" class="registerLoginBtn" onclick="openRegister()">＋ Criar minha conta</button><p id="err"></p><button type="button" class="registerLoginBtn" onclick="resetBVPassword()">Esqueci minha senha</button></div></div>
 <div id="registerModal" aria-hidden="true"><div class="registerBackdrop" onclick="closeRegister()"></div><div class="registerCard"><div class="productFormHero"><div><small>CADASTRO DE CLIENTE</small><h3>Criar minha conta</h3><p>Cadastre seus dados para fazer pedidos.</p></div><button type="button" class="productClose" onclick="closeRegister()">×</button></div><form class="productForm" onsubmit="registerUser(event)"><label><span>Nome</span><input id="registerName" required placeholder="Seu nome"></label><label><span>E-mail</span><input id="registerEmail" type="email" required placeholder="seu@email.com"></label><label><span>Senha</span><input id="registerPass" type="password" minlength="6" required placeholder="Mínimo de 6 caracteres"></label><label><span>Confirmar senha</span><input id="registerPass2" type="password" minlength="6" required placeholder="Digite novamente"></label><p id="registerErr" class="registerErr"></p><div class="productFormActions"><button type="button" class="formCancel" onclick="closeRegister()">Cancelar</button><button type="submit" class="formSave">✓ Criar conta</button></div></form></div></div>
 <div id="appRoot"><aside id="sidebar" class="sidebar"><div class="sideBrand"><div class="logo">BV <i>LANCHES</i></div><button class="closeSide" onclick="toggleSidebar()">×</button></div><div class="sideUser"><div class="avatar">BV</div><div><b>BV LANCHES</b><small>Sistema de pedidos</small></div></div><nav class="sideNav"><button data-page="inicio" onclick="showPage('inicio')">⌂ &nbsp;Início</button><button data-page="cardapio" onclick="showPage('cardapio')">🍔 &nbsp;Cardápio</button><button class="adminHide" data-page="pedido" onclick="showPage('pedido')">🛒 &nbsp;Meu pedido <b id="sideCount">0</b></button><button class="adminHide" data-page="acompanhar" onclick="showPage('acompanhar')">🔎 &nbsp;Acompanhar pedido</button><button data-role="motoboyOnly" data-page="pedidos" onclick="openMotoPage('pedidos')" style="display:none">🏍️ &nbsp;Pedidos</button><button data-role="motoboyOnly" data-page="taxa-entrega" onclick="openMotoPage('taxa-entrega')" style="display:none">💰 &nbsp;Taxa de entrega</button><button class="adminOnly adminDeliveryFeeLink" data-page="taxa-entrega" onclick="openAdmin('taxa-entrega')">💰 &nbsp;Taxa de entrega</button><div class="navTitle adminOnly">ADMINISTRAÇÃO</div><button class="adminOnly" data-page="dashboard" onclick="openAdmin('dashboard')">▦ &nbsp;Dashboard</button><button class="adminOnly" data-page="pedidos" onclick="openAdmin('pedidos')">📋 &nbsp;Pedidos <b id="sideNew">0</b></button><button class="adminOnly" data-page="vendas" onclick="openAdmin('vendas')">💰 &nbsp;Vendas</button><button class="adminOnly" data-page="produtos" onclick="openAdmin('produtos')">📦 &nbsp;Produtos</button><button class="adminOnly" data-page="promocoes" onclick="openAdmin('promocoes')">🏷️ &nbsp;Promoções</button><button class="adminOnly" data-page="cupons" onclick="openAdmin('cupons')">🎟 &nbsp;Cupons</button><button class="adminOnly" data-page="config" onclick="openAdmin('config')">⚙ &nbsp;Configurações</button></nav><div class="sideBottom"><button class="adminBtn adminOnly" onclick="openAdmin('dashboard')">🔐 Painel administrativo</button><button class="logoutBtn" onclick="logout()">↪ Sair da conta</button></div></aside><div class="app"><header class="topbar"><button class="menuBtn" onclick="toggleSidebar()">☰</button><div><div class="pageKicker">BV LANCHES</div><h1 id="pageTitle">Início</h1></div><div class="topActions"><button class="cartTop" type="button" onclick="showPage('pedido')" aria-label="Abrir carrinho" title="Abrir carrinho">🛒 <b id="count">0</b></button><button id="bvInstallAppBtn" type="button" onclick="bvInstallApp()" aria-label="Instalar BV Lanches" title="Instalar BV Lanches" style="display:none;align-items:center;gap:7px;min-height:40px;padding:0 12px;border:1px solid #e50914;border-radius:10px;background:linear-gradient(135deg,#e50914,#8d0007);color:#fff;font-weight:900;cursor:pointer">＋ Instalar app</button><button id="bvUpdateAppBtn" type="button" onclick="bvUpdateApp()" aria-label="Atualizar BV Lanches" title="Nova atualização disponível" style="display:none;align-items:center;gap:7px;min-height:40px;padding:0 12px;border:1px solid #ffd400;border-radius:10px;background:linear-gradient(135deg,#ffd400,#d69b00);color:#111;font-weight:900;cursor:pointer">↻ Atualizar</button><span class="adminState">Loja aberta</span><span id="loggedUserName" class="loggedUserName"></span></div></header><main class="content">
 
-<section id="page-conta" class="page">
-  <div class="bvAccountPage">
-   <div class="bvAccountHeader"><div class="bvAccountAvatar">👤</div><div><small>MINHA CONTA</small><h2 id="bvAccountName">Minha conta</h2></div></div>
-   <div class="bvAccountCard">
-    <div><small>Nome</small><strong id="bvAccountFullName">—</strong></div>
-    <div><small>E-mail / login</small><strong id="bvAccountEmail">—</strong></div>
-    <div><small>Telefone</small><strong id="bvAccountPhone">—</strong></div>
-    <div><small>Senha</small><strong>••••••••</strong><em>Por segurança, a senha não é exibida.</em></div>
-   </div>
-   <div class="bvAccountActions">
-    <button type="button" class="bvAccountAction bvAccountOrder" onclick="showPage('pedido')">🛒 Meu pedido</button>
-    <button type="button" class="bvAccountAction bvAccountLogout" onclick="bvAccountLogout()">🚪 Sair da conta</button>
-   </div>
-  </div>
- </section>
+
 <section id="page-inicio" class="page activePage">
 
 <div id="bvClientHome" class="bvClientHome" aria-label="Início do cliente">
   <div class="bvClientGreeting">
-    <div class="bvClientAvatar"><img src="./bv-logo.png?v=20260929.2300" alt="BV Lanches"></div>
+    <div class="bvClientAvatar"><img src="./bv-logo.png?v=20260929.2300" alt="BV Lanches"><button type="button" class="bvTopLogout" onclick="bvAccountLogout()">🚪 Sair da conta</button></div>
     <div class="bvClientGreetingText"><small>OLÁ, <span id="bvClientName">CLIENTE</span> 👋</small><h2>O que vamos pedir hoje?</h2></div>
     <button type="button" class="bvClientBell" onclick="toggleNotifications()" aria-label="Notificações">🔔</button>
   </div>
@@ -1159,7 +1150,7 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
 <button type="button" data-customer-page="cardapio" onclick="showPage('cardapio')"><span>🍔</span><b>Cardápio</b></button>
 <button type="button" data-customer-page="acompanhar" onclick="showPage('acompanhar')"><span>📦</span><b>Meus Pedidos</b></button>
 <button type="button" data-customer-page="pedido" onclick="showPage('pedido')"><span>🛒<i id="bvCustomerCount">0</i></span><b>Carrinho</b></button>
-<button type="button" data-customer-page="conta" onclick="showPage('conta')"><span>👤</span><b>Minha conta</b></button><button type="button" data-customer-page="conta" onclick="showPage('conta')"><span>👤</span><b>Minha conta</b></button>
+<button type="button" data-customer-page="conta" onclick="showPage('conta')"><span>👤</span><b>Minha conta</b></button>
 </nav>
 <style id="bv-customer-navigation-single">
 #bvCustomerBottomNav{display:none!important}
@@ -1232,4 +1223,11 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
   location.replace(location.pathname+'?bv_logout='+Date.now());
  };
 })();
+</script><script id="bv-top-logout-js">
+window.bvAccountLogout=async function(){
+ try{if(window.sb&&window.sb.auth)await window.sb.auth.signOut()}catch(e){console.warn('[BV LOGOUT]',e)}
+ ['bv_user','bv_user_name','bv_user_email','bv_name','bv_role','bv_session','bv_token'].forEach(function(k){try{sessionStorage.removeItem(k);localStorage.removeItem(k)}catch(e){}});
+ try{sessionStorage.clear()}catch(e){}
+ location.replace(location.pathname+'?bv_logout='+Date.now());
+};
 </script></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
