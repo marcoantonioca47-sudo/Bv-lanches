@@ -199,8 +199,10 @@
 
   window.admin=()=>['administrador','admin','maximo'].includes(String(window.BV_ROLE||'').trim().toLowerCase());
   window.applyAccess=()=>{
-    const role=String(window.BV_ROLE||'usuario').trim().toLowerCase();
+    const role=String(window.BV_ROLE||sessionStorage.getItem('bv_role')||document.documentElement.getAttribute('data-bv-role')||'usuario').trim().toLowerCase();
     window.BV_ROLE=(role==='maximo'?'administrador':role);
+    document.documentElement.setAttribute('data-bv-role',window.BV_ROLE);
+    try{sessionStorage.setItem('bv_role',window.BV_ROLE)}catch(e){}
     document.querySelectorAll('.adminOnly').forEach(x=>x.style.display=['administrador','admin','maximo'].includes(role)?'':'none');
     document.querySelectorAll('.adminHide').forEach(x=>x.style.display=['administrador','admin','maximo'].includes(window.BV_ROLE)?'none':'');
     document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=role==='motoboy'?'':'none');
@@ -1752,6 +1754,9 @@ window.BV_TRACKING_REALTIME=null;
     }
 
     window.BV_ROLE=String(profileRes.data.role||'usuario').trim().toLowerCase();
+    if(window.BV_ROLE==='maximo')window.BV_ROLE='administrador';
+    document.documentElement.setAttribute('data-bv-role',window.BV_ROLE);
+    try{sessionStorage.setItem('bv_role',window.BV_ROLE)}catch(e){}
     window.BV_USER_NAME=profileRes.data.name||user.email||'';window.BV_CREDIT_ENABLED=!!profileRes.data.credit_enabled;window.BV_CREDIT_LIMIT=Number(profileRes.data.credit_limit||0);
     try{
       localStorage.setItem('bv_profile_cache',JSON.stringify({
