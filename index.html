@@ -271,6 +271,45 @@
 }
 </style><link rel="stylesheet" href="bv-icon-styles-v1.css?v=20260926.1005" rel="stylesheet"><link rel="stylesheet" href="bv-icons-v1.css?v=20260926.1005">
 <link rel="stylesheet" href="bv-selection-v1.css?v=20260926.1005">
+<style id="bv-client-home-promo-carousel-v1">
+/* Banners de promoção no topo da tela inicial do cliente */
+#page-inicio .bvClientHomePromo{
+  display:none;
+  width:100%;
+  margin:0 0 18px!important;
+  border-radius:20px!important;
+  overflow:hidden;
+  border:1px solid rgba(229,9,20,.28)!important;
+  background:linear-gradient(115deg,#3b0508,#140b0d 55%,#2a1114)!important;
+  box-shadow:0 18px 45px rgba(0,0,0,.28)!important;
+}
+#page-inicio .bvClientHomePromo.show{display:block!important}
+#page-inicio .bvClientHomePromo .homePromoTrack{width:100%;display:flex}
+#page-inicio .bvClientHomePromo .homePromoSlide{
+  min-height:210px!important;
+  max-height:290px;
+  width:100%;
+  padding:22px 24px;
+  border-radius:18px;
+  overflow:hidden;
+  box-sizing:border-box;
+}
+#page-inicio .bvClientHomePromo .homePromoDots{display:flex!important;padding:0 0 10px}
+@media(max-width:600px){
+  #page-inicio .bvClientHomePromo{
+    margin:0 0 16px!important;
+    border-radius:16px!important;
+  }
+  #page-inicio .bvClientHomePromo .homePromoSlide{
+    min-height:185px!important;
+    max-height:235px;
+    padding:18px;
+    border-radius:14px;
+  }
+  #page-inicio .bvClientHomePromo .homePromoSlide h3{font-size:20px}
+  #page-inicio .bvClientHomePromo .homePromoPrice strong{font-size:24px}
+}
+</style>
 <style id="bv-home-more-info">
 #page-inicio .homeInfoGrid button.homeInfoCard{font:inherit;text-align:left;color:inherit;cursor:pointer;width:100%;}.homeHighlightGrid button{font:inherit;text-align:left;color:inherit;cursor:pointer;border:0;}.homeInfoGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
 #page-inicio .homeInfoCard{display:flex;align-items:center;gap:12px;min-height:92px;padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:linear-gradient(145deg,rgba(27,30,36,.94),rgba(12,14,17,.94));box-shadow:0 12px 30px rgba(0,0,0,.22)}
@@ -437,6 +476,11 @@ html[data-bv-role="usuario"] #page-inicio .homePromoDots{
     <div class="bvClientAvatar"><img src="./bv-logo.png?v=20260929.2200" alt="BV Lanches"></div>
     <div class="bvClientGreetingText"><small>OLÁ, <span id="bvClientName">CLIENTE</span> 👋</small><h2>O que vamos pedir hoje?</h2></div>
     <button type="button" class="bvClientBell" onclick="toggleNotifications()" aria-label="Notificações">🔔</button>
+  </div>
+
+  <div id="homePromoBanner" class="homePromoBanner bvClientHomePromo" aria-label="Promoções da BV Lanches">
+    <div id="homePromoTrack" class="homePromoTrack"></div>
+    <div id="homePromoDots" class="homePromoDots" aria-hidden="true"></div>
   </div>
 
   <div class="bvClientHero">
