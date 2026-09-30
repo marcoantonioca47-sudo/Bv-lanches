@@ -526,13 +526,13 @@ html[data-bv-role="usuario"] #page-inicio .homePromoDots{
 <section id="page-produtos" class="page adminPage"><div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Produtos</h2><p>Gerencie o cardápio.</p></div><button type="button" onclick="window.BV_OPEN_PRODUCT_FORM?.()">＋ Novo produto</button></div><div class="panel"><div id="productFormPanel" class="productFormPanel"><div class="productFormModal"><div class="productFormHero"><div><small id="productFormKicker">CADASTRO DE PRODUTO</small><h3 id="productFormTitle">Novo produto</h3><p id="productFormSubtitle">Preencha os dados do produto para adicionar ao cardápio.</p></div><div class="productHeroActions"><button type="button" id="closeProductFormBtn" class="productClose" onclick="event.preventDefault();event.stopPropagation();if(window.BV_CLOSE_PRODUCT_FORM){window.BV_CLOSE_PRODUCT_FORM()}else{const p=document.getElementById('productFormPanel');if(p){p.classList.remove('show','open');p.style.setProperty('display','none','important')}}" aria-label="Fechar cadastro" title="Fechar cadastro">×</button></div></div><form id="productForm" class="productForm" onsubmit="saveProduct(event)"><input type="hidden" id="productEditId"><label><span>Nome do produto</span><input id="productName" required></label><label><span>Valor</span><input id="productPrice" type="number" step="0.01" min="0" required></label><label><span>Categoria</span><select id="productCategory" required><option>Lanches</option><option>Bebidas</option><option>Adicionais</option></select></label><label><span>Descrição</span><textarea id="productDesc" rows="4"></textarea></label><div id="productFlavorEditor" class="productFlavorEditor" hidden><div class="productFlavorHead"><div><b>Sabores e estoque</b><small>Cadastre cada sabor da bebida e defina o estoque individual.</small></div></div><div id="productFlavorRows"></div><div class="productFlavorAdd"><input id="newProductFlavor" placeholder="Ex.: Coca, Guaraná, Fanta..."><input id="newProductFlavorStock" type="number" min="0" step="1" placeholder="Estoque"><button type="button" id="addProductFlavorBtn" class="formSave">＋ Adicionar sabor</button></div></div><button id="productFormSave" class="formSave" type="submit">✓ Cadastrar produto</button></form></div></div><div id="manage"></div></div></section>
 <section id="page-promocoes" class="page adminPage"><div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Promoções</h2><p>Crie ofertas com preço especial para aparecerem automaticamente no cardápio.</p></div></div><div class="panel promoFormPanel"><form class="promotionForm" onsubmit="addPromotion(event)"><label><span>Nome da promoção</span><input id="promoName" required placeholder="Ex.: Combo X-Bacon"></label><label class="promoItemsField"><span>Itens da promoção</span><div id="promoItems"></div><button type="button" class="addPromoItemBtn" onclick="addPromoItemRow()">＋ Adicionar outro item</button><small>Você pode repetir o mesmo produto e definir a quantidade desejada.</small></label><label><span>Preço promocional do conjunto</span><input id="promoPrice" type="number" step="0.01" min="0" required placeholder="Ex.: 29,90"></label><label><span>Descrição</span><textarea id="promoDesc" rows="3" placeholder="Ex.: Oferta especial desta semana"></textarea></label><label><span>Início</span><input id="promoStart" type="datetime-local"></label><label><span>Fim</span><input id="promoEnd" type="datetime-local"></label><button class="formSave" type="submit">✓ Cadastrar promoção</button><small class="promoAiHint">🖼️ Ao cadastrar, o site cria automaticamente um banner grátis com todos os itens juntos e coloca essa imagem na tela inicial.</small></form></div><div class="panel"><div class="panelTitle"><div><h3>Promoções cadastradas</h3><small>Ative ou desative quando quiser.</small></div></div><div id="promotionsManage"></div></div></section><section id="page-cupons" class="page adminPage"><div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Cupons</h2></div></div><div class="couponGrid"><div class="couponCard"><span>10%</span><b>BV10</b><p>10% de desconto.</p></div><div class="couponCard"><span>R$ 5</span><b>PRIMEIRA</b><p>R$ 5 de desconto.</p></div></div></section>
 <section id="page-config" class="page adminPage"><div class="adminTop"><div><small class="eyebrow">ADMINISTRAÇÃO</small><h2>Configurações</h2></div></div><div class="panel settingsPanel"><label>Taxa padrão de entrega<input id="feeCfg" type="number" step="0.01" min="0" value="5"></label><label>WhatsApp<input id="waCfg"></label><div id="storeStatusControl" class="storeStatusControl"><div><small>STATUS DA LOJA</small><b id="storeStatusLabel">Carregando...</b></div><button type="button" id="storeStatusBtn" onclick="toggleStoreStatus()">Carregando...</button></div><h3>Taxa por bairro</h3><details class="bvCompactDetails"><summary><span><b>📍 Taxas por bairro</b><small>Toque na seta para visualizar e editar todas as taxas cadastradas.</small></span><i>⌄</i></summary><div class="bvCompactDetailsBody"><div class="two"><input id="bairroCfg" placeholder="Bairro"><input id="bairroFeeCfg" type="number" step="0.01" placeholder="Taxa"></div><button onclick="addBairroFee()">+ Adicionar bairro</button><div id="bairroFees"></div></div></details><button onclick="saveCfg()">Salvar configurações</button></div><div class="panel creditRequestsAdminPanel"><div class="panelTitle"><div><h3>📝 Solicitações de limite</h3><small>Pedidos de usuários para comprar a prazo.</small></div><button type="button" class="dark" onclick="renderCreditRequests()">Atualizar</button></div><div id="creditRequestsList"><div class="emptyState"><span>⏳</span><b>Carregando solicitações...</b></div></div></div><div class="panel permissionsPanel"><div class="managerHeader"><div><h3>Usuários e contas</h3></div><span id="userCount" class="pill">0 usuários</span></div><input id="userSearch" type="search" oninput="renderUsers()" placeholder="Buscar..."><details class="bvCompactDetails usersRegisteredDetails" open><summary><span><b>👥 Usuários cadastrados</b><small>Todos os usuários ficam aqui, tenham limite para venda a prazo ou não. Gerencie permissões, conta e limite individual.</small></span><i>⌄</i></summary><div class="bvCompactDetailsBody"><div id="userPermissions"></div></div></details></div></section>
-<nav id="bvClientBottomNav" class="bvClientBottomNav" aria-label="Navegação do cliente">
+</main><nav id="bvClientBottomNav" class="bvClientBottomNav" aria-label="Navegação do cliente">
   <button type="button" data-bv-bottom-page="inicio" onclick="showPage('inicio')" aria-label="Início"><span class="bvNavIcon">⌂</span><b>Início</b></button>
   <button type="button" data-bv-bottom-page="cardapio" onclick="showPage('cardapio')" aria-label="Cardápio"><span class="bvNavIcon">☰</span><b>Cardápio</b></button>
   <button type="button" data-bv-bottom-page="acompanhar" onclick="showPage('acompanhar')" aria-label="Meus Pedidos"><span class="bvNavIcon">▣</span><b>Meus Pedidos</b></button>
   <button type="button" data-bv-bottom-page="pedido" onclick="showPage('pedido')" aria-label="Carrinho"><span class="bvNavIcon bvBottomCart">🛒<i id="bvBottomCount">0</i></span><b>Carrinho</b></button>
 </nav>
-</main></div></div><div id="toast"></div><div id="creditRequestModal" class="bvSystemModal" aria-hidden="true"><div class="bvSystemModalCard creditRequestCard"><div class="bvSystemModalTop"><div class="bvSystemModalIcon">📒</div><div><small class="bvSystemModalKicker">COMPRA A PRAZO</small><h3 class="bvSystemModalTitle">Solicitar limite</h3></div><button type="button" id="creditRequestCloseBtn" class="creditRequestClose" onclick="(function(e){if(e){e.preventDefault();e.stopPropagation();}var m=document.getElementById('creditRequestModal');if(m){m.setAttribute('aria-hidden','true');m.style.setProperty('display','none','important');}var b=document.getElementById('creditRequestBtn');if(b)b.style.display='none';})(event)" aria-label="Voltar">×</button></div><div class="bvSystemModalBody"><p>Informe o valor de limite que você deseja e explique o motivo da solicitação.</p><label class="creditRequestLabel">Valor desejado<input id="creditRequestAmount" type="number" min="1" step="0.01" placeholder="Ex.: 300,00"></label><label class="creditRequestLabel">Justificativa<textarea id="creditRequestReason" rows="4" maxlength="500" placeholder="Explique por que precisa do limite."></textarea></label><div id="creditRequestError" class="creditRequestError"></div></div><div class="bvSystemModalActions"><button type="button" class="bvSystemModalBtn" onclick="submitCreditRequest()">Enviar solicitação</button></div></div></div>
+</div></div><div id="toast"></div><div id="creditRequestModal" class="bvSystemModal" aria-hidden="true"><div class="bvSystemModalCard creditRequestCard"><div class="bvSystemModalTop"><div class="bvSystemModalIcon">📒</div><div><small class="bvSystemModalKicker">COMPRA A PRAZO</small><h3 class="bvSystemModalTitle">Solicitar limite</h3></div><button type="button" id="creditRequestCloseBtn" class="creditRequestClose" onclick="(function(e){if(e){e.preventDefault();e.stopPropagation();}var m=document.getElementById('creditRequestModal');if(m){m.setAttribute('aria-hidden','true');m.style.setProperty('display','none','important');}var b=document.getElementById('creditRequestBtn');if(b)b.style.display='none';})(event)" aria-label="Voltar">×</button></div><div class="bvSystemModalBody"><p>Informe o valor de limite que você deseja e explique o motivo da solicitação.</p><label class="creditRequestLabel">Valor desejado<input id="creditRequestAmount" type="number" min="1" step="0.01" placeholder="Ex.: 300,00"></label><label class="creditRequestLabel">Justificativa<textarea id="creditRequestReason" rows="4" maxlength="500" placeholder="Explique por que precisa do limite."></textarea></label><div id="creditRequestError" class="creditRequestError"></div></div><div class="bvSystemModalActions"><button type="button" class="bvSystemModalBtn" onclick="submitCreditRequest()">Enviar solicitação</button></div></div></div>
 <script>
 window.renderDeliveryFees=async function(){
   const box=document.getElementById('publicDeliveryFees');
@@ -1101,34 +1101,43 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
  setInterval(update,500);
 })();
 </script>
-<style id="bv-client-bottom-nav-fix-v2">
-/* Barra inferior do cliente: fica fora das páginas para permanecer visível em toda a navegação */
+<style id="bv-client-bottom-nav-fix-v3">
 @media(max-width:700px){
-  html[data-bv-role="usuario"] #bvClientBottomNav{display:grid!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;}
-  html[data-bv-role="usuario"] .content{padding-bottom:110px!important;}
-  html[data-bv-role="usuario"] .page{padding-bottom:18px;}
+  html[data-bv-role="usuario"] #bvClientBottomNav,
+  body.bv-role-usuario #bvClientBottomNav{display:grid!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;}
+  html[data-bv-role="usuario"] .content,
+  body.bv-role-usuario .content{padding-bottom:110px!important;}
+  html[data-bv-role="usuario"] .page,
+  body.bv-role-usuario .page{padding-bottom:18px!important;}
 }
 </style>
-<script id="bv-client-bottom-nav-fix-v2-js">
+<script id="bv-client-bottom-nav-fix-v3-js">
 (function(){
-  function refresh(){
-    var nav=document.getElementById('bvClientBottomNav');
-    if(!nav)return;
-    var role=document.documentElement.getAttribute('data-bv-role')||'';
-    nav.style.display=role==='usuario'?'grid':'none';
-    var current='';
-    document.querySelectorAll('.page.activePage').forEach(function(p){current=p.id.replace(/^page-/,'');});
-    nav.querySelectorAll('button[data-bv-bottom-page]').forEach(function(b){b.classList.toggle('active',b.dataset.bvBottomPage===current);});
-    var qty=0;
-    try{var cart=JSON.parse(localStorage.getItem('bv_cart')||'[]');if(Array.isArray(cart))qty=cart.reduce(function(s,x){return s+Number(x.q||x.qty||0)},0);}catch(e){}
-    var badge=document.getElementById('bvBottomCount');
-    if(badge){badge.textContent=qty;badge.style.display=qty?'grid':'none';}
-  }
-  document.addEventListener('DOMContentLoaded',refresh);
-  window.addEventListener('load',refresh);
-  window.addEventListener('storage',refresh);
-  setInterval(refresh,500);
-  window.BV_UPDATE_BOTTOM_NAV=refresh;
+ function refresh(){
+  var nav=document.getElementById('bvClientBottomNav'); if(!nav)return;
+  var role='';
+  try{role=sessionStorage.getItem('bv_role')||'';}catch(e){}
+  var htmlRole=document.documentElement.getAttribute('data-bv-role')||'';
+  var isUser=role==='usuario'||htmlRole==='usuario';
+  nav.style.setProperty('display',isUser?'grid':'none','important');
+  nav.style.setProperty('visibility',isUser?'visible':'hidden','important');
+  nav.style.setProperty('opacity',isUser?'1':'0','important');
+  nav.style.setProperty('pointer-events',isUser?'auto':'none','important');
+  var current='';
+  document.querySelectorAll('.page.activePage').forEach(function(p){current=p.id.replace(/^page-/,'');});
+  nav.querySelectorAll('button[data-bv-bottom-page]').forEach(function(b){
+    b.classList.toggle('active',b.getAttribute('data-bv-bottom-page')===current);
+  });
+  var qty=0;
+  try{var cart=JSON.parse(localStorage.getItem('bv_cart')||'[]');if(Array.isArray(cart))qty=cart.reduce(function(s,x){return s+Number(x.q||x.qty||0)},0);}catch(e){}
+  var badge=document.getElementById('bvBottomCount');
+  if(badge){badge.textContent=qty;badge.style.display=qty?'grid':'none';}
+ }
+ document.addEventListener('DOMContentLoaded',refresh);
+ window.addEventListener('load',refresh);
+ window.addEventListener('storage',refresh);
+ setInterval(refresh,300);
+ window.BV_UPDATE_BOTTOM_NAV=refresh;
 })();
 </script>
 </body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
