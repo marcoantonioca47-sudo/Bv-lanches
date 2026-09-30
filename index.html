@@ -1002,7 +1002,7 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
     if(nonPrazo)hideRequest();
   },true);
 })();
-</script><script id="bv-home-navigation-fix-v1">
+</script><script id="bv-home-navigation-fix-v2">
 (function(){
   function goCategory(category){
     try{
@@ -1010,14 +1010,15 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
       var run=function(){
         var btn=document.querySelector('[data-menu-category="'+category+'"]');
         if(btn){
-          if(typeof window.setMenuCategory==='function') window.setMenuCategory(category,btn);
-          else btn.click();
+          btn.click();
+          setTimeout(function(){
+            if(!btn.classList.contains('active')) btn.click();
+          },80);
           btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
         }
       };
-      run();
-      setTimeout(run,120);
-      setTimeout(run,400);
+      setTimeout(run,80);
+      setTimeout(run,300);
     }catch(e){console.error('BV navegação:',e);}
   }
   window.BV_OPEN_BEBIDAS=function(){goCategory('Bebidas');};
