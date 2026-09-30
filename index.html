@@ -1280,4 +1280,31 @@ window.bvAccountLogout=async function(){
    try{history.replaceState(null,'',location.pathname+'?bv_logout='+Date.now())}catch(e){}
  };
 })();
+</script><style id="bv-admin-sidebar-final">
+html[data-bv-role="administrador"] .sidebar .sideNav .adminOnly,
+html[data-bv-role="administrador"] .sidebar .sideNav .adminDeliveryFeeLink{display:flex!important}
+html[data-bv-role="administrador"] .sidebar .sideNav .adminHide{display:none!important}
+html[data-bv-role="administrador"] .sidebar .sideNav [data-role="motoboyOnly"]{display:none!important}
+html[data-bv-role="administrador"] .sidebar .sideNav .navTitle.adminOnly{display:block!important}
+</style>
+<script id="bv-admin-sidebar-final-js">
+(function(){
+ function syncAdminMenu(){
+   var role='';
+   try{role=sessionStorage.getItem('bv_role')||''}catch(e){}
+   var isAdmin=role==='administrador'||document.documentElement.getAttribute('data-bv-role')==='administrador';
+   if(!isAdmin)return;
+   document.querySelectorAll('#sidebar .sideNav .adminOnly,#sidebar .sideNav .adminDeliveryFeeLink').forEach(function(el){
+     el.style.setProperty('display',el.classList.contains('navTitle')?'block':'flex','important');
+   });
+   document.querySelectorAll('#sidebar .sideNav .adminHide,#sidebar .sideNav [data-role="motoboyOnly"]').forEach(function(el){
+     el.style.setProperty('display','none','important');
+   });
+ }
+ document.addEventListener('DOMContentLoaded',syncAdminMenu);
+ window.addEventListener('load',syncAdminMenu);
+ window.addEventListener('pageshow',syncAdminMenu);
+ setInterval(syncAdminMenu,500);
+ new MutationObserver(syncAdminMenu).observe(document.documentElement,{attributes:true,attributeFilter:['data-bv-role']});
+})();
 </script>
