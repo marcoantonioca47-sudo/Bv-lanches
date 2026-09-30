@@ -200,9 +200,9 @@
   window.admin=()=>['administrador','admin'].includes(window.BV_ROLE);
   window.applyAccess=()=>{
     const role=String(window.BV_ROLE||'usuario').trim().toLowerCase();
-    window.BV_ROLE=role;
-    document.querySelectorAll('.adminOnly').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'':'none');
-    document.querySelectorAll('.adminHide').forEach(x=>x.style.display=['administrador','admin'].includes(role)?'none':'');
+    window.BV_ROLE=(role==='maximo'?'administrador':role);
+    document.querySelectorAll('.adminOnly').forEach(x=>x.style.display=['administrador','admin','maximo'].includes(role)?'':'none');
+    document.querySelectorAll('.adminHide').forEach(x=>x.style.display=['administrador','admin','maximo'].includes(role)?'none':');
     document.querySelectorAll('[data-role="motoboyOnly"]').forEach(x=>x.style.display=role==='motoboy'?'':'none');
     if(role==='motoboy'){
       // O motoboy não possui tela Início/Cardápio/Meu pedido/Acompanhar.
