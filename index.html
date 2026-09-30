@@ -456,6 +456,7 @@ html[data-bv-role="usuario"] #page-inicio .homePromoDots{
     <div class="bvClientSectionHead"><div><small>SEU PEDIDO</small><b>Meu pedido</b></div><button type="button" onclick="showPage('pedido')">Ver meu pedido →</button></div>
     <div id="bvClientOrderItems" class="bvClientHorizontal bvClientOrderItems"></div>
     <div class="bvClientOrderSummary" id="bvClientOrderSummary"></div>
+    <button type="button" id="bvFinalizeOrderHome" class="bvFinalizeOrderHome" onclick="showPage('pedido')" style="display:none">Finalizar pedido →</button>
   </div>
 
   <div class="bvClientSectionHead bvClientPromoHead"><div><small>MAIS PEDIDOS</small><b>Os favoritos da BV</b></div><span>Deslize →</span></div>
@@ -1023,5 +1024,22 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
   }
   window.BV_OPEN_BEBIDAS=function(){goCategory('Bebidas');};
   window.BV_OPEN_PROMOCOES=function(){goCategory('Promocoes');};
+})();
+</script><style id="bv-finalize-order-home-v1">
+.bvFinalizeOrderHome{width:100%;margin-top:10px;min-height:46px;border:0;border-radius:13px;background:linear-gradient(135deg,#ffd400,#ffb800);color:#111;font-weight:950;font-size:13px;cursor:pointer;box-shadow:0 10px 24px rgba(255,212,0,.14)}
+.bvFinalizeOrderHome:active{transform:scale(.985)}
+</style>
+<script id="bv-finalize-order-home-js">
+(function(){
+ function update(){
+  var btn=document.getElementById('bvFinalizeOrderHome'); if(!btn)return;
+  var cart=[];try{cart=JSON.parse(localStorage.getItem('bv_cart')||'[]')}catch(e){}
+  var has=Array.isArray(cart)&&cart.some(function(x){return Number(x.q||x.qty||1)>0});
+  btn.style.display=has?'block':'none';
+ }
+ document.addEventListener('DOMContentLoaded',update);
+ window.addEventListener('load',update);
+ window.addEventListener('storage',update);
+ setInterval(update,500);
 })();
 </script></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
