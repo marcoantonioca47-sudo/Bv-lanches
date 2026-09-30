@@ -163,6 +163,38 @@ function refreshMiniCatalogUI(){
   }
  });
 }
+window.BV_OPEN_FLAVOR_PICKER=async function(productId){
+ const p=(window.products||[]).find(x=>String(x.id)===String(productId));
+ if(!p||norm(p.name)!=='refri 2l')return;
+ await loadMiniStocks();
+ let m=$('bvRefri2Picker');
+ if(!m){
+  m=document.createElement('div');m.id='bvRefri2Picker';m.className='bvMiniPicker';
+  m.innerHTML='<div class="bvMiniPickerBox"><button class="bvMiniClose" type="button">×</button><h3>Refri 2 litros</h3><p>Escolha o sabor</p><div class="bvMiniChoices"></div></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')});
+  m.querySelector('.bvMiniClose').onclick=()=>m.classList.remove('show');
+ }
+ const box=m.querySelector('.bvMiniChoices');
+ const flavors=[{key:'guarana',label:'Guaraná',emoji:'🥤'},{key:'laranja',label:'Laranja',emoji:'🍊'}];
+ box.innerHTML=flavors.map(f=>{const n=stockOf(p.id,f.key);return '<button type="button" data-f="'+f.key+'" '+(n<1?'disabled':'')+'>'+f.emoji+' '+f.label+' <small>'+n+' disponíveis</small></button>'}).join('');
+ box.querySelectorAll('button').forEach(b=>b.onclick=()=>addRefri2Flavor(p,b.dataset.f));
+ m.classList.add('show');
+};
+async function addRefri2Flavor(p,flavor){
+ await loadMiniStocks();
+ const f=flavor==='guarana'?{key:'guarana',label:'Guaraná'}:{key:'laranja',label:'Laranja'};
+ const n=stockOf(p.id,f.key);
+ if(n<1)return say('Este sabor está esgotado.');
+ window.cart=window.cart||[];
+ const id=p.id+'::'+f.key;
+ const old=window.cart.find(x=>String(x.id)===id);
+ if(old&&Number(old.q)>=n)return say('Estoque máximo disponível.');
+ if(old)old.q++;else window.cart.push({id,productId:p.id,name:p.name+' — '+f.label,price:Number(p.price)||0,q:1,category:p.category||'Bebidas',flavor:f.label});
+ localStorage.setItem('bv_cart',JSON.stringify(window.cart));
+ document.getElementById('count')?.replaceChildren(String(window.cart.reduce((a,x)=>a+Number(x.q||0),0)));
+ window.renderCart?.();$('bvRefri2Picker')?.classList.remove('show');
+}
 window.BV_REFRESH_MINI_CATALOG_UI=refreshMiniCatalogUI;
 
 /* Imagens definitivas dos cards de 2L — aplicadas depois de todos os renderizadores. */
@@ -206,5 +238,5 @@ if(typeof oldRender==='function'){
 
 const st=document.createElement('style');st.id='bvMiniV2Style';st.textContent='#products .flavorStock,#products .flavorStockGrid,#products .flavorStockItem{display:none!important}.bvMiniOnly,.bvMiniCatalog{margin-top:10px;padding:10px;border-radius:12px;background:rgba(0,0,0,.28)}.productBottom button:not(.addDisabled){background:var(--primary,#e50914)!important;color:#fff!important;border:0!important;opacity:1!important;filter:none!important;box-shadow:none!important}.productBottom button:not(.addDisabled):active{transform:scale(.98);filter:brightness(.92)!important}.bvMiniRow{display:grid;grid-template-columns:1fr 38px 42px 38px;align-items:center;gap:6px;margin-top:7px}.bvMiniRow button{min-height:34px;border:0;border-radius:8px;font-size:18px;font-weight:800;cursor:pointer;background:var(--primary,#e11);color:#fff;padding:0 12px;transition:transform .08s,filter .08s}.bvMiniRow button:active{transform:scale(.94);filter:brightness(.9)}.bvMiniRow button:disabled{opacity:.65}.bvMiniRow strong{text-align:center}.bvMiniCatalog{display:grid;grid-template-columns:1fr 1fr;gap:5px}.bvMiniCatalog b{grid-column:1/-1}.bvMiniPicker{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:99999;padding:18px}.bvMiniPicker.show{display:flex}.bvMiniPickerBox{width:min(420px,100%);padding:20px;border-radius:18px;background:#171717;color:#fff}.bvMiniClose{float:right;border:0;background:none;color:#fff;font-size:28px}.bvMiniChoices{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bvMiniChoices button{padding:14px;border:0;border-radius:12px;font-weight:800}.bvMiniChoices small{display:block;margin-top:4px;opacity:.7}@media(max-width:600px){.bvMiniChoices{grid-template-columns:1fr 1fr}}';
 document.head.appendChild(st);
-window.BV_REFRI_FLAVORS_VERSION='2026.09.26.1010';
+window.BV_REFRI_FLAVORS_VERSION='2026.09.30.2020';
 })();
