@@ -522,6 +522,19 @@ html:not([data-bv-role="administrador"]):not([data-bv-role="motoboy"]) #bvCustom
 .bvAccountAction{display:flex!important;width:100%!important;min-height:54px!important;margin:0!important;align-items:center!important;justify-content:center!important;border-radius:16px!important;box-sizing:border-box!important}
 .bvAccountOrder{background:linear-gradient(135deg,#24272d,#15171b)!important;border:1px solid rgba(255,255,255,.14)!important;color:#fff!important}
 .bvAccountLogout{background:linear-gradient(135deg,#e50914,#8d0007)!important;border:1px solid rgba(255,90,90,.5)!important;color:#fff!important}
+</style><style id="bv-account-bottom-v3">
+@media(max-width:700px){
+ #bvCustomerBottomNav{grid-template-columns:repeat(5,minmax(0,1fr))!important;height:70px!important}
+ #bvCustomerBottomNav button{min-width:0!important;padding:4px 2px!important;gap:2px!important}
+ #bvCustomerBottomNav button b{font-size:10px!important;white-space:nowrap!important}
+ #bvCustomerBottomNav button span{font-size:20px!important}
+ .bvAccountPage{padding-bottom:110px!important}
+}
+.bvAccountActions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.bvAccountAction{min-height:52px;border-radius:16px!important;font-weight:850;font-size:14px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.bvAccountOrder{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff}
+.bvAccountLogout{margin-top:0!important;border:1px solid rgba(255,60,60,.35)!important;background:rgba(220,30,30,.16)!important;color:#fff}
+@media(max-width:420px){.bvAccountActions{grid-template-columns:1fr}}
 </style></head><body>
 <div id="login" class="overlay"><div class="login"><div class="logo">BV <i>LANCHES</i></div><small>ACESSE SUA CONTA</small><h1>Entrar</h1><input id="email" type="email" placeholder="E-mail"><input id="pass" type="password" placeholder="Senha"><button onclick="login()">Entrar</button><button type="button" class="registerLoginBtn" onclick="openRegister()">＋ Criar minha conta</button><p id="err"></p><button type="button" class="registerLoginBtn" onclick="resetBVPassword()">Esqueci minha senha</button></div></div>
 <div id="registerModal" aria-hidden="true"><div class="registerBackdrop" onclick="closeRegister()"></div><div class="registerCard"><div class="productFormHero"><div><small>CADASTRO DE CLIENTE</small><h3>Criar minha conta</h3><p>Cadastre seus dados para fazer pedidos.</p></div><button type="button" class="productClose" onclick="closeRegister()">×</button></div><form class="productForm" onsubmit="registerUser(event)"><label><span>Nome</span><input id="registerName" required placeholder="Seu nome"></label><label><span>E-mail</span><input id="registerEmail" type="email" required placeholder="seu@email.com"></label><label><span>Senha</span><input id="registerPass" type="password" minlength="6" required placeholder="Mínimo de 6 caracteres"></label><label><span>Confirmar senha</span><input id="registerPass2" type="password" minlength="6" required placeholder="Digite novamente"></label><p id="registerErr" class="registerErr"></p><div class="productFormActions"><button type="button" class="formCancel" onclick="closeRegister()">Cancelar</button><button type="submit" class="formSave">✓ Criar conta</button></div></form></div></div>
@@ -529,19 +542,19 @@ html:not([data-bv-role="administrador"]):not([data-bv-role="motoboy"]) #bvCustom
 
 <section id="page-conta" class="page">
   <div class="bvAccountPage">
-    <div class="bvAccountHeader"><div class="bvAccountAvatar">👤</div><div><small>MINHA CONTA</small><h2 id="bvAccountName">Minha conta</h2></div></div>
-    <div class="bvAccountCard">
-      <div><small>Nome</small><strong id="bvAccountFullName">—</strong></div>
-      <div><small>E-mail / login</small><strong id="bvAccountEmail">—</strong></div>
-      <div><small>Telefone</small><strong id="bvAccountPhone">—</strong></div>
-      <div><small>Senha</small><strong>••••••••</strong><em>Por segurança, a senha não é exibida.</em></div>
-    </div>
-    <div class="bvAccountActions">
-      <button type="button" class="bvAccountAction bvAccountOrder" onclick="showPage('pedido')">🛒 Meu pedido</button>
-      <button type="button" class="bvAccountAction bvAccountLogout" onclick="bvAccountLogout()">🚪 Sair da conta</button>
-    </div>
+   <div class="bvAccountHeader"><div class="bvAccountAvatar">👤</div><div><small>MINHA CONTA</small><h2 id="bvAccountName">Minha conta</h2></div></div>
+   <div class="bvAccountCard">
+    <div><small>Nome</small><strong id="bvAccountFullName">—</strong></div>
+    <div><small>E-mail / login</small><strong id="bvAccountEmail">—</strong></div>
+    <div><small>Telefone</small><strong id="bvAccountPhone">—</strong></div>
+    <div><small>Senha</small><strong>••••••••</strong><em>Por segurança, a senha não é exibida.</em></div>
+   </div>
+   <div class="bvAccountActions">
+    <button type="button" class="bvAccountAction bvAccountOrder" onclick="showPage('pedido')">🛒 Meu pedido</button>
+    <button type="button" class="bvAccountAction bvAccountLogout" onclick="bvAccountLogout()">🚪 Sair da conta</button>
+   </div>
   </div>
-</section>
+ </section>
 <section id="page-inicio" class="page activePage">
 
 <div id="bvClientHome" class="bvClientHome" aria-label="Início do cliente">
@@ -1133,7 +1146,8 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
 <button type="button" data-customer-page="inicio" onclick="showPage('inicio')"><span>⌂</span><b>Início</b></button>
 <button type="button" data-customer-page="cardapio" onclick="showPage('cardapio')"><span>🍔</span><b>Cardápio</b></button>
 <button type="button" data-customer-page="acompanhar" onclick="showPage('acompanhar')"><span>📦</span><b>Meus Pedidos</b></button>
-<button type="button" data-customer-page="pedido" onclick="showPage('pedido')"><span>🛒<i id="bvCustomerCount">0</i></span><b>Carrinho</b></button><button type="button" data-customer-page="conta" onclick="showPage('conta')"><span>👤</span><b>Minha conta</b></button>
+<button type="button" data-customer-page="pedido" onclick="showPage('pedido')"><span>🛒<i id="bvCustomerCount">0</i></span><b>Carrinho</b></button>
+<button type="button" data-customer-page="conta" onclick="showPage('conta')"><span>👤</span><b>Minha conta</b></button><button type="button" data-customer-page="conta" onclick="showPage('conta')"><span>👤</span><b>Minha conta</b></button>
 </nav>
 <style id="bv-customer-navigation-single">
 #bvCustomerBottomNav{display:none!important}
@@ -1187,5 +1201,16 @@ html[data-bv-role="usuario"] .bvClientOrderBox{display:block}
  };
  document.addEventListener('DOMContentLoaded',fill);window.addEventListener('load',fill);window.addEventListener('pageshow',fill);
  window.BV_FILL_ACCOUNT=fill;
+})();
+</script><script id="bv-account-logout-v3">
+(function(){
+ window.bvAccountLogout=async function(){
+  try{if(window.sb&&window.sb.auth)await window.sb.auth.signOut()}catch(e){console.warn('[BV LOGOUT]',e)}
+  ['bv_user','bv_user_name','bv_user_email','bv_name','bv_role','bv_session','bv_token'].forEach(function(k){
+   try{sessionStorage.removeItem(k);localStorage.removeItem(k)}catch(e){}
+  });
+  try{sessionStorage.clear()}catch(e){}
+  location.replace(location.pathname+'?bv_logout='+Date.now());
+ };
 })();
 </script></body></html><style>#page-config .userCreditManager{margin:16px 0 18px;padding:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px}#page-config .userCreditManager .creditConfigHead{margin-bottom:12px}</style>
