@@ -772,3 +772,50 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(229,9,20,
 
 .salesSummary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 14px}.salesKpi{padding:15px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:linear-gradient(145deg,#171a1f,#0d0f12)}.salesKpi small{display:block;color:#8f96a0;font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}.salesKpi strong{display:block;margin-top:5px;color:#fff;font-size:20px;font-weight:950}.salesKpi span{display:block;margin-top:4px;color:#777f89;font-size:10px}.salesCard{padding:16px 0;border-bottom:1px solid rgba(255,255,255,.07)}.salesCard:last-child{border-bottom:0}.salesHead{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center}.salesHead>div{min-width:0}.salesHead b{display:block;color:#fff;font-size:15px;font-weight:950}.salesHead small{display:block;margin-top:4px;color:#8f96a0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.salesHead>strong{font-size:18px;color:#fff;white-space:nowrap}.salesBadge{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 10px;border-radius:999px;font-size:10px;font-weight:950;text-transform:uppercase}.salesBadge.paid{background:rgba(35,180,105,.12);border:1px solid rgba(35,180,105,.3);color:#70e0a7}.salesBadge.pending{background:rgba(255,183,0,.12);border:1px solid rgba(255,183,0,.3);color:#ffd15c}.salesBadge.cancelled{background:rgba(229,9,20,.13);border:1px solid rgba(229,9,20,.35);color:#ff6870}.salesMeta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}.salesMeta div{padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.05)}.salesMeta small{display:block;color:#7f8690;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.5px}.salesMeta b{display:block;margin-top:3px;color:#e7e9ec;font-size:12px}@media(max-width:700px){.salesSummary{grid-template-columns:1fr 1fr}.salesHead{grid-template-columns:1fr auto}.salesHead>strong{grid-column:1;grid-row:2}.salesBadge{grid-column:2;grid-row:1}.salesMeta{grid-template-columns:1fr 1fr}}
 .salesViewSelect{min-height:40px;padding:0 12px;border:1px solid rgba(229,9,20,.45);border-radius:10px;background:#15181d;color:#fff;font-weight:900;cursor:pointer;outline:none}.salesViewSelect option{background:#15181d;color:#fff}.salesCancelReason{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(229,9,20,.07);border:1px solid rgba(229,9,20,.2)}.salesCancelReason small{display:block;color:#ff6971;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.6px}.salesCancelReason b{display:block;margin-top:4px;color:#e7e9ec;font-size:12px;line-height:1.4}.bvCancelReasonInput{display:block;width:100%;margin-top:12px;padding:12px;box-sizing:border-box;border:1px solid #343a44;border-radius:10px;background:#0d1014;color:#fff;resize:vertical;font:inherit;outline:none}.bvCancelReasonInput:focus{border-color:#e50914}.bvCancelReasonError{display:block;margin-top:6px;color:#ff6971;font-size:11px;font-weight:800;min-height:14px}
+
+/* ===== BV DESKTOP LAYOUT FIX — evita cortes e garante leitura completa ===== */
+html,body{min-width:0;overflow-x:hidden}
+@media (min-width:851px){
+  body{display:block;width:100%;min-height:100vh}
+  .sidebar{width:270px;overflow:hidden}
+  .app{margin-left:270px;width:calc(100% - 270px);min-width:0}
+  .topbar{width:100%;box-sizing:border-box;min-width:0}
+  .topbar>*,.topActions{min-width:0}
+  .content{width:100%;max-width:1440px;box-sizing:border-box;margin:0 auto;padding:32px 34px 80px}
+  .page{width:100%;min-width:0;box-sizing:border-box}
+  .panel,.product,.order,.manageProduct,.permissionsPanel,.settingsPanel{max-width:100%;min-width:0;box-sizing:border-box}
+  /* listas/tabelas e linhas extensas devem rolar horizontalmente, nunca cortar conteúdo */
+  .panel,.order,.manageProduct,.permissionsPanel{overflow-x:auto}
+  .panel>table,.panel table{width:100%;min-width:720px}
+  /* grids se adaptam a monitores menores sem esmagar os cards */
+  .grid{grid-template-columns:repeat(4,minmax(180px,1fr));min-width:0}
+  .stats{grid-template-columns:repeat(4,minmax(150px,1fr));min-width:0}
+  .quickGrid{grid-template-columns:repeat(3,minmax(200px,1fr));min-width:0}
+  .adminCards{grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr)}
+  .checkout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .trackingGrid{grid-template-columns:minmax(280px,360px) minmax(0,1fr)}
+  /* textos longos não podem aumentar o layout e desaparecer */
+  .product h3,.product p,.manageProduct h3,.manageProduct p,.order,.line,.userIdentity{overflow-wrap:anywhere;word-break:break-word}
+  .topbar h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topActions{flex-wrap:wrap;justify-content:flex-end}
+}
+@media (min-width:851px) and (max-width:1180px){
+  .sidebar{width:240px}
+  .app{margin-left:240px;width:calc(100% - 240px)}
+  .topbar{padding-left:24px;padding-right:24px}
+  .content{padding-left:24px;padding-right:24px}
+  .grid{grid-template-columns:repeat(3,minmax(180px,1fr))}
+  .stats{grid-template-columns:repeat(2,minmax(180px,1fr))}
+  .quickGrid{grid-template-columns:repeat(2,minmax(220px,1fr))}
+}
+@media (min-width:851px) and (max-width:980px){
+  .content{padding-left:18px;padding-right:18px}
+  .topbar{padding-left:18px;padding-right:18px}
+  .grid{grid-template-columns:repeat(2,minmax(190px,1fr))}
+  .adminCards,.checkout,.trackingGrid{grid-template-columns:1fr}
+}
+/* Nunca limitar a altura de páginas ou áreas principais no desktop. */
+@media (min-width:851px){
+  .content,.page,.activePage{height:auto;max-height:none}
+  .page.activePage{overflow:visible}
+}
