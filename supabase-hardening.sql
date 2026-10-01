@@ -215,3 +215,44 @@ end $$;
 
 -- 10) Evita que pedidos iguais sejam inseridos duas vezes durante migrações.
 -- Não altera pedidos existentes; serve apenas como diagnóstico futuro.
+
+
+-- 11) PERFIL: evita políticas permissivas duplicadas e impede autoelevação de papel.
+drop policy if exists "profiles_insert_self" on public.profiles;
+drop policy if exists "profiles_insert_own_or_admin" on public.profiles;
+create policy "profiles_insert_own_or_admin"
+on public.profiles for insert to authenticated
+with check (
+  ((id=(select auth.uid())) and lower(coalesce(trim(role),'usuario'))='usuario')
+  or (select private.is_bv_admin())
+);
+
+drop policy if exists "profiles_update_admin" on public.profiles;
+drop policy if exists "profiles_update_self" on public.profiles;
+drop policy if exists "profiles_update_own" on public.profiles;
+drop policy if exists "profiles_update_own_or_admin" on public.profiles;
+create policy "profiles_update_own_or_admin"
+on public.profiles for update to authenticated
+using ((id=(select auth.uid())) or (select private.is_bv_admin()))
+with check ((id=(select auth.uid())) or (select private.is_bv_admin()));
+
+-- 12) SOLICITAÇÕES DE LIMITE: políticas com auth.uid() em initplan + índices das FKs.
+do $$
+begin
+  if to_regclass('public.credit_limit_requests') is not null then
+    drop policy if exists "credit requests own insert" on public.credit_limit_requests;
+    create policy "credit requests own insert"
+    on public.credit_limit_requests for insert to authenticated
+    with check (user_id=(select auth.uid()));
+
+    drop policy if exists "credit requests own select" on public.credit_limit_requests;
+    create policy "credit requests own select"
+    on public.credit_limit_requests for select to authenticated
+    using ((user_id=(select auth.uid())) or (select public.is_admin()));
+
+    create index if not exists credit_limit_requests_user_id_idx
+      on public.credit_limit_requests(user_id);
+    create index if not exists credit_limit_requests_decided_by_idx
+      on public.credit_limit_requests(decided_by);
+  end if;
+end $$;
