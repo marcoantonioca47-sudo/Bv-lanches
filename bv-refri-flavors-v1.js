@@ -20,8 +20,8 @@ const say=m=>{const t=$('toast');if(t){t.textContent=String(m);t.classList.add('
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const isMini=p=>norm(p?.name)==='refri mini';
 const is2L=p=>norm(p?.name)==='refri 2l';
-const isFlavorProduct=p=>isMini(p)||is2L(p);
-const flavorsFor=p=>isMini(p)?MINI_FLAVORS:is2L(p)?REFri2_FLAVORS:[];
+const isFlavorProduct=p=>isMini(p)||is2L(p)||String(p?.category||'')==='Bebidas'&&Object.keys(window.BV_FLAVOR_NAMES||{}).some(k=>k.startsWith(String(p?.id)+'::'));
+const flavorsFor=p=>{const prefix=String(p?.id)+'::';const dynamic=Object.keys(window.BV_FLAVOR_NAMES||{}).filter(k=>k.startsWith(prefix)).map(k=>({key:k.slice(prefix.length),label:window.BV_FLAVOR_NAMES[k],emoji:'🥤'}));if(dynamic.length)return dynamic;return isMini(p)?MINI_FLAVORS:is2L(p)?REFri2_FLAVORS:[];};
 const getProducts=()=>Array.isArray(window.products)?window.products:[];
 const findProduct=kind=>{
   const fn=kind==='mini'?isMini:is2L;
@@ -33,21 +33,19 @@ async function loadFlavorStocks(){
   const client=db();
   if(!client)return false;
   try{
-    const products=getProducts().filter(isFlavorProduct);
+    const products=getProducts().filter(p=>String(p?.category||'')==='Bebidas');
     const ids=[...new Set(products.map(p=>String(p.id)).filter(Boolean))];
     if(!ids.length){
       window.BV_FLAVOR_STOCKS={};
+      window.BV_FLAVOR_NAMES={};
       return true;
     }
     const r=await client.from('product_flavor_stock').select('product_id,flavor,stock,updated_at').in('product_id',ids);
     if(r.error)throw r.error;
-    const next={};
-    products.forEach(p=>flavorsFor(p).forEach(f=>next[key(p.id,f.key)]=0));
-    (r.data||[]).forEach(row=>{
-      const k=key(row.product_id,row.flavor);
-      if(k in next)next[k]=Math.max(0,Number(row.stock)||0);
-    });
-    window.BV_FLAVOR_STOCKS=next;
+    const next={},names={};
+    products.forEach(p=>flavorsFor(p).forEach(f=>{next[key(p.id,f.key)]=0;names[key(p.id,f.key)]=f.label;}));
+    (r.data||[]).forEach(row=>{const k=key(row.product_id,row.flavor);next[k]=Math.max(0,Number(row.stock)||0);names[k]=String(row.flavor||'').trim();});
+    window.BV_FLAVOR_STOCKS=next;window.BV_FLAVOR_NAMES=names;
     return true;
   }catch(e){
     console.error('[BV REFRI STOCK LOAD]',e);
@@ -86,6 +84,7 @@ async function setFlavorStock(id,flavor,stock){
     const saved=Math.max(0,Number(r.data)||0);
     window.BV_FLAVOR_STOCKS=window.BV_FLAVOR_STOCKS||{};
     window.BV_FLAVOR_STOCKS[key(id,f.key)]=saved;
+    window.BV_FLAVOR_NAMES=window.BV_FLAVOR_NAMES||{};window.BV_FLAVOR_NAMES[key(id,f.key)]=f.label;
     syncProductTotal(id);
     renderAdminFlavorStocks();
     refreshCatalogFlavorUI();
@@ -289,7 +288,7 @@ style.textContent=`
 `;
 document.head.appendChild(style);
 
-window.BV_REFRI_FLAVORS_VERSION='2026.10.01.1250';
+window.BV_REFRI_FLAVORS_VERSION='2026.10.01.1710';
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(wrapRenders,0));
 else setTimeout(wrapRenders,0);
