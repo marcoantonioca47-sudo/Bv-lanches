@@ -819,3 +819,28 @@ html,body{min-width:0;overflow-x:hidden}
   .content,.page,.activePage{height:auto;max-height:none}
   .page.activePage{overflow:visible}
 }
+
+
+/* ===== BV LANCHES — AJUSTE DA TELA INICIAL 2026.10.01 ===== */
+/* Mantém as demais telas intactas: apenas reposiciona o conteúdo da Home. */
+#page-inicio .bvClientHome{
+  padding-top:28px!important;
+}
+#page-inicio .bvClientHero{
+  margin-top:18px!important;
+}
+#page-inicio .bvClientHeroText > span{
+  font-size:clamp(30px,4.2vw,58px)!important;
+  line-height:.95!important;
+  font-weight:1000!important;
+  letter-spacing:-1.8px!important;
+  display:block!important;
+}
+@media(max-width:600px){
+  #page-inicio .bvClientHome{padding-top:24px!important}
+  #page-inicio .bvClientHero{margin-top:16px!important}
+  #page-inicio .bvClientHeroText > span{
+    font-size:42px!important;
+    letter-spacing:-1.5px!important;
+  }
+}
