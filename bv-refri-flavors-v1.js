@@ -295,6 +295,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else setTimeout(wrapRenders,0);
 setTimeout(wrapRenders,800);
 setTimeout(wrapRenders,1800);
-setInterval(()=>{if(document.querySelector('#manage'))renderAdminFlavorStocks()},3000);
+setInterval(()=>{if(document.querySelector('#manage'))renderAdminFlavorStocks()},15000);
 
 })();
