@@ -844,3 +844,11 @@ html,body{min-width:0;overflow-x:hidden}
     letter-spacing:-1.5px!important;
   }
 }
+
+
+/* BV — sabores salvos visíveis nos cards de Produtos e Cardápio */
+.bvProductFlavorList{margin:10px 0 2px;padding:9px 10px;border:1px solid rgba(255,255,255,.07);border-radius:11px;background:rgba(255,255,255,.035)}
+.bvProductFlavorList>span{display:block;margin-bottom:6px;font-size:9px;font-weight:950;letter-spacing:.12em;color:#8f96a0}
+.bvProductFlavorList>div{display:flex;flex-wrap:wrap;gap:5px}
+.bvProductFlavorList b{display:inline-flex;align-items:center;min-height:25px;padding:0 8px;border-radius:999px;background:rgba(229,9,20,.10);border:1px solid rgba(229,9,20,.20);color:#f4f5f6;font-size:10px;font-weight:900}
+.catalogFlavorList{margin-top:9px}
