@@ -212,5 +212,6 @@ begin
   end if;
 end $$;
 
+
 -- 10) Evita que pedidos iguais sejam inseridos duas vezes durante migrações.
 -- Não altera pedidos existentes; serve apenas como diagnóstico futuro.
