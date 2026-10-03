@@ -3,9 +3,9 @@
 window.BV_OPEN_PROMO_FLAVOR_PICKER=async(promoId,refriItems)=>{
     let m=$('bvFlavorModal');
     if(!m){
-      const refri=(window.products||[]).find(p=>norm(p?.name)==='refri 2l');
-      if(!refri)return toast('Produto Refri 2L não encontrado.');
-      await window.BV_OPEN_FLAVOR_PICKER?.(refri);
+      const refriProduct=(window.products||[]).find(p=>norm(p?.name)==='refri 2l');
+      if(!refriProduct)return toast('Produto Refri 2L não encontrado.');
+      await window.BV_OPEN_FLAVOR_PICKER?.(refriProduct);
       m=$('bvFlavorModal');
     }
     if(!m)return toast('Não foi possível abrir a seleção de sabor.');
