@@ -586,7 +586,8 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
       const rows=items.length?items:(promo.product_id?[{product_id:promo.product_id,quantity:1}]:[]);
       const base=rows.map(i=>({
         p:ps.find(x=>String(x.id)===String(i.product_id)),
-        q:Math.max(1,Number(i.quantity)||1)
+        q:Math.max(1,Number(i.quantity)||1),
+        flavor:i.flavor||''
       })).filter(x=>x.p);
       if(!base.length)throw new Error('A promoção não possui produtos válidos.');
 
@@ -602,9 +603,9 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
       });
 
       const units=[];
-      base.forEach(x=>{for(let i=0;i<x.q;i++)units.push(x.p)});
+      base.forEach(x=>{for(let i=0;i<x.q;i++)units.push(x)});
       const visible=units.slice(0,9);
-      const imgs=await Promise.all(visible.map(p=>loadImg(p.image_url)));
+      const imgs=await Promise.all(visible.map(x=>loadImg(x.p.image_url)));
 
       const c=document.createElement('canvas');
       c.width=1200;c.height=800;
@@ -667,6 +668,8 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
 
       visible.forEach((p,i)=>{
         const [x,y,size]=positions[i]||[600,410,240];
+        const item=visible[i]||{p:{},flavor:''};
+        const p=item.p||{};
         const im=imgs[i];
         if(im)drawImageCover(im,x,y,size);
         else{
