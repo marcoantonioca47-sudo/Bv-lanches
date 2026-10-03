@@ -667,7 +667,7 @@ window.saveCfg=async()=>{if(!sb)return;const f=Number(String($('feeCfg')?.value|
         ctx.restore();
       };
 
-      visible.forEach((p,i)=>{
+      visible.forEach((_row,i)=>{
         const [x,y,size]=positions[i]||[600,410,240];
         const item=visible[i]||{p:{},flavor:''};
         var p=item.p||{};
