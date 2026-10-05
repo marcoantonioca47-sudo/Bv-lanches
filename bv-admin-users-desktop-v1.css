@@ -100,3 +100,54 @@
     gap:10px!important;
   }
 }
+
+/* Nome e e-mail sempre em linhas independentes */
+@media (min-width:701px){
+  #page-config .usersRegisteredDetails .userPerm{
+    grid-template-columns:42px minmax(360px,1fr) 210px 105px!important;
+  }
+  #page-config .usersRegisteredDetails .userIdentity{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:center!important;
+    gap:7px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  #page-config .usersRegisteredDetails .userNameLine,
+  #page-config .usersRegisteredDetails .userEmailLine{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:flex-start!important;
+    gap:2px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  #page-config .usersRegisteredDetails .userFieldLabel{
+    display:block!important;
+    font-size:9px!important;
+    line-height:1!important;
+    letter-spacing:.8px!important;
+    font-weight:900!important;
+    color:#777f89!important;
+  }
+  #page-config .usersRegisteredDetails .userNameLine b,
+  #page-config .usersRegisteredDetails .userEmailLine small{
+    width:100%!important;
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    overflow-wrap:anywhere!important;
+    word-break:normal!important;
+  }
+  #page-config .usersRegisteredDetails .userNameLine b{
+    font-size:15px!important;
+    line-height:1.25!important;
+  }
+  #page-config .usersRegisteredDetails .userEmailLine small{
+    font-size:12px!important;
+    line-height:1.35!important;
+    color:#aeb4bd!important;
+  }
+}
