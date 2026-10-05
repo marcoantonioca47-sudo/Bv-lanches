@@ -1,0 +1,102 @@
+/* BV LANCHES — usuários cadastrados: organização desktop v1 */
+@media (min-width:701px){
+  #page-config .usersRegisteredDetails .bvCompactDetailsBody{
+    padding:16px 18px 18px!important;
+  }
+  #page-config .usersRegisteredDetails #userPermissions{
+    width:100%;
+    min-width:0;
+  }
+  #page-config .usersRegisteredDetails .userPerm{
+    display:grid!important;
+    grid-template-columns:42px minmax(280px,1fr) 210px 105px!important;
+    align-items:center!important;
+    gap:14px!important;
+    width:100%!important;
+    min-width:0!important;
+    padding:15px 0!important;
+    border-bottom:1px solid rgba(255,255,255,.07)!important;
+  }
+  #page-config .usersRegisteredDetails .userPerm:last-child{
+    border-bottom:0!important;
+  }
+  #page-config .usersRegisteredDetails .userIndex{
+    width:42px!important;
+    height:42px!important;
+    display:grid!important;
+    place-items:center!important;
+    border-radius:11px!important;
+    background:rgba(229,9,20,.10)!important;
+    border:1px solid rgba(229,9,20,.22)!important;
+    color:#ff6870!important;
+    font-size:13px!important;
+    font-weight:950!important;
+  }
+  #page-config .usersRegisteredDetails .userIdentity{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:flex-start!important;
+    justify-content:center!important;
+    gap:5px!important;
+    min-width:0!important;
+    overflow:visible!important;
+  }
+  #page-config .usersRegisteredDetails .userIdentity b{
+    display:block!important;
+    width:100%!important;
+    font-size:15px!important;
+    line-height:1.25!important;
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    overflow-wrap:anywhere!important;
+    word-break:break-word!important;
+  }
+  #page-config .usersRegisteredDetails .userIdentity small{
+    display:block!important;
+    width:100%!important;
+    color:#aeb4bd!important;
+    font-size:12px!important;
+    line-height:1.35!important;
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    overflow-wrap:anywhere!important;
+    word-break:break-word!important;
+  }
+  #page-config .usersRegisteredDetails .userIdentity em{
+    display:inline-flex!important;
+    align-items:center!important;
+    min-height:24px!important;
+    padding:0 9px!important;
+    border-radius:999px!important;
+    background:rgba(229,9,20,.09)!important;
+    border:1px solid rgba(229,9,20,.20)!important;
+    color:#ff6870!important;
+    font-size:10px!important;
+    line-height:1!important;
+    font-style:normal!important;
+    font-weight:900!important;
+    white-space:nowrap!important;
+  }
+  #page-config .usersRegisteredDetails .userPerm select{
+    width:100%!important;
+    min-width:0!important;
+    height:40px!important;
+    padding:0 10px!important;
+    border-radius:10px!important;
+  }
+  #page-config .usersRegisteredDetails .deleteUserBtn{
+    width:100%!important;
+    min-width:0!important;
+    height:40px!important;
+    padding:0 10px!important;
+    white-space:nowrap!important;
+  }
+}
+@media (min-width:701px) and (max-width:1050px){
+  #page-config .usersRegisteredDetails .userPerm{
+    grid-template-columns:38px minmax(220px,1fr) 180px 92px!important;
+    gap:10px!important;
+  }
+}
